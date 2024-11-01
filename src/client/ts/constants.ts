@@ -1,3 +1,6 @@
+export const APP_ID_TF2 = 440;
+export const APP_ID_DOTA2 = 570;
+export const APP_ID_CS2 = 730;
 
 export const TF2_REPOSITORY = 'https://tf2content.loadout.tf/';
 export const CSGO_REPOSITORY = 'https://cs2content.csloadout.com/';
