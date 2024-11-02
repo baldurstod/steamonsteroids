@@ -17,7 +17,7 @@ function resolvePromise(promiseId: number, resolveValue?: any) {
 	}
 }
 
-class MarketAssets {
+export class MarketAssets {
 	static #assets = new Map();
 	static #listingInfos = new Map();
 	static {
@@ -114,7 +114,7 @@ async function getInventoryAssetDatas(appId: number, contextId: number, assetId:
 	return promise;
 }
 
-async function getInventorySteamId() {
+export async function getInventorySteamId() {
 	let { promise, promiseId } = createPromise();
 	requestInventorySteamId(promiseId);
 	return promise;
