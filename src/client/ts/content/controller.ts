@@ -1,5 +1,13 @@
 export enum ControllerEvents {
 	Tf2RefreshListing = 'refreshlisting',
+	ClearMarketListing = 'clearmarketlisting',
+	SetGenerationState = 'setgenerationstate',
+	ShowRowContainer = 'showrowcontainer',
+	HideRowContainer = 'hiderowcontainer',
+	SelectInventoryItem = 'selectinventoryitem',
+	CenterCameraTarget = 'centercameratarget',
+	SetCameraTarget = 'setcameratarget',
+	SetItemInfo = 'setiteminfo',
 }
 
 export const Controller = new EventTarget();
