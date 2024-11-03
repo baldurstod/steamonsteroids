@@ -108,7 +108,7 @@ async function getListingAsset(appId: number, contextId: number, assetId: number
 	return promise;
 }
 
-async function getInventoryAssetDatas(appId: number, contextId: number, assetId: number) {
+export async function getInventoryAssetDatas(appId: number, contextId: number, assetId: number) {
 	let { promise, promiseId } = createPromise();
 	requestInventoryAssetDatas(appId, contextId, assetId, promiseId);
 	return promise;

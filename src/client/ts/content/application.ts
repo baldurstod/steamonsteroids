@@ -1,9 +1,9 @@
-import { BoundingBox, setFetchFunction, Source1ModelInstance } from 'harmony-3d';
+import { BoundingBox, Camera, OrbitControl, Scene, setFetchFunction, Source1ModelInstance } from 'harmony-3d';
 import { controlleraddEventListener, ControllerEvents } from './controller';
 import { TF2Viewer } from './tf2/tf2viewer';
 import { CS2Viewer } from './cs2/cs2viewer';
 import { ACTIVE_INVENTORY_PAGE, APP_ID_CS2, APP_ID_TF2 } from '../constants';
-import { getInventorySteamId, MarketAssets } from './marketassets';
+import { getInventoryAssetDatas, getInventorySteamId, MarketAssets } from './marketassets';
 import { show } from 'harmony-ui';
 import { vec3 } from 'gl-matrix';
 
@@ -14,11 +14,14 @@ enum PageType {
 	TradeOffer
 }
 
+const CAMERA_DISTANCE = 200;
+
 class Application {
 	#pageType: PageType = PageType.Unknown;
 	#currentListingId: number = 0;
 	#tf2Viewer = new TF2Viewer();
 	#cs2Viewer = new CS2Viewer();
+	#htmlCanvas: HTMLCanvasElement = document.createElement('canvas');
 	#htmlState?: HTMLElement;
 	#htmlCanvasItemInfo?: HTMLElement;
 	#htmlRowContainer?: HTMLElement;
@@ -26,8 +29,16 @@ class Application {
 	#currentAssetId: number = 0;
 	#currentContextId: number = 0;
 	#inventoryItem: any/*TODO:better type*/;
+	#favorites: { [key: string]: any } = {};
+	#inventoryFavorites: { [key: string]: any } = {};
+	#scene = new Scene();
+	#camera = new Camera();
+
+	#orbitCameraControl = new OrbitControl();
+
 
 	constructor() {
+		this.#initScene();
 		this.#initPageType();
 		if (!isChromium()) {
 			setFetchFunction(async (resource, options) => await this.#backgroundFetch(resource, options));
@@ -57,6 +68,10 @@ class Application {
 		}
 
 		return new Response(test, { status: result.status, statusText: result.statusText });
+	}
+
+	#initScene() {
+
 	}
 
 	#initPageType() {
@@ -136,15 +151,15 @@ class Application {
 			this.#currentContextId = contextId;
 			this.#currentAssetId = assetId;
 			let activeInventoryPage = document.getElementById(ACTIVE_INVENTORY_PAGE);
-			if (activeInventoryPage) {
-				activeInventoryPage.parentNode.insertBefore(this.htmlRowContainer, activeInventoryPage);
+			if (activeInventoryPage && this.#htmlRowContainer) {
+				activeInventoryPage.parentNode?.insertBefore(this.#htmlRowContainer, activeInventoryPage);
 			} else {
 				let tradeArea = document.getElementsByClassName('trade_area')[0];
-				if (tradeArea) {
-					tradeArea.parentNode.insertBefore(this.htmlRowContainer, tradeArea);
+				if (tradeArea && this.#htmlRowContainer) {
+					tradeArea.parentNode?.insertBefore(this.#htmlRowContainer, tradeArea);
 				}
 			}
-			let asset = await MarketAssets.getInventoryAssetDatas(appId, contextId, assetId);
+			let asset = await getInventoryAssetDatas(appId, contextId, assetId);
 			if (asset) {
 				this.setGenerationState(GenerationState.RetrievingItemDatas);
 				let steamUserId = await getInventorySteamId();
@@ -193,16 +208,18 @@ class Application {
 
 	#setSelectedInventoryItem(assetId: any/*TODO:better type*/, inventoryItem: any/*TODO:better type*/) {
 		let className = 'as-inventory-selected-item';
-		if (this.inventoryItem) {
-			this.inventoryItem.classList.remove(className);
+		if (this.#inventoryItem) {
+			this.#inventoryItem.classList.remove(className);
 		}
 		inventoryItem.classList.add(className);
-		this.inventoryItem = inventoryItem;
+		this.#inventoryItem = inventoryItem;
 
-		if (this._inventoryFavorites[assetId]) {
-			this.htmlRowContainer.classList.add('favorited-market-listing');
-		} else {
-			this.htmlRowContainer.classList.remove('favorited-market-listing');
+		if (this.#htmlRowContainer) {
+			if (this.#inventoryFavorites[assetId]) {
+				this.#htmlRowContainer.classList.add('favorited-market-listing');
+			} else {
+				this.#htmlRowContainer.classList.remove('favorited-market-listing');
+			}
 		}
 	}
 
@@ -212,18 +229,18 @@ class Application {
 			let max = vec3.create();
 			let boundingBox = new BoundingBox();
 			sourceModel.getBoundingBox(boundingBox);
-			this.orbitCameraControl.target.position = boundingBox.center;//vec3.lerp(vec3.create(), min, max, 0.5);
-			this.perspectiveCamera._position[0] = this.orbitCameraControl.target[0];
-			this.perspectiveCamera._position[1] = CAMERA_DISTANCE;//TODO: set y to have the model occupy most of the canvas (inspect_panel_dist)
-			this.perspectiveCamera._position[2] = this.orbitCameraControl.target[2];
-			this.orbitCameraControl.update();
+			this.#orbitCameraControl.target.position = boundingBox.center;//vec3.lerp(vec3.create(), min, max, 0.5);
+			this.#camera._position[0] = this.#orbitCameraControl.target._position[0];
+			this.#camera._position[1] = CAMERA_DISTANCE;//TODO: set y to have the model occupy most of the canvas (inspect_panel_dist)
+			this.#camera._position[2] = this.#orbitCameraControl.target._position[2];
+			this.#orbitCameraControl.update();
 		}
 	}
 
 	#setCameraTarget(target: vec3, position: vec3) {
-		this.orbitCameraControl.target.position = target;
-		this.perspectiveCamera.position = position;
-		this.orbitCameraControl.update();
+		this.#orbitCameraControl.target.position = target;
+		this.#camera.position = position;
+		this.#orbitCameraControl.update();
 	}
 
 	#setItemInfo(info: string) {
