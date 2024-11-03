@@ -1,0 +1,80 @@
+import nodeResolve from '@rollup/plugin-node-resolve';
+import copy from 'rollup-plugin-copy';
+import terser from '@rollup/plugin-terser';
+import del from 'rollup-plugin-delete';
+import typescript from '@rollup/plugin-typescript';
+
+const isProduction = process.env.BUILD === 'production';
+const isFirefox = process.env.BROWSER === 'firefox';
+
+export default [
+	{
+		input: './src/client/ts/content/application.ts',
+		output: {
+			file: './build/client/application.js',
+			format: 'esm',
+		},
+		plugins: [
+			isProduction ? del({targets: 'build/client/*'}) : null,
+			/*styles({
+				mode: [
+					'inject',
+					(varname) => `import { styleInject } from 'harmony-ui';styleInject(${varname});`
+				],
+			}),*/
+			typescript(),
+			nodeResolve({dedupe: ['harmony-ui']}),
+			isProduction ? terser() : null,
+			copy({
+				targets: [
+					{src: isFirefox ? 'src/client/manifest_firefox.json' : 'src/client/manifest.json', dest: 'build/client', rename: 'manifest.json'},
+					{src: 'src/client/html/popup.html', dest: 'build/client/popups/'},
+					{src: 'src/client/css/popup.css', dest: 'build/client/popups/'},
+					{src: 'src/client/css/content.css', dest: 'build/client/css/'},
+					{src: 'src/client/images/', dest: 'build/client/'},
+				]
+			}),
+		],
+	},
+	{
+		input: './src/client/ts/injected/injected.ts',
+		output: {
+			file: './build/client/injected.js',
+			format: 'esm',
+		},
+		plugins: [
+			typescript(),
+			isProduction ? terser() : null,
+		],
+	},
+	{
+		input: './src/client/ts/background/background.ts',
+		output: {
+			file: './build/client/background.js',
+			format: 'esm',
+		},
+		plugins: [
+			typescript(),
+			nodeResolve(),
+			isProduction ? terser() : null,
+		],
+	},
+	/*
+	{
+		input: './src/js/options.js',
+		output: {
+			file: './build/options/options.js',
+			format: 'esm',
+		},
+		plugins: [
+			nodeResolve(),
+			isProduction ? terser() : null,
+			copy({
+				targets: [
+					{src: 'src/html/options.html', dest: 'build/options/'},
+					{src: 'src/css/options.css', dest: 'build/options/'},
+				]
+			}),
+		],
+	},*/
+];
