@@ -1,0 +1,120 @@
+.accurate-skins {}
+
+.accurate-skins label {
+	font-size: 30px;
+	cursor: pointer;
+}
+
+.accurate-skins .option-line {
+	display: block;
+}
+
+.texture-generation-state {
+	font-size: 2em;
+	user-select: none;
+}
+
+.texture-generation-state.success {
+	color: #abce4e;
+}
+
+.texture-generation-state.failure {
+	color: #bd4847;
+}
+
+.texture-generation-state.waiting {
+	color: #5aa9d6;
+}
+
+.weapon-selector {
+	position: absolute;
+	top: 0px;
+	left: 0px;
+	font-size: 1.5em;
+	pointer-events: all;
+}
+
+.canvas-container {
+	height: 500px;
+	position: relative;
+}
+
+.canvas-container-controls {
+	pointer-events: none;
+}
+
+.favorite-button,
+.unfavorite-button {
+	position: absolute;
+	top: 0px;
+	right: 0px;
+	margin-right: 25px;
+}
+
+.unfavorite-button {
+	display: none;
+}
+
+.favorited-market-listing {
+	border: 2px solid #c3a700 !important;
+}
+
+.favorited-market-listing .favorite-button,
+.as-favorited-inventory-listing .favorite-button {
+	display: none;
+}
+
+.favorited-market-listing .unfavorite-button,
+.as-favorited-inventory-listing .unfavorite-button {
+	display: unset;
+}
+
+.as-inventory-selected-item {
+	background-color: royalblue;
+}
+
+.as-favorited-inventory-listing>div {
+	background-color: rgb(235 127 20) !important;
+	background-image: unset !important;
+}
+
+.canvas-container-item-info {
+	position: absolute;
+	bottom: 0px;
+	font-size: 1.5em;
+}
+
+.canvas-container-controls-class-icons {
+	position: absolute;
+	bottom: 20px;
+}
+
+.canvas-container-controls-class-icon {
+	pointer-events: all;
+	height: 48px;
+	width: 48px;
+	background-size: 100%;
+	cursor: pointer;
+	filter: invert(70%);
+}
+
+.canvas-container-controls-playpause {
+	pointer-events: all;
+	position: absolute;
+	bottom: 20px;
+	right: 20px;
+	width: 50px;
+	height: 50px;
+	background-repeat: no-repeat;
+	background-size: 35px;
+	background-position: center;
+	background-color: #00000000;
+	border: 0px solid;
+	cursor: pointer;
+	color: white;
+}
+
+.canvas-container-controls-playpause svg {
+	height: 100%;
+	width: 100%;
+}
