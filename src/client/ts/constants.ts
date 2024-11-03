@@ -9,7 +9,14 @@ export const ACTIVE_INVENTORY_PAGE = 'active_inventory_page';
 
 export const TF2_WARPAINT_DEFINITIONS_URL = TF2_REPOSITORY + 'generated/warpaint_definitions.json';
 
+export const API_GET_ASSET_CLASS_INFO_ENDPOINT = 'https://assetclassinfo.accurateskins.com/';
+export const TF2_ITEMS_URL = 'https://loadout.tf/generated/items/items_english.json';
+export const CSGO_ITEMS_URL = 'https://csloadout.com/generated/items/items_english.json';
+
 export const API_GET_UCG_IMAGE_ENDPOINT = 'https://loadout.tf/php/steam/getugcimage.php';
+
+export const API_INSPECT_TF2_WEAPON_ENDPOINT = 'https://inspecttf2.accurateskins.com/';
+export const API_INSPECT_CSGO_WEAPON_ENDPOINT = 'https://inspectcsgo.accurateskins.com/';
 
 
 export const DECORATED_WEAPONS: { [key: string]: number } = {
