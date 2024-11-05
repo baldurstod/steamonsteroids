@@ -59,22 +59,22 @@ export default [
 			isProduction ? terser() : null,
 		],
 	},
-	/*
 	{
-		input: './src/js/options.js',
+		input: './src/client/ts/options.ts',
 		output: {
-			file: './build/options/options.js',
+			file: './build/client/options/options.js',
 			format: 'esm',
 		},
 		plugins: [
+			typescript(),
 			nodeResolve(),
 			isProduction ? terser() : null,
 			copy({
 				targets: [
-					{src: 'src/html/options.html', dest: 'build/options/'},
-					{src: 'src/css/options.css', dest: 'build/options/'},
+					{src: 'src/client/html/options.html', dest: 'build/client/options/'},
+					{src: 'src/client/css/options.css', dest: 'build/client/options/'},
 				]
 			}),
 		],
-	},*/
+	}
 ];
