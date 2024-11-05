@@ -224,7 +224,7 @@ class BackGround {
 	}
 
 	static async initPaintKits() {
-		await WeaponManager.initPaintKitDefinitions(TF2_WARPAINT_DEFINITIONS_URL);
+		await new WeaponManager().initPaintKitDefinitions(TF2_WARPAINT_DEFINITIONS_URL);
 	}
 
 	static async getPaintKit() {

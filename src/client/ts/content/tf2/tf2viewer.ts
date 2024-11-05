@@ -39,7 +39,7 @@ export class TF2Viewer {
 
 	constructor() {
 		Repositories.addRepository(new Repository('tf2', TF2_REPOSITORY));
-		//WeaponManager.reuseTextures = true;
+		//new WeaponManager().reuseTextures = true;
 		TextureCombiner.setTextureSize(2048);//TODO: set an option
 		this.#initEvents();
 	}
@@ -193,7 +193,7 @@ export class TF2Viewer {
 			if (paintKitId && paintKitWear && paintKitSeed) {
 				//console.log(paintKitId, paintKitWear, paintKitSeed);
 				paintKitWear = (paintKitWear - 0.2) * 5 >> 0; // transform the wear from decimal point to integer
-				WeaponManager.refreshItem({ sourceModel: source1Model, paintKitId: Number(paintKitId), paintKitWear: paintKitWear, itemDefIndex: defIndex, paintKitSeed: paintKitSeed });
+				new WeaponManager().refreshItem({ sourceModel: source1Model, paintKitId: Number(paintKitId), paintKitWear: paintKitWear, itemDefIndex: defIndex, paintKitSeed: paintKitSeed });
 				if (htmlImg) {
 					//this.application.setSelectedInventoryItem(assetId, htmlImg);
 					controllerDispatchEvent(ControllerEvents.SelectInventoryItem, { detail: { assetId: assetId, htmlImg: htmlImg } });
