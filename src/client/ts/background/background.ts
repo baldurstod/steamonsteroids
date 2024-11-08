@@ -1,4 +1,4 @@
-import { PaintKitDefinitions, WeaponManager } from 'harmony-3d-utils';
+import { PaintKitDefinitions } from 'harmony-tf2-utils';
 import { TF2_ITEMS_URL, CSGO_ITEMS_URL, TF2_WARPAINT_DEFINITIONS_URL } from '../constants';
 import { API_GET_ASSET_CLASS_INFO_ENDPOINT, API_INSPECT_TF2_WEAPON_ENDPOINT, API_INSPECT_CSGO_WEAPON_ENDPOINT } from '../constants';
 
@@ -224,7 +224,7 @@ class BackGround {
 	}
 
 	static async initPaintKits() {
-		await new WeaponManager().initPaintKitDefinitions(TF2_WARPAINT_DEFINITIONS_URL);
+		//await new WeaponManager().initPaintKitDefinitions(TF2_WARPAINT_DEFINITIONS_URL);
 	}
 
 	static async getPaintKit() {
