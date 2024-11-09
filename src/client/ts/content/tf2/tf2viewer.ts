@@ -1,6 +1,6 @@
 
 import { createElement, hide, HTMLHarmonyToggleButtonElement, show } from 'harmony-ui';
-import { Camera, Group, PointLight, Repositories, Repository, RotationControl, Scene, Source1ModelInstance, Source1ParticleControler } from 'harmony-3d';
+import { Camera, Group, PointLight, Repositories, RotationControl, Scene, Source1ModelInstance, Source1ParticleControler, WebRepository } from 'harmony-3d';
 import { APP_ID_TF2, DECORATED_WEAPONS, TF2_REPOSITORY } from '../../constants';
 import { TextureCombiner, WeaponManager, WeaponManagerEventTarget } from 'harmony-3d-utils';
 import { Controller, controllerDispatchEvent, ControllerEvents } from '../controller';
@@ -38,7 +38,7 @@ export class TF2Viewer {
 	#modelPath: string = '';
 
 	constructor() {
-		new Repositories().addRepository(new Repository('tf2', TF2_REPOSITORY));
+		new Repositories().addRepository(new WebRepository('tf2', TF2_REPOSITORY));
 		//new WeaponManager().reuseTextures = true;
 		new TextureCombiner().setTextureSize(2048);//TODO: set an option
 		this.#initEvents();
