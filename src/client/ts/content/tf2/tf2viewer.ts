@@ -38,9 +38,9 @@ export class TF2Viewer {
 	#modelPath: string = '';
 
 	constructor() {
-		Repositories.addRepository(new Repository('tf2', TF2_REPOSITORY));
+		new Repositories().addRepository(new Repository('tf2', TF2_REPOSITORY));
 		//new WeaponManager().reuseTextures = true;
-		TextureCombiner.setTextureSize(2048);//TODO: set an option
+		new TextureCombiner().setTextureSize(2048);//TODO: set an option
 		this.#initEvents();
 	}
 
