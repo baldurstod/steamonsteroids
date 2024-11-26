@@ -2,30 +2,32 @@ const LOADOUT_CREDENTIAL_URL = 'https://loadout.tf/patreon.php';
 const STEAM_MARKET_LISTING_URL = 'https://steamcommunity.com/market/listings';
 const STEAM_INVENTORY_URL = 'https://steamcommunity.com/profiles/';
 
-function setMessage(message, type = 'error') {
-	let messages = document.getElementById('messages');
-	messages.innerHTML = message;
-	messages.className = type;
+function setMessage(message: string, type = 'error') {
+	const messages = document.getElementById('messages');
+	if (messages) {
+		messages.innerHTML = message;
+		messages.className = type;
+	}
 }
 
 async function collapseMarketFavorites() {
-	document.getElementById('options-market-favorites-expand-button').style.display = '';
-	document.getElementById('options-market-favorites-collapse-button').style.display = 'none';
-	document.getElementById('options-market-favorites-listings').style.display = 'none';
+	(document.getElementById('options-market-favorites-expand-button') as HTMLElement).style.display = '';
+	(document.getElementById('options-market-favorites-collapse-button') as HTMLElement).style.display = 'none';
+	(document.getElementById('options-market-favorites-listings') as HTMLElement).style.display = 'none';
 }
 
 async function collapseInventoryFavorites() {
-	document.getElementById('options-inventory-favorites-expand-button').style.display = '';
-	document.getElementById('options-inventory-favorites-collapse-button').style.display = 'none';
-	document.getElementById('options-inventory-favorites-listings').style.display = 'none';
+	(document.getElementById('options-inventory-favorites-expand-button') as HTMLElement).style.display = '';
+	(document.getElementById('options-inventory-favorites-collapse-button') as HTMLElement).style.display = 'none';
+	(document.getElementById('options-inventory-favorites-listings') as HTMLElement).style.display = 'none';
 }
 
 async function expandMarketFavorites() {
-	document.getElementById('options-market-favorites-collapse-button').style.display = '';
-	document.getElementById('options-market-favorites-expand-button').style.display = 'none';
-	document.getElementById('options-market-favorites-listings').style.display = '';
+	(document.getElementById('options-market-favorites-collapse-button') as HTMLElement).style.display = '';
+	(document.getElementById('options-market-favorites-expand-button') as HTMLElement).style.display = 'none';
+	(document.getElementById('options-market-favorites-listings') as HTMLElement).style.display = '';
 
-	let htmlListings = document.getElementById('options-market-favorites-listings');
+	let htmlListings = document.getElementById('options-market-favorites-listings') as HTMLElement;
 	htmlListings.innerHTML = '';
 
 	let storageResult = await chrome.storage.sync.get('app.market.favoritelistings');
@@ -50,11 +52,11 @@ async function expandMarketFavorites() {
 }
 
 async function expandInventoryFavorites() {
-	document.getElementById('options-inventory-favorites-collapse-button').style.display = '';
-	document.getElementById('options-inventory-favorites-expand-button').style.display = 'none';
-	document.getElementById('options-inventory-favorites-listings').style.display = '';
+	(document.getElementById('options-inventory-favorites-collapse-button') as HTMLElement).style.display = '';
+	(document.getElementById('options-inventory-favorites-expand-button') as HTMLElement).style.display = 'none';
+	(document.getElementById('options-inventory-favorites-listings') as HTMLElement).style.display = '';
 
-	let htmlListings = document.getElementById('options-inventory-favorites-listings');
+	let htmlListings = document.getElementById('options-inventory-favorites-listings') as HTMLElement;
 	htmlListings.innerHTML = '';
 
 	let storageResult = await chrome.storage.sync.get('app.inventory.favoritelistings');
@@ -78,13 +80,13 @@ async function expandInventoryFavorites() {
 async function checkCredentials() {
 	let storage = await chrome.storage.sync.get('app.access.level');
 	if (storage['app.access.level'] > 0) {
-		document.getElementById('credentials').style.display = 'none';
+		(document.getElementById('credentials') as HTMLElement).style.display = 'none';
 	} else {
-		document.getElementById('credentials').style.display = '';
+		(document.getElementById('credentials') as HTMLElement).style.display = '';
 	}
 }
 
-async function getPatreonCredential(url) {
+async function getPatreonCredential(url: string) {
 	try {
 		let response = await fetch(url, { credentials: "same-origin" });
 		let responseJSON = await response.json();
@@ -116,16 +118,16 @@ async function clearInventoryFavorites() {
 
 
 document.addEventListener('DOMContentLoaded', (event) => {
-	document.getElementById('button-login-loadout-tf').addEventListener('click', () => getPatreonCredential(LOADOUT_CREDENTIAL_URL));
-	document.getElementById('button-clear-datas').addEventListener('click', () => clearExtensionDatas());
-	document.getElementById('button-clear-market-favorites').addEventListener('click', () => clearMarketFavorites());
-	document.getElementById('button-clear-inventory-favorites').addEventListener('click', () => clearInventoryFavorites());
+	(document.getElementById('button-login-loadout-tf') as HTMLElement).addEventListener('click', () => getPatreonCredential(LOADOUT_CREDENTIAL_URL));
+	(document.getElementById('button-clear-datas') as HTMLElement).addEventListener('click', () => clearExtensionDatas());
+	(document.getElementById('button-clear-market-favorites') as HTMLElement).addEventListener('click', () => clearMarketFavorites());
+	(document.getElementById('button-clear-inventory-favorites') as HTMLElement).addEventListener('click', () => clearInventoryFavorites());
 
-	document.getElementById('options-market-favorites-expand-button').addEventListener('click', () => expandMarketFavorites());
-	document.getElementById('options-market-favorites-collapse-button').addEventListener('click', () => collapseMarketFavorites());
+	(document.getElementById('options-market-favorites-expand-button') as HTMLElement).addEventListener('click', () => expandMarketFavorites());
+	(document.getElementById('options-market-favorites-collapse-button') as HTMLElement).addEventListener('click', () => collapseMarketFavorites());
 
-	document.getElementById('options-inventory-favorites-expand-button').addEventListener('click', () => expandInventoryFavorites());
-	document.getElementById('options-inventory-favorites-collapse-button').addEventListener('click', () => collapseInventoryFavorites());
+	(document.getElementById('options-inventory-favorites-expand-button') as HTMLElement).addEventListener('click', () => expandInventoryFavorites());
+	(document.getElementById('options-inventory-favorites-collapse-button') as HTMLElement).addEventListener('click', () => collapseInventoryFavorites());
 
 	checkCredentials();
 	collapseMarketFavorites();
@@ -133,7 +135,7 @@ document.addEventListener('DOMContentLoaded', (event) => {
 });
 
 
-function setPledgeLevel(pledgeLevel) {
+function setPledgeLevel(pledgeLevel: number) {
 	chrome.storage.sync.set({
 		'app.access.level': pledgeLevel
 		, accessLevelLastChecked: Date.now()
