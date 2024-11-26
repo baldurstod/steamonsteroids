@@ -86,7 +86,7 @@ async function checkCredentials() {
 
 async function getPatreonCredential(url) {
 	try {
-		let response = await fetch(url, {credentials: "same-origin"});
+		let response = await fetch(url, { credentials: "same-origin" });
 		let responseJSON = await response.json();
 		if (responseJSON && responseJSON.success) {
 			setPledgeLevel(responseJSON.pledge_level ?? 0);
@@ -95,7 +95,7 @@ async function getPatreonCredential(url) {
 		} else {
 			setMessage('Failed to get the credentials');
 		}
-	} catch(e) {
+	} catch (e) {
 		setMessage('Failed to get the credentials');
 	}
 }
@@ -136,6 +136,6 @@ document.addEventListener('DOMContentLoaded', (event) => {
 function setPledgeLevel(pledgeLevel) {
 	chrome.storage.sync.set({
 		'app.access.level': pledgeLevel
-		,accessLevelLastChecked: Date.now()
+		, accessLevelLastChecked: Date.now()
 	});
 }
