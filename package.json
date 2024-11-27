@@ -1,6 +1,7 @@
 {
   "name": "steamonsteroids",
   "version": "0.0.1",
+  "type": "module",
   "dependencies": {
     "gl-matrix": "^3.4.3",
     "harmony-3d": "github:baldurstod/harmony-3d",

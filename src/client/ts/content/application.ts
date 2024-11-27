@@ -1,10 +1,10 @@
-import { BoundingBox, Camera, OrbitControl, Scene, setFetchFunction, Source1ModelInstance } from 'harmony-3d';
+import { BoundingBox, Camera, Graphics, OrbitControl, Scene, setFetchFunction, Source1ModelInstance } from 'harmony-3d';
 import { controlleraddEventListener, ControllerEvents } from './controller';
 import { TF2Viewer } from './tf2/tf2viewer';
 import { CS2Viewer } from './cs2/cs2viewer';
-import { ACTIVE_INVENTORY_PAGE, APP_ID_CS2, APP_ID_TF2 } from '../constants';
+import { ACTIVE_INVENTORY_PAGE, APP_ID_CS2, APP_ID_TF2, INVENTORY_BACKGROUND_COLOR, INVENTORY_ITEM_CLASSNAME, MARKET_LISTING_ROW_CLASSNAME, MOUSE_ENTER_DELAY } from '../constants';
 import { getInventoryAssetDatas, getInventorySteamId, MarketAssets } from './marketassets';
-import { show } from 'harmony-ui';
+import { createElement, show } from 'harmony-ui';
 import { vec3 } from 'gl-matrix';
 
 enum PageType {
@@ -24,7 +24,7 @@ class Application {
 	#htmlCanvas: HTMLCanvasElement = document.createElement('canvas');
 	#htmlState?: HTMLElement;
 	#htmlCanvasItemInfo?: HTMLElement;
-	#htmlRowContainer?: HTMLElement;
+	#htmlRowContainer: HTMLElement = createElement('div');
 	#currentAppId: number = 0;
 	#currentAssetId: number = 0;
 	#currentContextId: number = 0;
@@ -33,9 +33,12 @@ class Application {
 	#inventoryFavorites: { [key: string]: any } = {};
 	#scene = new Scene();
 	#camera = new Camera();
-
+	#buttons = new Set<HTMLElement>();
 	#orbitCameraControl = new OrbitControl();
-
+	#isInventoryPage = false;
+	#isMarketPage = false;
+	#isTradeOffer = false;
+	#timeouts = new Map<HTMLElement, ReturnType<typeof setTimeout>>();
 
 	constructor() {
 		this.#initScene();
@@ -44,6 +47,7 @@ class Application {
 			setFetchFunction(async (resource, options) => await this.#backgroundFetch(resource, options));
 		}
 		this.#initEvents();
+		this.#initObserver();
 	}
 
 	async #backgroundFetch(resource: RequestInfo | URL, options?: RequestInit) {
@@ -248,6 +252,92 @@ class Application {
 			this.#htmlCanvasItemInfo.innerHTML = info;
 		}
 	}
+
+	#initObserver() {
+		let config = { childList: true, subtree: true };
+		const mutationCallback: MutationCallback = (mutationsList, observer) => {
+			for (const mutation of mutationsList) {
+				let addedNodes = mutation.addedNodes;
+				for (let addedNode of addedNodes) {
+					if ((addedNode as HTMLElement).classList) {
+						switch (true) {
+							case (addedNode as HTMLElement).classList.contains(MARKET_LISTING_ROW_CLASSNAME):
+								this.#createButton(addedNode as HTMLElement);
+								break;
+							case (addedNode as HTMLElement).classList.contains(INVENTORY_ITEM_CLASSNAME):
+								this.#createInventoryListener(addedNode as HTMLElement);
+								break;
+						}
+					}
+				}
+			}
+			this.#createInventoryListeners();
+		};
+
+		let observer = new MutationObserver(mutationCallback);
+		let searchResultsRows = document.getElementById('searchResultsRows');
+		if (searchResultsRows) {
+			observer.observe(searchResultsRows, config);
+		}
+
+		let inventories = document.getElementById('inventories');
+		if (inventories) {
+			observer.observe(inventories, config);
+		}
+	}
+
+	#createInventoryListeners() {
+		let items = document.getElementsByClassName(INVENTORY_ITEM_CLASSNAME);
+		for (let item of items) {
+			this.#createInventoryListener(item as HTMLElement);
+		}
+	}
+
+	#createInventoryListener(inventoryItem: HTMLElement) {
+		this.#isInventoryPage = true;
+		new Graphics().clearColor(INVENTORY_BACKGROUND_COLOR);
+		this.#htmlRowContainer.className = 'as-inventory';
+		if (this.#buttons.has(inventoryItem)) {
+			return;
+		}
+		this.#buttons.add(inventoryItem);
+
+		inventoryItem.addEventListener('click', async () => {
+			if (this.#isTradeOffer) {
+				let enable = (await chrome.storage.sync.get('app.tradeoffer.enabled'))['app.tradeoffer.enabled'] ?? true;
+				if (!enable) {
+					return;
+				}
+			}
+			let itemDatas = getItemDatas(inventoryItem);
+			if (itemDatas) {
+				let htmlImg = inventoryItem.getElementsByTagName('img')[0];
+				this.renderInventoryListing(itemDatas.appId, itemDatas.contextId, itemDatas.assetId, htmlImg);
+			}
+		});
+	}
+
+	#createButton(marketListingRow: HTMLElement) {
+		this.#isMarketPage = true;
+		this.#htmlRowContainer.className = 'as-market';
+		if (this.#buttons.has(marketListingRow)) {
+			return;
+		}
+		this.#buttons.add(marketListingRow);
+
+		marketListingRow.addEventListener('mouseenter', () => this.#timeouts.set(marketListingRow, setTimeout(() => this.#renderMarketRow(marketListingRow), MOUSE_ENTER_DELAY)));
+		marketListingRow.addEventListener('mouseleave', () => clearTimeout(this.#timeouts.get(marketListingRow)));
+
+		let marketListingId = marketListingRow.id.replace('listing_', '');
+		if (this.#favorites[marketListingId]) {
+			marketListingRow.classList.add('favorited-market-listing');
+		}
+	}
+
+	#renderMarketRow(marketListingRow: HTMLElement) {
+		marketListingRow.append(this.#htmlRowContainer);
+		this.renderListing(Number(marketListingRow.id.replace('listing_', '')));
+	}
 }
 
 async function injectScript(path: string, tag: string) {
@@ -258,3 +348,11 @@ async function injectScript(path: string, tag: string) {
 	node.appendChild(script);
 }
 injectScript(chrome.runtime.getURL('injected.js'), 'body');
+
+function getItemDatas(htmlItem: HTMLElement) {
+	let regexResult = htmlItem.id.match(/(\d*)\_(\d*)\_(\d*)/);
+	if (regexResult) {
+		return { appId: Number(regexResult[1]), contextId: Number(regexResult[2]), assetId: Number(regexResult[3]) };
+	}
+	return null;
+}
