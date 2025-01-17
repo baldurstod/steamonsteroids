@@ -1,5 +1,5 @@
 
-import { createElement, defineHarmonyToggleButton, hide, HTMLHarmonyToggleButtonElement, show } from 'harmony-ui';
+import { createElement, defineToggleButton, hide, HTMLHarmonyToggleButtonElement, show } from 'harmony-ui';
 import { Camera, Group, PointLight, Repositories, RotationControl, Scene, Source1ModelInstance, Source1ParticleControler, WebRepository } from 'harmony-3d';
 import { APP_ID_TF2, DECORATED_WEAPONS, TF2_REPOSITORY } from '../../constants';
 import { TextureCombiner, WeaponManager, WeaponManagerEventTarget } from 'harmony-3d-utils';
@@ -84,7 +84,7 @@ export class TF2Viewer {
 			class: 'canvas-container-controls-class-icons',
 		}) as HTMLElement;
 
-		defineHarmonyToggleButton();
+		defineToggleButton();
 		const htmlPlayPauseButton: HTMLHarmonyToggleButtonElement = createElement('harmony-toggle-button', {
 			class: 'canvas-container-controls-playpause play',
 			//innerHTML: pauseSVG,
