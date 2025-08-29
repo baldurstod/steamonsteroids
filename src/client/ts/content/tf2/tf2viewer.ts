@@ -469,4 +469,8 @@ export class TF2Viewer {
 	hide() {
 		hide(this.#htmlControls);
 	}
+
+	getScene(): Scene {
+		return this.#scene;
+	}
 }

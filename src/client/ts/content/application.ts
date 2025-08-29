@@ -1,5 +1,5 @@
 import { vec3 } from 'gl-matrix';
-import { BoundingBox, Camera, Graphics, OrbitControl, Scene, setFetchFunction, Source1ModelInstance } from 'harmony-3d';
+import { BoundingBox, Camera, ContextObserver, Graphics, GraphicsEvent, GraphicsEvents, GraphicTickEvent, OrbitControl, Scene, setFetchFunction, Source1ModelInstance, WebGLStats } from 'harmony-3d';
 import { createElement, hide, show } from 'harmony-ui';
 import { ACTIVE_INVENTORY_PAGE, APP_ID_CS2, APP_ID_TF2, INVENTORY_BACKGROUND_COLOR, INVENTORY_ITEM_CLASSNAME, MARKET_LISTING_ROW_CLASSNAME, MOUSE_ENTER_DELAY } from '../constants';
 import { GenerationState } from '../enums';
@@ -46,8 +46,8 @@ export class Application {
 	#inventoryFavorites: { [key: string]: any } = {};
 	#canvasContainer = createElement('div', { class: 'canvas-container' });
 	#htmlCanvas = createElement('canvas', { parent: this.#canvasContainer }) as HTMLCanvasElement;
-	#scene = new Scene();
 	#camera = new Camera();
+	#scene = new Scene({ camera: this.#camera });
 	#buttons = new Set<HTMLElement>();
 	#orbitCameraControl = new OrbitControl(this.#camera);
 	currentListingId = '';
@@ -106,6 +106,22 @@ export class Application {
 			}
 		});
 		new Graphics().play();
+
+		const render = (event: Event) => {
+			WebGLStats.tick();
+			if (this.#scene.activeCamera) {
+				new Graphics().render(this.#scene, this.#scene.activeCamera, (event as CustomEvent<GraphicTickEvent>).detail.delta, {});
+			}
+		}
+
+		GraphicsEvents.addEventListener(GraphicsEvent.Tick, render);
+		GraphicsEvents.addEventListener(GraphicsEvent.Tick, (event) => this.#orbitCameraControl.update((event as CustomEvent<GraphicTickEvent>).detail.delta / 1000));
+
+
+
+		this.#scene.addChild(this.#tf2Viewer.getScene());
+		ContextObserver.observe(GraphicsEvents, this.#camera);
+		//this.#scene.addChild(this.csgoViewer.getScene());
 	}
 
 	#initScene() {
