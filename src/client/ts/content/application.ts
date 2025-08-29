@@ -69,6 +69,7 @@ export class Application {
 		}
 		this.#initEvents();
 		this.#initObserver();
+		this.#loadFavorites();
 	}
 
 	async #backgroundFetch(resource: RequestInfo | URL, options?: RequestInit) {
@@ -229,6 +230,23 @@ export class Application {
 				}
 			}
 		}
+	}
+
+	async #loadFavorites() {
+		let marketStorage = await chrome.storage.sync.get('app.market.favoritelistings');
+		let marketFavoriteListings = marketStorage['app.market.favoritelistings'];
+		if (marketFavoriteListings) {
+			this.#favorites = marketFavoriteListings;
+		}
+
+		let inventoryStorage = await chrome.storage.sync.get('app.inventory.favoritelistings');
+		let inventoryFavoriteListings = inventoryStorage['app.inventory.favoritelistings'];
+		if (inventoryFavoriteListings) {
+			this.#inventoryFavorites = inventoryFavoriteListings;
+		}
+
+		this.#createButtons();
+		this.#createInventoryListeners();
 	}
 
 	setGenerationState(state: GenerationState) {
@@ -425,6 +443,13 @@ export class Application {
 		let inventories = document.getElementById('inventories');
 		if (inventories) {
 			observer.observe(inventories, config);
+		}
+	}
+
+	#createButtons() {
+		let listings = document.getElementsByClassName(MARKET_LISTING_ROW_CLASSNAME);
+		for (let listing of listings) {
+			this.#createButton(listing as HTMLElement);
 		}
 	}
 
