@@ -121,7 +121,7 @@ export class TF2Viewer {
 			*/
 	}
 
-	async renderListingTF2(listingOrSteamId: string, listingDatas: any/*TODO:better type*/, classInfo: any/*TODO:better type*/, assetId?: number, htmlImg?: HTMLImageElement) {
+	async renderListingTF2(listingOrSteamId: string, listingDatas: any/*TODO:improve type*/, classInfo: any/*TODO:improve type*/, assetId?: number, htmlImg?: HTMLImageElement) {
 		show(this.#htmlControls);
 		if (this.#htmlClassIcons) {
 			this.#htmlClassIcons.innerText = '';
@@ -296,7 +296,7 @@ export class TF2Viewer {
 		if (removeCurrentClassModel) {
 			this.#setActiveClass(null);
 		}
-		this.#centerCameraOnItem();
+		//this.#centerCameraOnItem();
 	}
 
 	async #centerCameraOnItem() {
@@ -384,7 +384,7 @@ export class TF2Viewer {
 		return this.#source1Model;
 	}
 
-	#populateTF2MarketListing(paintKitId: any/*TODO:better type*/, seed: any/*TODO:better type*/, craftIndex: any/*TODO:better type*/) {
+	#populateTF2MarketListing(paintKitId: number, seed: bigint, craftIndex: number) {
 		//let div = this.application.htmlCanvasItemInfo;//this.getMarketListingNameDiv(listingId);
 		//if (div) {
 		//div.innerHTML = '';
