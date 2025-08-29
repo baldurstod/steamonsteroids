@@ -9,9 +9,9 @@ const isFirefox = process.env.BROWSER === 'firefox';
 
 export default [
 	{
-		input: './src/client/ts/content/application.ts',
+		input: './src/client/ts/content/content.ts',
 		output: {
-			file: './build/client/application.js',
+			file: './build/client/content.js',
 			format: 'esm',
 		},
 		plugins: [

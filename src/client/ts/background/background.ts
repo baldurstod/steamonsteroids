@@ -3,8 +3,8 @@ import { TF2_ITEMS_URL, CSGO_ITEMS_URL, TF2_WARPAINT_DEFINITIONS_URL } from '../
 import { API_GET_ASSET_CLASS_INFO_ENDPOINT, API_INSPECT_TF2_WEAPON_ENDPOINT, API_INSPECT_CSGO_WEAPON_ENDPOINT } from '../constants';
 
 class BackGround {
-	static #assetClassInfos = new Map();
-	static #inspectedWeapons = new Map();
+	static #assetClassInfos = new Map<number, Map<number, any/*TODO: improve type*/>>();
+	static #inspectedWeapons = new Map<string, any/*TODO: improve type*/>();
 	static #tf2Schema?: any;
 	static #cs2Schema?: any;
 	static {
@@ -79,10 +79,11 @@ class BackGround {
 	}
 
 	static async getAssetClassInfo(appId: number, classId: number) {
-		if (!this.#assetClassInfos.has(appId)) {
-			this.#assetClassInfos.set(appId, new Map());
-		}
 		let app = this.#assetClassInfos.get(appId);
+		if (!app) {
+			app = new Map();
+			this.#assetClassInfos.set(appId, app);
+		}
 		if (app.has(classId)) {
 			return app.get(classId);
 		}

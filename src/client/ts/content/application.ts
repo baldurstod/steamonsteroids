@@ -1,11 +1,12 @@
-import { BoundingBox, Camera, Graphics, OrbitControl, Scene, setFetchFunction, Source1ModelInstance } from 'harmony-3d';
-import { controlleraddEventListener, ControllerEvents } from './controller';
-import { TF2Viewer } from './tf2/tf2viewer';
-import { CS2Viewer } from './cs2/cs2viewer';
-import { ACTIVE_INVENTORY_PAGE, APP_ID_CS2, APP_ID_TF2, INVENTORY_BACKGROUND_COLOR, INVENTORY_ITEM_CLASSNAME, MARKET_LISTING_ROW_CLASSNAME, MOUSE_ENTER_DELAY } from '../constants';
-import { getInventoryAssetDatas, getInventorySteamId, MarketAssets } from './marketassets';
-import { createElement, show } from 'harmony-ui';
 import { vec3 } from 'gl-matrix';
+import { BoundingBox, Camera, Graphics, OrbitControl, Scene, setFetchFunction, Source1ModelInstance } from 'harmony-3d';
+import { createElement, hide, show } from 'harmony-ui';
+import { ACTIVE_INVENTORY_PAGE, APP_ID_CS2, APP_ID_TF2, INVENTORY_BACKGROUND_COLOR, INVENTORY_ITEM_CLASSNAME, MARKET_LISTING_ROW_CLASSNAME, MOUSE_ENTER_DELAY } from '../constants';
+import { GenerationState } from '../enums';
+import { controlleraddEventListener, ControllerEvents } from './controller';
+import { CS2Viewer } from './cs2/cs2viewer';
+import { getInventoryAssetDatas, getInventorySteamId, MarketAssets } from './marketassets';
+import { TF2Viewer } from './tf2/tf2viewer';
 
 enum PageType {
 	Unknown = 0,
@@ -16,12 +17,24 @@ enum PageType {
 
 const CAMERA_DISTANCE = 200;
 
-class Application {
+function isChromium() {
+	const brands = (navigator as any/*as of now, userAgentData does not exist in typescript*/)?.userAgentData?.brands;
+	if (brands) {
+		for (const brand of brands) {
+			if (brand.brand.toLowerCase() == 'chromium') {
+				return true;
+			}
+		}
+	}
+	return false;
+}
+
+export class Application {
+	#htmlTradeAreaContainer?: HTMLElement;
 	#pageType: PageType = PageType.Unknown;
-	#currentListingId: number = 0;
+	#currentListingId = '';
 	#tf2Viewer = new TF2Viewer();
 	#cs2Viewer = new CS2Viewer();
-	#htmlCanvas: HTMLCanvasElement = document.createElement('canvas');
 	#htmlState?: HTMLElement;
 	#htmlCanvasItemInfo?: HTMLElement;
 	#htmlRowContainer: HTMLElement = createElement('div');
@@ -31,16 +44,24 @@ class Application {
 	#inventoryItem: any/*TODO:better type*/;
 	#favorites: { [key: string]: any } = {};
 	#inventoryFavorites: { [key: string]: any } = {};
+	#canvasContainer = createElement('div', { class: 'canvas-container' });
+	#htmlCanvas = createElement('canvas', { parent: this.#canvasContainer }) as HTMLCanvasElement;
 	#scene = new Scene();
 	#camera = new Camera();
 	#buttons = new Set<HTMLElement>();
-	#orbitCameraControl = new OrbitControl();
+	#orbitCameraControl = new OrbitControl(this.#camera);
+	currentListingId = '';
+	currentAppId = 0;
+	currentContextId = 0;
+	currentAssetId = 0;
 	#isInventoryPage = false;
 	#isMarketPage = false;
 	#isTradeOffer = false;
 	#timeouts = new Map<HTMLElement, ReturnType<typeof setTimeout>>();
 
 	constructor() {
+		this.#initHtml();
+		this.#initGraphics();
 		this.#initScene();
 		this.#initPageType();
 		if (!isChromium()) {
@@ -72,6 +93,19 @@ class Application {
 		}
 
 		return new Response(test, { status: result.status, statusText: result.statusText });
+	}
+
+	#initGraphics() {
+		new Graphics().initCanvas({
+			canvas: this.#htmlCanvas,
+			autoResize: true,
+			webGL: {
+				alpha: true,
+				preserveDrawingBuffer: true,
+				premultipliedAlpha: false,
+			}
+		});
+		new Graphics().play();
 	}
 
 	#initScene() {
@@ -126,7 +160,7 @@ class Application {
 		this.#setItemInfo('');
 	}
 
-	async renderListing(listingId: number, force = false) {
+	async renderListing(listingId: string, force = false) {
 		if (force || (this.#currentListingId != listingId)) {
 			this.#tf2Viewer.hide();
 			this.#cs2Viewer.hide();
@@ -210,6 +244,72 @@ class Application {
 		}
 	}
 
+	#initHtml() {
+		let tradeArea = document.getElementsByClassName('trade_area')[0];
+		if (tradeArea) {
+			this.#htmlTradeAreaContainer = createElement('div', { class: 'accurate-skins' });
+			tradeArea.prepend(this.#htmlTradeAreaContainer);
+
+			if (this.#pageType == PageType.TradeOffer) {
+				let htmlTradeOfferEnabledLine = createElement('label', {
+					class: 'option-line',
+					parent: this.#htmlTradeAreaContainer,
+					childs: [
+						createElement('span', { i18n: 'Inspect warpaints', htmlFor: 'accurate-skins-enable-trade-offer' }),
+					]
+				});
+
+				let htmlTradeOfferEnabled = createElement('input', {
+					id: 'accurate-skins-enable-trade-offer',
+					type: 'checkbox',
+					parent: htmlTradeOfferEnabledLine,
+					events: {
+						input: (event: InputEvent) => this.#tradeActivate((event.target as HTMLInputElement).checked)
+					}
+				}) as HTMLInputElement;
+
+				(async () => {
+					htmlTradeOfferEnabled.checked = (await chrome.storage.sync.get('app.tradeoffer.enabled'))['app.tradeoffer.enabled'] ?? true;
+				})();
+			}
+		}
+
+		this.#htmlRowContainer = document.createElement('div');
+		let htmlFilter = document.createElement('div');
+		htmlFilter.className = 'filter_tag_button_ctn';
+		htmlFilter.innerHTML = '<div class="btn_black btn_details btn_small"><span>Tradable warpaints only</span></div>';
+
+		htmlFilter.addEventListener('click', () => window.postMessage({ action: 'setInventoryFilter', filter: { Exterior: ['TFUI_InvTooltip_BattleScared', 'TFUI_InvTooltip_FactoryNew', 'TFUI_InvTooltip_FieldTested', 'TFUI_InvTooltip_MinimalWear', 'TFUI_InvTooltip_WellWorn'], misc: ['tradable'] } }, '*'));
+
+		let filterNode = document.getElementById('filter_tag_show')?.parentNode;
+		if (filterNode && this.isInventory()) {
+			filterNode.parentNode?.insertBefore(htmlFilter, filterNode.nextSibling);
+		}
+
+
+		this.#htmlState = document.createElement('div');
+
+		this.#htmlRowContainer.append(this.#canvasContainer, this.#htmlState);
+		hide(this.#htmlRowContainer);
+
+		let htmlFavoriteButton = document.createElement('div');
+		htmlFavoriteButton.className = 'favorite-button';
+		htmlFavoriteButton.innerHTML = '<a class="item_market_action_button btn_green_white_innerfade btn_small"><span>Favorite</span></a>';
+		htmlFavoriteButton.addEventListener('click', () => this.favoriteListing());
+
+		let htmlUnFavoriteButton = document.createElement('div');
+		htmlUnFavoriteButton.className = 'unfavorite-button';
+		htmlUnFavoriteButton.innerHTML = '<a class="item_market_action_button btn_green_white_innerfade btn_small"><span>Unfavorite</span></a>';
+		htmlUnFavoriteButton.addEventListener('click', () => this.unfavoriteListing());
+		this.#htmlCanvasItemInfo = createElement('div', { class: 'canvas-container-item-info' });
+
+		this.#canvasContainer.append(htmlFavoriteButton, htmlUnFavoriteButton, this.#htmlCanvasItemInfo, this.#tf2Viewer.initHtml()/*, this.csgoViewer.initHtml()*/);
+	}
+
+	#tradeActivate(activate: boolean) {
+		chrome.storage.sync.set({ 'app.tradeoffer.enabled': activate });
+	}
+
 	#setSelectedInventoryItem(assetId: any/*TODO:better type*/, inventoryItem: any/*TODO:better type*/) {
 		let className = 'as-inventory-selected-item';
 		if (this.#inventoryItem) {
@@ -250,6 +350,24 @@ class Application {
 	#setItemInfo(info: string) {
 		if (this.#htmlCanvasItemInfo) {
 			this.#htmlCanvasItemInfo.innerHTML = info;
+		}
+	}
+
+	async favoriteListing() {
+		if (this.#isInventoryPage) {
+			this.favoriteInventoryListing(this.currentAppId, this.currentContextId, this.currentAssetId, await getInventorySteamId());
+		}
+		if (this.#isMarketPage) {
+			this.#favoriteMarketListing(this.currentListingId);
+		}
+	}
+
+	unfavoriteListing() {
+		if (this.#isInventoryPage) {
+			this.unfavoriteInventoryListing(this.currentAppId, this.currentContextId, this.currentAssetId);
+		}
+		if (this.#isMarketPage) {
+			this.unfavoriteMarketListing(this.currentListingId);
 		}
 	}
 
@@ -336,7 +454,52 @@ class Application {
 
 	#renderMarketRow(marketListingRow: HTMLElement) {
 		marketListingRow.append(this.#htmlRowContainer);
-		this.renderListing(Number(marketListingRow.id.replace('listing_', '')));
+		this.renderListing(marketListingRow.id.replace('listing_', ''));
+	}
+
+	async #favoriteMarketListing(marketListingId: string) {
+		let asset = await MarketAssets.getListingAssetData(marketListingId);
+		if (asset) {
+			this.#favorites[marketListingId] = { appId: asset.appid, marketHashName: asset.market_hash_name };
+			chrome.storage.sync.set({ 'app.market.favoritelistings': this.#favorites });
+		}
+		document.getElementById('listing_' + marketListingId)?.classList.add('favorited-market-listing');
+	}
+
+	unfavoriteMarketListing(marketListingId: string) {
+		delete this.#favorites[marketListingId];
+		chrome.storage.sync.set({ 'app.market.favoritelistings': this.#favorites });
+		document.getElementById('listing_' + marketListingId)?.classList.remove('favorited-market-listing');
+	}
+
+	async favoriteInventoryListing(appId: number, contextId: number, assetId: number, steamUserId: string) {
+		let asset = await getInventoryAssetDatas(appId, contextId, assetId);
+		if (asset) {
+			this.#inventoryFavorites[assetId] = { steamUserId: steamUserId, appId: appId, contextId: contextId, marketHashName: asset.market_hash_name };
+			chrome.storage.sync.set({ 'app.inventory.favoritelistings': this.#inventoryFavorites });
+		}
+		(document.getElementById(`${appId}_${contextId}_${assetId}`)?.parentNode as HTMLElement)?.classList.add('as-favorited-inventory-listing');
+		this.#htmlRowContainer.classList.add('favorited-market-listing');
+	}
+
+	unfavoriteInventoryListing(appId: number, contextId: number, assetId: number) {
+		delete this.#inventoryFavorites[assetId];
+		chrome.storage.sync.set({ 'app.inventory.favoritelistings': this.#inventoryFavorites });
+		(document.getElementById(`${appId}_${contextId}_${assetId}`)?.parentNode as HTMLElement)?.classList.remove('as-favorited-inventory-listing');
+		this.#htmlRowContainer.classList.remove('favorited-market-listing');
+	}
+
+
+	isInventory() {
+		return this.#pageType == PageType.Inventory;
+	}
+
+	isMarket() {
+		return this.#pageType == PageType.Market;
+	}
+
+	isTradeOffer() {
+		return this.#pageType == PageType.TradeOffer;
 	}
 }
 

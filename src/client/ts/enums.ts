@@ -1,4 +1,4 @@
-enum GenerationState {
+export enum GenerationState {
 	Started = 0,
 	Sucess,
 	Failure,

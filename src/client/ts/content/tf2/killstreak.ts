@@ -1,3 +1,5 @@
+import { vec3 } from 'gl-matrix';
+
 const KillStreakSheenTint = [
 	[],//Invalid
 	[13112335, 2646728],//Team shine
@@ -9,7 +11,7 @@ const KillStreakSheenTint = [
 	[16719615],//Hot Rod
 ]
 
-export function getSheenTint(effectId: number, teamId = 0) {
+export function getSheenTint(effectId: number, teamId = 0): vec3 {
 	let sheenTint = 0;
 	let row = KillStreakSheenTint[effectId];
 	if (row) {

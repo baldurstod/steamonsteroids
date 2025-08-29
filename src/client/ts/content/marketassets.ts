@@ -18,8 +18,9 @@ function resolvePromise(promiseId: number, resolveValue?: any) {
 }
 
 export class MarketAssets {
-	static #assets = new Map();
-	static #listingInfos = new Map();
+	static #assets = new Map<string, any/*TODO: improve type*/>();
+	static #listingInfos = new Map<string, any/*TODO: improve type*/>();
+
 	static {
 		this.initMessageListener();
 	}
@@ -67,14 +68,14 @@ export class MarketAssets {
 		}
 	}
 
-	static async getListingInfo(listingId: number) {
+	static async getListingInfo(listingId: string) {
 		let { promise, promiseId } = createPromise();
 		requestListingInfo(promiseId);
 		await promise;
 		return this.#listingInfos.get(listingId);
 	}
 
-	static async getListingAssetData(listingId: number) {
+	static async getListingAssetData(listingId: string) {
 		let listingInfo = await this.getListingInfo(listingId);
 		let asset = listingInfo?.asset;
 		let assetData = await getListingAsset(asset?.appid, asset?.contextid, asset?.id);

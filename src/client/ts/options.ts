@@ -32,7 +32,7 @@ async function expandMarketFavorites() {
 
 	let storageResult = await chrome.storage.sync.get('app.market.favoritelistings');
 	let favoriteListings = storageResult['app.market.favoritelistings'];
-	let favorites = new Set();
+	let favorites = new Set<string>();
 	if (favoriteListings) {
 		for (let listingId in favoriteListings) {
 			let listingProperties = favoriteListings[listingId];

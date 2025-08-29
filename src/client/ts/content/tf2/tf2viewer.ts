@@ -1,22 +1,21 @@
 
-import { createElement, defineToggleButton, hide, HTMLHarmonyToggleButtonElement, show } from 'harmony-ui';
 import { Camera, Group, PointLight, Repositories, RotationControl, Scene, Source1ModelInstance, Source1ParticleControler, WebRepository } from 'harmony-3d';
-import { APP_ID_TF2, DECORATED_WEAPONS, TF2_REPOSITORY } from '../../constants';
-import { TextureCombiner, WeaponManager, WeaponManagerEventTarget } from 'harmony-3d-utils';
-import { Controller, controllerDispatchEvent, ControllerEvents } from '../controller';
-import { sortSelect } from '../utils/sort';
+import { TextureCombiner, WeaponManager } from 'harmony-3d-utils';
 import { pauseSVG, playSVG } from 'harmony-svg';
+import { PaintKitDefinitions, Tf2Team } from 'harmony-tf2-utils';
+import { createElement, hide, HTMLHarmonyToggleButtonElement, show } from 'harmony-ui';
+import { setTimeoutPromise } from 'harmony-utils';
+import { APP_ID_TF2, DECORATED_WEAPONS, TF2_REPOSITORY, TF2_WARPAINT_DEFINITIONS_URL } from '../../constants';
+import { GenerationState } from '../../enums';
+import { Controller, controllerDispatchEvent, ControllerEvents } from '../controller';
 import { getInspectLink } from '../utils/inspect';
-import { getTF2ModelName, selectCharacterAnim, setTF2ModelAttributes } from './tf2';
+import { sortSelect } from '../utils/sort';
 import { addSource1Model } from '../utils/sourcemodels';
 import { getSheenTint } from './killstreak';
-import { setTimeoutPromise } from 'harmony-utils';
+import { getTF2ModelName, selectCharacterAnim, setTF2ModelAttributes } from './tf2';
 import { TF2_CLASSES_REMOVABLE_PARTS, TF2_MERCENARIES, TF2_PLAYER_CAMERA_POSITION, TF2_PLAYER_CAMERA_TARGET } from './tf2constants';
 
-enum TeamColor {
-	RED = 0,
-	BLU = 1,
-}
+PaintKitDefinitions.setWarpaintDefinitionsURL(TF2_WARPAINT_DEFINITIONS_URL);
 
 export class TF2Viewer {
 	#classModels = new Map<string, Source1ModelInstance>();
@@ -25,28 +24,28 @@ export class TF2Viewer {
 	#pointLight2: PointLight = new PointLight({ range: 500, parent: this.#scene, intensity: 0.5, position: [100, -100, 100] });
 	#rotationControl = new RotationControl({ parent: this.#scene });
 	#group = new Group({ parent: this.#rotationControl });
-	#teamColor: TeamColor = TeamColor.RED;
+	#teamColor: Tf2Team = Tf2Team.RED;
 	#htmlControls?: HTMLElement;
 	#htmlWeaponSelector?: HTMLSelectElement;
 	#htmlClassIcons?: HTMLElement;
 	#forcedWeaponIndex: number | null = null;
 	#currentClassName: string = '';
-	#source1Model?: Source1ModelInstance;
+	#source1Model?: Source1ModelInstance | null;
 	#selectClassPromise?: Promise<boolean>;
 	#createModelPromise?: Promise<boolean>;
 	#modelPath: string = '';
 
 	constructor() {
-		new Repositories().addRepository(new WebRepository('tf2', TF2_REPOSITORY));
+		Repositories.addRepository(new WebRepository('tf2', TF2_REPOSITORY));
 		//new WeaponManager().reuseTextures = true;
-		new TextureCombiner().setTextureSize(2048);//TODO: set an option
+		TextureCombiner.setTextureSize(2048);//TODO: set an option
 		this.#initEvents();
 	}
 
 	#initEvents() {
-		WeaponManagerEventTarget.addEventListener('started', () => Controller.dispatchEvent(new CustomEvent('setgenerationstate', { detail: GenerationState.Started })));
-		WeaponManagerEventTarget.addEventListener('success', () => Controller.dispatchEvent(new CustomEvent('setgenerationstate', { detail: GenerationState.Sucess })));
-		WeaponManagerEventTarget.addEventListener('failure', () => Controller.dispatchEvent(new CustomEvent('setgenerationstate', { detail: GenerationState.Failure })));
+		WeaponManager.addEventListener('started', () => Controller.dispatchEvent(new CustomEvent('setgenerationstate', { detail: GenerationState.Started })));
+		WeaponManager.addEventListener('success', () => Controller.dispatchEvent(new CustomEvent('setgenerationstate', { detail: GenerationState.Sucess })));
+		WeaponManager.addEventListener('failure', () => Controller.dispatchEvent(new CustomEvent('setgenerationstate', { detail: GenerationState.Failure })));
 	}
 
 	setCamera(camera: Camera) {
@@ -84,7 +83,6 @@ export class TF2Viewer {
 			class: 'canvas-container-controls-class-icons',
 		}) as HTMLElement;
 
-		defineToggleButton();
 		const htmlPlayPauseButton: HTMLHarmonyToggleButtonElement = createElement('harmony-toggle-button', {
 			class: 'canvas-container-controls-playpause play',
 			//innerHTML: pauseSVG,
@@ -126,7 +124,7 @@ export class TF2Viewer {
 			*/
 	}
 
-	async renderListingTF2(listingOrSteamId: number, listingDatas: any/*TODO:better type*/, classInfo: any/*TODO:better type*/, assetId?: number, htmlImg?: HTMLImageElement) {
+	async renderListingTF2(listingOrSteamId: string, listingDatas: any/*TODO:better type*/, classInfo: any/*TODO:better type*/, assetId?: number, htmlImg?: HTMLImageElement) {
 		show(this.#htmlControls);
 		if (this.#htmlClassIcons) {
 			this.#htmlClassIcons.innerText = '';
@@ -160,7 +158,7 @@ export class TF2Viewer {
 							controllerDispatchEvent(ControllerEvents.ShowRowContainer);
 							if (remappedDefIndex) {
 								chrome.runtime.sendMessage({ action: 'get-tf2-item', defIndex: defIndex }, async (remappedTf2Item) => {
-									this.#refreshWarpaint(listingOrSteamId, assetId, inspectLink, source1Model, remappedDefIndex, remappedTf2Item, htmlImg, tf2Item);
+									this.#refreshWarpaint(listingOrSteamId, assetId, inspectLink, source1Model, remappedDefIndex!, remappedTf2Item, htmlImg, tf2Item);
 								});
 							} else {
 								this.#refreshWarpaint(listingOrSteamId, assetId, inspectLink, source1Model, defIndex, tf2Item, htmlImg);
@@ -176,7 +174,7 @@ export class TF2Viewer {
 		}
 	}
 
-	#refreshWarpaint(listingOrSteamId: any/*TODO:better type*/, assetId: any/*TODO:better type*/, inspectLink: any/*TODO:better type*/, source1Model: Source1ModelInstance, defIndex: any/*TODO:better type*/, tf2Item: any/*TODO:better type*/, htmlImg?: HTMLImageElement, remappedTf2Item?: any/*TODO:better type*/) {
+	#refreshWarpaint(listingOrSteamId: any/*TODO:better type*/, assetId: any/*TODO:better type*/, inspectLink: any/*TODO:better type*/, source1Model: Source1ModelInstance, defIndex: number, tf2Item: any/*TODO:better type*/, htmlImg?: HTMLImageElement, remappedTf2Item?: any/*TODO:better type*/) {
 		let paintKitId = tf2Item.paintkit_proto_def_index;
 
 		//this.application.setGenerationState(GENERATION_STATE_RETRIEVING_ITEM_DATAS);
@@ -193,7 +191,7 @@ export class TF2Viewer {
 			if (paintKitId && paintKitWear && paintKitSeed) {
 				//console.log(paintKitId, paintKitWear, paintKitSeed);
 				paintKitWear = (paintKitWear - 0.2) * 5 >> 0; // transform the wear from decimal point to integer
-				new WeaponManager().refreshItem({ sourceModel: source1Model, paintKitId: Number(paintKitId), paintKitWear: paintKitWear, itemDefIndex: defIndex, paintKitSeed: paintKitSeed });
+				WeaponManager.refreshItem({ sourceModel: source1Model, paintKitId: Number(paintKitId), paintKitWear: paintKitWear, id: String(defIndex), paintKitSeed: paintKitSeed });
 				if (htmlImg) {
 					//this.application.setSelectedInventoryItem(assetId, htmlImg);
 					controllerDispatchEvent(ControllerEvents.SelectInventoryItem, { detail: { assetId: assetId, htmlImg: htmlImg } });
@@ -221,7 +219,7 @@ export class TF2Viewer {
 
 	#setModelSkin(model: Source1ModelInstance, tf2Item: any/*TODO:better type*/) {
 		if (model && tf2Item) {
-			let skin = Number(this.#teamColor == TeamColor.RED ? tf2Item.skin_red : tf2Item.skin_blu ?? tf2Item.skin_red);
+			let skin = Number(this.#teamColor == Tf2Team.RED ? tf2Item.skin_red : tf2Item.skin_blu ?? tf2Item.skin_red);
 			if (skin) {
 				model.skin = skin;
 			}
@@ -369,7 +367,7 @@ export class TF2Viewer {
 			this.#source1Model.remove();
 		}
 		await this.#createModelPromise;
-		let createModelPromiseResolve: (value: boolean) => void = () => {};
+		let createModelPromiseResolve: (value: boolean) => void = () => { };
 		this.#createModelPromise = new Promise<boolean>((resolve) => createModelPromiseResolve = resolve);
 		this.#modelPath = modelPath;
 		if (this.#source1Model) {
@@ -378,9 +376,12 @@ export class TF2Viewer {
 		this.#source1Model = await addSource1Model('tf2', modelPath, this.#group);
 		createModelPromiseResolve(true);
 
-		let seq = this.#source1Model.sourceModel.mdl.getSequenceById(0);
-		if (seq) {
-			this.#source1Model.playSequence(seq.name);
+
+		if (this.#source1Model) {
+			let seq = this.#source1Model.sourceModel.mdl.getSequenceById(0);
+			if (seq) {
+				this.#source1Model.playSequence(seq.name);
+			}
 		}
 		this.#centerCameraOnItem();
 		return this.#source1Model;
@@ -389,26 +390,28 @@ export class TF2Viewer {
 	#populateTF2MarketListing(paintKitId: any/*TODO:better type*/, seed: any/*TODO:better type*/, craftIndex: any/*TODO:better type*/) {
 		//let div = this.application.htmlCanvasItemInfo;//this.getMarketListingNameDiv(listingId);
 		//if (div) {
-			//div.innerHTML = '';
-			let s:string = '';
-			if (paintKitId && seed) {
-				s = `<div>Seed: ${seed}</div>`;
-			}
-			if (craftIndex) {
-				s += `<div>Craft #${craftIndex}</div>`;
-			}
+		//div.innerHTML = '';
+		let s: string = '';
+		if (paintKitId && seed) {
+			s = `<div>Seed: ${seed}</div>`;
+		}
+		if (craftIndex) {
+			s += `<div>Craft #${craftIndex}</div>`;
+		}
 		//}
 
 		controllerDispatchEvent(ControllerEvents.SetItemInfo, { detail: s });
 	}
 
 	async #getClassModel(className: string) {
-		let classModel = this.#classModels.get(className);
+		let classModel: Source1ModelInstance | null | undefined = this.#classModels.get(className);
 		let mercenary = TF2_MERCENARIES.get(className);
 		if (!classModel) {
 			if (mercenary) {
 				let classModel = await addSource1Model('tf2', mercenary.modelPath, this.#group);
-				this.#classModels.set(className, classModel);
+				if (classModel) {
+					this.#classModels.set(className, classModel);
+				}
 			}
 		}
 		if (classModel && mercenary) {
@@ -457,7 +460,7 @@ export class TF2Viewer {
 			if (bodyGroupList) {
 				for (let bodyGroupIndex in bodyGroupList) {
 					let bodyGroup = bodyGroupList[bodyGroupIndex];
-					classModel.setBodyPartIdModel(bodyGroupIndex, bodyGroup);
+					classModel.setBodyPartIdModel(Number(bodyGroupIndex), bodyGroup);
 				}
 			}
 		}

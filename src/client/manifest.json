@@ -22,7 +22,7 @@
 	"content_scripts": [
 		{
 			"matches": ["https://steamcommunity.com/market/listings/440/*", "https://steamcommunity.com/*/inventory*", "https://steamcommunity.com/market/", "https://steamcommunity.com/tradeoffer/*"],
-			"js": ["application.js"],
+			"js": ["content.js"],
 			"css": ["css/content.css"]
 		}
 	],

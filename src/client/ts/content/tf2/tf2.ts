@@ -1,5 +1,6 @@
 import { vec3 } from 'gl-matrix';
 import { Source1ModelInstance, Source1TextureManager, TextureManager } from 'harmony-3d';
+import { Tf2Team } from 'harmony-tf2-utils';
 import { API_GET_UCG_IMAGE_ENDPOINT } from '../../constants';
 
 export function getTF2ModelName(item: any/*TODO: improved type*/, className: string) {
@@ -50,9 +51,9 @@ export function getTF2ModelName(item: any/*TODO: improved type*/, className: str
 	return '';
 }
 
-export function setTF2ModelAttributes(model: Source1ModelInstance, item: any/*TODO: improved type*/, teamColor = 0) {
+export function setTF2ModelAttributes(model: Source1ModelInstance, item: any/*TODO: improved type*/, teamColor: Tf2Team = Tf2Team.RED) {
 	if (model && item) {
-		let itemTintRGB = (teamColor == 0) ? item.set_item_tint_rgb : (item.set_item_tint_rgb_2 ?? item.set_item_tint_rgb);
+		let itemTintRGB = (teamColor == Tf2Team.RED) ? item.set_item_tint_rgb : (item.set_item_tint_rgb_2 ?? item.set_item_tint_rgb);
 		if (itemTintRGB) {
 			model.tint = colorToTint(itemTintRGB);
 		}
@@ -67,7 +68,7 @@ export function setTF2ModelAttributes(model: Source1ModelInstance, item: any/*TO
 async function setCustomTexture(model: Source1ModelInstance, imageUrl: string) {
 	let image = new Image();
 	image.onload = function () {
-		const { name: textureName, texture: texture } = Source1TextureManager.addInternalTexture();
+		const { name: textureName, texture: texture } = Source1TextureManager.addInternalTexture(model.sourceModel.repository);
 		model.materialsParams.customtexture = textureName;
 		TextureManager.fillTextureWithImage(texture, image);
 	}
@@ -75,7 +76,7 @@ async function setCustomTexture(model: Source1ModelInstance, imageUrl: string) {
 	image.src = imageUrl;
 }
 
-function colorToTint(color: number) {
+function colorToTint(color: number): vec3 | null {
 	if (isNaN(color)) {
 		return null;
 	}
