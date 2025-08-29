@@ -3,7 +3,7 @@ import { Camera, Group, PointLight, Repositories, RotationControl, Scene, Source
 import { TextureCombiner, WeaponManager } from 'harmony-3d-utils';
 import { pauseSVG, playSVG } from 'harmony-svg';
 import { PaintKitDefinitions, Tf2Team } from 'harmony-tf2-utils';
-import { createElement, hide, HTMLHarmonyToggleButtonElement, show } from 'harmony-ui';
+import { createElement, hide, show } from 'harmony-ui';
 import { setTimeoutPromise } from 'harmony-utils';
 import { APP_ID_TF2, DECORATED_WEAPONS, TF2_REPOSITORY, TF2_WARPAINT_DEFINITIONS_URL } from '../../constants';
 import { GenerationState } from '../../enums';
@@ -18,18 +18,18 @@ import { TF2_CLASSES_REMOVABLE_PARTS, TF2_MERCENARIES, TF2_PLAYER_CAMERA_POSITIO
 PaintKitDefinitions.setWarpaintDefinitionsURL(TF2_WARPAINT_DEFINITIONS_URL);
 
 export class TF2Viewer {
-	#classModels = new Map<string, Source1ModelInstance>();
 	#scene = new Scene();
 	#pointLight1: PointLight = new PointLight({ range: 500, parent: this.#scene, intensity: 0.5, position: [100, 100, 100] });
 	#pointLight2: PointLight = new PointLight({ range: 500, parent: this.#scene, intensity: 0.5, position: [100, -100, 100] });
 	#rotationControl = new RotationControl({ parent: this.#scene });
 	#group = new Group({ parent: this.#rotationControl });
+	#classModels = new Map<string, Source1ModelInstance>();
 	#teamColor: Tf2Team = Tf2Team.RED;
 	#htmlControls?: HTMLElement;
 	#htmlWeaponSelector?: HTMLSelectElement;
 	#htmlClassIcons?: HTMLElement;
 	#forcedWeaponIndex: number | null = null;
-	#currentClassName: string = '';
+	#currentClassName = '';
 	#source1Model?: Source1ModelInstance | null;
 	#selectClassPromise?: Promise<boolean>;
 	#createModelPromise?: Promise<boolean>;
@@ -121,11 +121,9 @@ export class TF2Viewer {
 			*/
 	}
 
-	async renderListingTF2(listingOrSteamId: string, listingDatas: any/*TODO:improve type*/, classInfo: any/*TODO:improve type*/, assetId?: number, htmlImg?: HTMLImageElement) {
+	async renderListingTF2(listingOrSteamId: string, listingDatas: any/*TODO: improve type*/, classInfo: any/*TODO: improve type*/, assetId?: number, htmlImg?: HTMLImageElement) {
 		show(this.#htmlControls);
-		if (this.#htmlClassIcons) {
-			this.#htmlClassIcons.innerText = '';
-		}
+		this.#htmlClassIcons?.replaceChildren();
 		if ((listingDatas.appid == APP_ID_TF2) && listingDatas.market_hash_name.includes('War Paint')/* && this.application.canInspectWarpaintWeapons()*/) {
 			show(this.#htmlWeaponSelector);
 		} else {
@@ -133,7 +131,7 @@ export class TF2Viewer {
 		}
 		controllerDispatchEvent(ControllerEvents.ClearMarketListing);
 		let defIndex = classInfo?.app_data?.def_index;
-		let remappedDefIndex: number | null = null;
+		let remappedDefIndex: number | undefined;
 		if (defIndex) {
 			defIndex = Number(defIndex);
 
@@ -155,10 +153,10 @@ export class TF2Viewer {
 							controllerDispatchEvent(ControllerEvents.ShowRowContainer);
 							if (remappedDefIndex) {
 								chrome.runtime.sendMessage({ action: 'get-tf2-item', defIndex: defIndex }, async (remappedTf2Item) => {
-									this.#refreshWarpaint(listingOrSteamId, assetId, inspectLink, source1Model, remappedDefIndex!, remappedTf2Item, htmlImg, tf2Item);
+									this.#refreshWarpaint(assetId, inspectLink, source1Model, remappedDefIndex!, remappedTf2Item, htmlImg, tf2Item);
 								});
 							} else {
-								this.#refreshWarpaint(listingOrSteamId, assetId, inspectLink, source1Model, defIndex, tf2Item, htmlImg);
+								this.#refreshWarpaint(assetId, inspectLink, source1Model, defIndex, tf2Item, htmlImg);
 							}
 						}
 					} else {
@@ -171,7 +169,7 @@ export class TF2Viewer {
 		}
 	}
 
-	#refreshWarpaint(listingOrSteamId: any/*TODO:better type*/, assetId: any/*TODO:better type*/, inspectLink: any/*TODO:better type*/, source1Model: Source1ModelInstance, defIndex: number, tf2Item: any/*TODO:better type*/, htmlImg?: HTMLImageElement, remappedTf2Item?: any/*TODO:better type*/) {
+	#refreshWarpaint(assetId: number | undefined, inspectLink: string, source1Model: Source1ModelInstance, defIndex: number, tf2Item: any/*TODO:improve type*/, htmlImg?: HTMLImageElement, remappedTf2Item?: any/*TODO:improve type*/) {
 		let paintKitId = tf2Item.paintkit_proto_def_index;
 
 		//this.application.setGenerationState(GENERATION_STATE_RETRIEVING_ITEM_DATAS);
@@ -188,7 +186,7 @@ export class TF2Viewer {
 			if (paintKitId && paintKitWear && paintKitSeed) {
 				//console.log(paintKitId, paintKitWear, paintKitSeed);
 				paintKitWear = (paintKitWear - 0.2) * 5 >> 0; // transform the wear from decimal point to integer
-				WeaponManager.refreshItem({ sourceModel: source1Model, paintKitId: Number(paintKitId), paintKitWear: paintKitWear, id: String(defIndex), paintKitSeed: paintKitSeed });
+				WeaponManager.refreshItem({ sourceModel: source1Model, paintKitId: Number(paintKitId), paintKitWear: paintKitWear, id: String(defIndex), paintKitSeed: paintKitSeed }, true);
 				if (htmlImg) {
 					//this.application.setSelectedInventoryItem(assetId, htmlImg);
 					controllerDispatchEvent(ControllerEvents.SelectInventoryItem, { detail: { assetId: assetId, htmlImg: htmlImg } });
@@ -214,7 +212,7 @@ export class TF2Viewer {
 		});
 	}
 
-	#setModelSkin(model: Source1ModelInstance, tf2Item: any/*TODO:better type*/) {
+	#setModelSkin(model: Source1ModelInstance, tf2Item: any/*TODO:improve type*/) {
 		if (model && tf2Item) {
 			let skin = Number(this.#teamColor == Tf2Team.RED ? tf2Item.skin_red : tf2Item.skin_blu ?? tf2Item.skin_red);
 			if (skin) {
@@ -223,7 +221,7 @@ export class TF2Viewer {
 		}
 	}
 
-	async #attachModels(source1Model: Source1ModelInstance, tf2Item: any/*TODO:better type*/, econItem: any/*TODO:better type*/) {
+	async #attachModels(source1Model: Source1ModelInstance, tf2Item: any/*TODO:improve type*/, econItem: any/*TODO:improve type*/) {
 		if (source1Model && tf2Item && econItem) {
 			if (econItem.is_strange && tf2Item.weapon_uses_stattrak_module) {
 				let stattrakModule = await addSource1Model('tf2', tf2Item.weapon_uses_stattrak_module, source1Model);
@@ -247,7 +245,7 @@ export class TF2Viewer {
 		}
 	}
 
-	async #attachTF2Effects(source1Model: Source1ModelInstance, tf2Item: any/*TODO:better type*/, econItem: any/*TODO:better type*/) {
+	async #attachTF2Effects(source1Model: Source1ModelInstance, tf2Item: any/*TODO:improve type*/, econItem: any/*TODO:improve type*/) {
 		if (source1Model && tf2Item && econItem) {
 			if (econItem.set_attached_particle) {
 				this.#attachTF2Effect(source1Model, econItem.set_attached_particle, tf2Item.particle_suffix);
@@ -258,7 +256,7 @@ export class TF2Viewer {
 		}
 	}
 
-	async #attachTF2Effect(model: Source1ModelInstance, effectId: string, particleSuffix: string) {
+	async #attachTF2Effect(model: Source1ModelInstance, effectId: number, particleSuffix: string) {
 		chrome.runtime.sendMessage({ action: 'get-tf2-effect', effectId: effectId }, async (tf2Effect) => {
 			console.log(tf2Effect);
 			if (tf2Effect && tf2Effect.system) {
@@ -278,7 +276,7 @@ export class TF2Viewer {
 		});
 	}
 
-	#displayClassIcons(tf2Item: any/*TODO:better type*/) {
+	#displayClassIcons(tf2Item: any/*TODO:improve type*/) {
 		let usedByClasses = tf2Item?.used_by_classes;
 		let removeCurrentClassModel = true;
 		if (usedByClasses) {
@@ -307,15 +305,13 @@ export class TF2Viewer {
 		}
 	}
 
-	#addClassIcon(className: string, tf2Item: any/*TODO:better type*/) {
+	#addClassIcon(className: string, tf2Item: any/*TODO:improve type*/) {
 		let htmlClassIcon = document.createElement('div');
 		htmlClassIcon.className = 'canvas-container-controls-class-icon';
 		let imageUrl = chrome.runtime.getURL(`images/class_icon/${className}.svg`);
 		htmlClassIcon.style.backgroundImage = `url(${imageUrl})`;
 
-		if (this.#htmlClassIcons) {
-			this.#htmlClassIcons.append(htmlClassIcon);
-		}
+		this.#htmlClassIcons?.append(htmlClassIcon);
 
 		htmlClassIcon.addEventListener('click', async () => {
 			await this.#refreshListing();
@@ -323,7 +319,7 @@ export class TF2Viewer {
 		});
 	}
 
-	async #selectClass(className: string, tf2Item: any/*TODO:better type*/) {
+	async #selectClass(className: string, tf2Item: any/*TODO:improve type*/) {
 		await this.#selectClassPromise;
 		this.#selectClassPromise = new Promise(async (resolve, reject) => {
 			this.#currentClassName = className;
@@ -432,7 +428,7 @@ export class TF2Viewer {
 		return false;
 	}
 
-	async #checkBodyGroups(className: string, tf2Item: any/*TODO:better type*/) {
+	async #checkBodyGroups(className: string, tf2Item: any/*TODO:improve type*/) {
 		let classModel = await this.#getClassModel(className);
 		if (classModel) {
 			let bodyGroupList;

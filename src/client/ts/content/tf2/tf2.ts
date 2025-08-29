@@ -3,7 +3,7 @@ import { Source1ModelInstance, Source1TextureManager, TextureManager } from 'har
 import { Tf2Team } from 'harmony-tf2-utils';
 import { API_GET_UCG_IMAGE_ENDPOINT } from '../../constants';
 
-export function getTF2ModelName(item: any/*TODO: improved type*/, className: string) {
+export function getTF2ModelName(item: any/*TODO: improve type*/, className: string) {
 	if (item) {
 		if (item.model_player_per_class) {
 			if (item.model_player_per_class[className]) {
@@ -51,7 +51,7 @@ export function getTF2ModelName(item: any/*TODO: improved type*/, className: str
 	return '';
 }
 
-export function setTF2ModelAttributes(model: Source1ModelInstance, item: any/*TODO: improved type*/, teamColor: Tf2Team = Tf2Team.RED) {
+export function setTF2ModelAttributes(model: Source1ModelInstance, item: any/*TODO: improve type*/, teamColor: Tf2Team = Tf2Team.RED) {
 	if (model && item) {
 		let itemTintRGB = (teamColor == Tf2Team.RED) ? item.set_item_tint_rgb : (item.set_item_tint_rgb_2 ?? item.set_item_tint_rgb);
 		if (itemTintRGB) {
@@ -68,7 +68,7 @@ export function setTF2ModelAttributes(model: Source1ModelInstance, item: any/*TO
 async function setCustomTexture(model: Source1ModelInstance, imageUrl: string) {
 	let image = new Image();
 	image.onload = function () {
-		const { name: textureName, texture: texture } = Source1TextureManager.addInternalTexture(model.sourceModel.repository);
+		const { name: textureName, texture } = Source1TextureManager.addInternalTexture(model.sourceModel.repository);
 		model.materialsParams.customtexture = textureName;
 		TextureManager.fillTextureWithImage(texture, image);
 	}
@@ -88,7 +88,7 @@ function colorToTint(color: number): vec3 | null {
 }
 
 
-export function selectCharacterAnim(className: string, classModel: Source1ModelInstance, tf2Item: any/*TODO: improved type*/) {
+export function selectCharacterAnim(className: string, classModel: Source1ModelInstance, tf2Item: any/*TODO: improve type*/) {
 	if (tf2Item.anim_slot && tf2Item.anim_slot.toLowerCase() != 'building') {
 		if (tf2Item.anim_slot.toLowerCase() == 'primary2') {
 			classModel.playSequence('stand_primary');

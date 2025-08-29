@@ -1,7 +1,7 @@
 import { quat, vec3 } from 'gl-matrix';
-import { AmbientLight, BoundingBox, Camera, ContextObserver, Graphics, GraphicsEvent, GraphicsEvents, GraphicTickEvent, OrbitControl, Scene, setFetchFunction, Source1ModelInstance, WebGLStats } from 'harmony-3d';
+import { AmbientLight, BoundingBox, Camera, ColorBackground, ContextObserver, Graphics, GraphicsEvent, GraphicsEvents, GraphicTickEvent, OrbitControl, Scene, setFetchFunction, Source1ModelInstance, WebGLStats } from 'harmony-3d';
 import { createElement, hide, show } from 'harmony-ui';
-import { ACTIVE_INVENTORY_PAGE, APP_ID_CS2, APP_ID_TF2, INVENTORY_BACKGROUND_COLOR, INVENTORY_ITEM_CLASSNAME, MARKET_LISTING_ROW_CLASSNAME, MOUSE_ENTER_DELAY } from '../constants';
+import { ACTIVE_INVENTORY_PAGE, APP_ID_CS2, APP_ID_TF2, INVENTORY_BACKGROUND_COLOR, INVENTORY_ITEM_CLASSNAME, MARKET_LISTING_BACKGROUND_COLOR, MARKET_LISTING_ROW_CLASSNAME, MOUSE_ENTER_DELAY } from '../constants';
 import { GenerationState } from '../enums';
 import { controlleraddEventListener, ControllerEvents } from './controller';
 import { CS2Viewer } from './cs2/cs2viewer';
@@ -47,9 +47,9 @@ export class Application {
 	#canvasContainer = createElement('div', { class: 'canvas-container' });
 	#htmlCanvas = createElement('canvas', { parent: this.#canvasContainer }) as HTMLCanvasElement;
 	#camera = new Camera({ nearPlane: 1, farPlane: 1000, verticalFov: 10 });
-	#scene = new Scene({ camera: this.#camera });
-	#buttons = new Set<HTMLElement>();
+	#scene = new Scene({ camera: this.#camera, background: new ColorBackground({ color: MARKET_LISTING_BACKGROUND_COLOR }), childs: [this.#camera], });
 	#orbitCameraControl = new OrbitControl(this.#camera);
+	#buttons = new Set<HTMLElement>();
 	currentListingId = '';
 	currentAppId = 0;
 	currentContextId = 0;
@@ -106,7 +106,6 @@ export class Application {
 				premultipliedAlpha: false,
 			}
 		});
-		new Graphics().play();
 
 		const render = (event: Event) => {
 			WebGLStats.tick();
@@ -117,12 +116,12 @@ export class Application {
 
 		GraphicsEvents.addEventListener(GraphicsEvent.Tick, render);
 		GraphicsEvents.addEventListener(GraphicsEvent.Tick, (event) => this.#orbitCameraControl.update((event as CustomEvent<GraphicTickEvent>).detail.delta / 1000));
-
-
+		new Graphics().play();
 
 		this.#scene.addChild(this.#tf2Viewer.getScene());
-		ContextObserver.observe(GraphicsEvents, this.#camera);
 		//this.#scene.addChild(this.csgoViewer.getScene());
+
+		ContextObserver.observe(GraphicsEvents, this.#camera);
 	}
 
 	#initScene() {
