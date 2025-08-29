@@ -83,28 +83,25 @@ export class TF2Viewer {
 			class: 'canvas-container-controls-class-icons',
 		}) as HTMLElement;
 
-		const htmlPlayPauseButton: HTMLHarmonyToggleButtonElement = createElement('harmony-toggle-button', {
+		let buttonState = true;
+		const htmlPlayPauseButton = createElement('button', {
 			class: 'canvas-container-controls-playpause play',
-			//innerHTML: pauseSVG,
+			innerHTML: pauseSVG,
 			parent: this.#htmlControls,
-			childs: [
-				createElement('on', { innerHTML: playSVG }),
-				createElement('off', { innerHTML: pauseSVG }),
-			],
 			events: {
 				click: () => {
-					//htmlPlayPauseButton.setAttribute('buttonState', ) = !htmlPlayPauseButton.buttonState
-					if (htmlPlayPauseButton.state) {
+					buttonState = !buttonState;
+					if (buttonState) {
 						this.#rotationControl.rotationSpeed = 1;
-						//htmlPlayPauseButton.innerHTML = pauseSVG;
+						htmlPlayPauseButton.innerHTML = pauseSVG;
 					} else {
 						this.#rotationControl.rotationSpeed = 0;
-						//htmlPlayPauseButton.innerHTML = playSVG;
+						htmlPlayPauseButton.innerHTML = playSVG;
 					}
 				}
 			},
 			buttonState: true,
-		}) as HTMLHarmonyToggleButtonElement;
+		});
 
 
 		this.#loadWarpaintWeapon();
