@@ -1,5 +1,5 @@
-import { vec3 } from 'gl-matrix';
-import { BoundingBox, Camera, ContextObserver, Graphics, GraphicsEvent, GraphicsEvents, GraphicTickEvent, OrbitControl, Scene, setFetchFunction, Source1ModelInstance, WebGLStats } from 'harmony-3d';
+import { quat, vec3 } from 'gl-matrix';
+import { AmbientLight, BoundingBox, Camera, ContextObserver, Graphics, GraphicsEvent, GraphicsEvents, GraphicTickEvent, OrbitControl, Scene, setFetchFunction, Source1ModelInstance, WebGLStats } from 'harmony-3d';
 import { createElement, hide, show } from 'harmony-ui';
 import { ACTIVE_INVENTORY_PAGE, APP_ID_CS2, APP_ID_TF2, INVENTORY_BACKGROUND_COLOR, INVENTORY_ITEM_CLASSNAME, MARKET_LISTING_ROW_CLASSNAME, MOUSE_ENTER_DELAY } from '../constants';
 import { GenerationState } from '../enums';
@@ -46,7 +46,7 @@ export class Application {
 	#inventoryFavorites: { [key: string]: any } = {};
 	#canvasContainer = createElement('div', { class: 'canvas-container' });
 	#htmlCanvas = createElement('canvas', { parent: this.#canvasContainer }) as HTMLCanvasElement;
-	#camera = new Camera();
+	#camera = new Camera({ nearPlane: 1, farPlane: 1000, verticalFov: 10 });
 	#scene = new Scene({ camera: this.#camera });
 	#buttons = new Set<HTMLElement>();
 	#orbitCameraControl = new OrbitControl(this.#camera);
@@ -125,7 +125,7 @@ export class Application {
 	}
 
 	#initScene() {
-
+		this.#scene.addChild(new AmbientLight());
 	}
 
 	#initPageType() {
@@ -349,7 +349,15 @@ export class Application {
 			let max = vec3.create();
 			let boundingBox = new BoundingBox();
 			sourceModel.getBoundingBox(boundingBox);
-			this.#orbitCameraControl.target.position = boundingBox.center;//vec3.lerp(vec3.create(), min, max, 0.5);
+			const pos = sourceModel.getWorldPosition();
+			const rot = sourceModel.getWorldQuaternion();
+			quat.invert(rot, rot);
+			sourceModel.getBoundingBox(boundingBox);
+			vec3.sub(pos, boundingBox.center, pos);
+			vec3.transformQuat(pos, pos, rot);
+			sourceModel.setPosition(vec3.negate(pos, pos));
+
+			//this.#orbitCameraControl.target.position = boundingBox.center;//vec3.lerp(vec3.create(), min, max, 0.5);
 			this.#camera._position[0] = this.#orbitCameraControl.target._position[0];
 			this.#camera._position[1] = CAMERA_DISTANCE;//TODO: set y to have the model occupy most of the canvas (inspect_panel_dist)
 			this.#camera._position[2] = this.#orbitCameraControl.target._position[2];
