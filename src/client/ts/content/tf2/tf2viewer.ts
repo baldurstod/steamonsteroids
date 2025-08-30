@@ -18,6 +18,9 @@ import { TF2_CLASSES_REMOVABLE_PARTS, TF2_MERCENARIES, TF2_PLAYER_CAMERA_POSITIO
 PaintKitDefinitions.setWarpaintDefinitionsURL(TF2_WARPAINT_DEFINITIONS_URL);
 
 export class TF2Viewer {
+	#htmlControls?: HTMLElement;
+	#htmlWeaponSelector?: HTMLSelectElement;
+	#htmlClassIcons?: HTMLElement;
 	#scene = new Scene();
 	#pointLight1: PointLight = new PointLight({ range: 500, parent: this.#scene, intensity: 0.5, position: [100, 100, 100] });
 	#pointLight2: PointLight = new PointLight({ range: 500, parent: this.#scene, intensity: 0.5, position: [100, -100, 100] });
@@ -25,15 +28,12 @@ export class TF2Viewer {
 	#group = new Group({ parent: this.#rotationControl });
 	#classModels = new Map<string, Source1ModelInstance>();
 	#teamColor: Tf2Team = Tf2Team.RED;
-	#htmlControls?: HTMLElement;
-	#htmlWeaponSelector?: HTMLSelectElement;
-	#htmlClassIcons?: HTMLElement;
-	#forcedWeaponIndex: number | null = null;
 	#currentClassName = '';
 	#source1Model?: Source1ModelInstance | null;
 	#selectClassPromise?: Promise<boolean>;
+	#forcedWeaponIndex: number | null = null;
 	#createModelPromise?: Promise<boolean>;
-	#modelPath: string = '';
+	#modelPath = '';
 
 	constructor() {
 		Repositories.addRepository(new WebRepository('tf2', TF2_REPOSITORY));
@@ -54,19 +54,16 @@ export class TF2Viewer {
 	}
 
 	initHtml() {
-		this.#htmlControls = document.createElement('div');
-		this.#htmlControls.className = 'canvas-container-controls';
+		this.#htmlControls = createElement('div', { class: 'canvas-container-controls' });
 
 		this.#htmlWeaponSelector = createElement('select', {
 			parent: this.#htmlControls,
 			class: 'weapon-selector',
-			events: {
-				change: (event: Event) => {
-					this.#forcedWeaponIndex = Number((event.target as HTMLSelectElement).value);
-					chrome.storage.sync.set({ warpaintWeaponIndex: (event.target as HTMLSelectElement).value });
-					this.#refreshListing();
-				},
-			}
+			$change: (event: Event) => {
+				this.#forcedWeaponIndex = Number((event.target as HTMLSelectElement).value);
+				chrome.storage.sync.set({ warpaintWeaponIndex: (event.target as HTMLSelectElement).value });
+				this.#refreshListing();
+			},
 		}) as HTMLSelectElement;
 
 		for (let weaponName in DECORATED_WEAPONS) {
@@ -81,7 +78,7 @@ export class TF2Viewer {
 		this.#htmlClassIcons = createElement('div', {
 			parent: this.#htmlControls,
 			class: 'canvas-container-controls-class-icons',
-		}) as HTMLElement;
+		});
 
 		let buttonState = true;
 		const htmlPlayPauseButton = createElement('button', {

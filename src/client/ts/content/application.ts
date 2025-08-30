@@ -255,23 +255,23 @@ export class Application {
 		this.#htmlState.className = 'texture-generation-state';
 		switch (state) {
 			case GenerationState.Started:
-				this.#htmlState.innerHTML = 'Generating...';
+				this.#htmlState.innerText = 'Generating...';
 				this.#htmlState.classList.add('waiting');
 				break;
 			case GenerationState.Sucess:
-				this.#htmlState.innerHTML = 'Finished';
+				this.#htmlState.innerText = 'Finished';
 				this.#htmlState.classList.add('success');
 				break;
 			case GenerationState.Failure:
-				this.#htmlState.innerHTML = 'Failure';
+				this.#htmlState.innerText = 'Failure';
 				this.#htmlState.classList.add('failure');
 				break;
 			case GenerationState.LoadingModel:
-				this.#htmlState.innerHTML = 'Loading model';
+				this.#htmlState.innerText = 'Loading model';
 				this.#htmlState.classList.add('waiting');
 				break;
 			case GenerationState.RetrievingItemDatas:
-				this.#htmlState.innerHTML = 'Retrieving item datas';
+				this.#htmlState.innerText = 'Retrieving item datas';
 				this.#htmlState.classList.add('waiting');
 				break;
 		}
