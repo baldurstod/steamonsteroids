@@ -8,7 +8,7 @@ import { setTimeoutPromise } from 'harmony-utils';
 import { APP_ID_TF2, DECORATED_WEAPONS, TF2_REPOSITORY, TF2_WARPAINT_DEFINITIONS_URL } from '../../constants';
 import { GenerationState } from '../../enums';
 import { Controller, controllerDispatchEvent, ControllerEvents } from '../controller';
-import { getInspectLink } from '../utils/inspect';
+import { getInspectLink } from '../utils/inspectlink';
 import { sortSelect } from '../utils/sort';
 import { addSource1Model } from '../utils/sourcemodels';
 import { getSheenTint } from './killstreak';
