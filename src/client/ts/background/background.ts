@@ -1,12 +1,13 @@
 import { PaintKitDefinitions } from 'harmony-tf2-utils';
-import { TF2_ITEMS_URL, CSGO_ITEMS_URL, TF2_WARPAINT_DEFINITIONS_URL } from '../constants';
-import { API_GET_ASSET_CLASS_INFO_ENDPOINT, API_INSPECT_TF2_WEAPON_ENDPOINT, API_INSPECT_CSGO_WEAPON_ENDPOINT } from '../constants';
+import { JSONObject } from 'harmony-utils';
+import { API_GET_ASSET_CLASS_INFO_ENDPOINT, API_INSPECT_CSGO_WEAPON_ENDPOINT, API_INSPECT_TF2_WEAPON_ENDPOINT, CSGO_ITEMS_URL, TF2_ITEMS_URL } from '../constants';
 
 class BackGround {
 	static #assetClassInfos = new Map<number, Map<number, any/*TODO: improve type*/>>();
 	static #inspectedWeapons = new Map<string, any/*TODO: improve type*/>();
-	static #tf2Schema?: any;
-	static #cs2Schema?: any;
+	static #tf2Schema?: JSONObject/*TODO: improve type*/;
+	static #cs2Schema?: JSONObject/*TODO: improve type*/;
+
 	static {
 		this.#setupMessageListener();
 	}
@@ -22,24 +23,24 @@ class BackGround {
 		});
 		switch (message.action) {
 			case 'get-asset-class-info':
-				sendResponse(await this.getAssetClassInfo(message.appId, message.classId));
+				sendResponse(await this.#getAssetClassInfo(message.appId, message.classId));
 				break;
 			case 'get-paintkit-definition':
 				sendResponse(await PaintKitDefinitions.getDefinition(message.protodefid));
 				break;
 			case 'get-tf2-item':
-				sendResponse(await this.getTF2Item(Number(message.defIndex), message.styleId));
+				sendResponse(await this.#getTF2Item(Number(message.defIndex), message.styleId));
 				break;
 			case 'get-tf2-effect':
-				sendResponse(await this.getTF2Effect(Number(message.effectId)));
+				sendResponse(await this.#getTF2Effect(Number(message.effectId)));
 				break;
 			case 'get-csgo-item':
-				let item = await this.getCSGOItem(Number(message.defIndex));
-				let paintkit = await this.getCSGOPaintkit(Number(message.paintkitId));
+				let item = await this.#getCSGOItem(Number(message.defIndex));
+				let paintkit = await this.#getCSGOPaintkit(Number(message.paintkitId));
 				sendResponse({ item: item, paintkit: paintkit });
 				break;
 			case 'get-csgo-sticker':
-				sendResponse(await this.getCSGOSticker(Number(message.stickerId)));
+				sendResponse(await this.#getCSGOSticker(Number(message.stickerId)));
 				break;
 			case 'inspect-item':
 				sendResponse(await this.inspectItem(message.link));
@@ -65,7 +66,7 @@ class BackGround {
 		});
 	}
 
-	static async getAssetClassInfo(appId: number, classId: number) {
+	static async #getAssetClassInfo(appId: number, classId: number) {
 		let app = this.#assetClassInfos.get(appId);
 		if (!app) {
 			app = new Map();
@@ -86,14 +87,14 @@ class BackGround {
 		return null;
 	}
 
-	static async getTF2Item(defindex: any/*TODO:better type*/, styleId = 0) {
+	static async #getTF2Item(defindex: number, styleId = 0) {
 		if (!this.#tf2Schema) {
 			let tf2Response = await fetch(TF2_ITEMS_URL);
 			this.#tf2Schema = await tf2Response.json();
 		}
 		let items = this.#tf2Schema?.items;
 		if (items) {
-			let item = items[defindex] ?? items[`${defindex}~${styleId}`];
+			let item = (items as JSONObject)[defindex] ?? (items as JSONObject)[`${defindex}~${styleId}`];
 			if (item) {
 				//console.log(item);
 				return item;
@@ -123,12 +124,12 @@ class BackGround {
 		return false;
 	}
 
-	static async getTF2Effect(effectId: number) {
+	static async #getTF2Effect(effectId: number) {
 		if (!this.#tf2Schema) {
 			let tf2Response = await fetch(TF2_ITEMS_URL);
 			this.#tf2Schema = await tf2Response.json();
 		}
-		let systems = this.#tf2Schema?.systems;
+		let systems = this.#tf2Schema?.systems as JSONObject;
 		if (systems) {
 			let system = systems[effectId];
 			if (system) {
@@ -138,12 +139,12 @@ class BackGround {
 		return false;
 	}
 
-	static async getCSGOItem(defindex: any/*TODO:better type*/) {
+	static async #getCSGOItem(defindex: number) {
 		if (!this.#cs2Schema) {
 			let csgoResponse = await fetch(CSGO_ITEMS_URL);
 			this.#cs2Schema = await csgoResponse.json();
 		}
-		let items = this.#cs2Schema?.items;
+		let items = this.#cs2Schema?.items as JSONObject;
 		if (items) {
 			let item = items[defindex];
 			if (item) {
@@ -153,12 +154,12 @@ class BackGround {
 		return false;
 	}
 
-	static async getCSGOPaintkit(paintkitId: number) {
+	static async #getCSGOPaintkit(paintkitId: number) {
 		if (!this.#cs2Schema) {
 			let csgoResponse = await fetch(CSGO_ITEMS_URL);
 			this.#cs2Schema = await csgoResponse.json();
 		}
-		let paintkits = this.#cs2Schema?.paintkits;
+		let paintkits = this.#cs2Schema?.paintkits as JSONObject;
 		if (paintkits) {
 			let paintkit = paintkits[paintkitId];
 			if (paintkit) {
@@ -168,12 +169,12 @@ class BackGround {
 		return false;
 	}
 
-	static async getCSGOSticker(stickerId: number) {
+	static async #getCSGOSticker(stickerId: number) {
 		if (!this.#cs2Schema) {
 			let csgoResponse = await fetch(CSGO_ITEMS_URL);
 			this.#cs2Schema = await csgoResponse.json();
 		}
-		let stickers = this.#cs2Schema?.stickers;
+		let stickers = this.#cs2Schema?.stickers as JSONObject;
 		if (stickers) {
 			let sticker = stickers[stickerId];
 			if (sticker) {
@@ -209,14 +210,5 @@ class BackGround {
 			return responseJson.item;
 		}
 		return null;
-	}
-
-	static async initPaintKits() {
-		//await new WeaponManager().initPaintKitDefinitions(TF2_WARPAINT_DEFINITIONS_URL);
-	}
-
-	static async getPaintKit() {
-		await this.initPaintKits();
-
 	}
 }
