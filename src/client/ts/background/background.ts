@@ -12,6 +12,14 @@ class BackGround {
 	}
 
 	static async #messageListener(message: any, sender: chrome.runtime.MessageSender, sendResponse: (response?: any) => void) {
+		const convertBlobToBase64 = (blob: Blob) => new Promise<string>(resolve => {
+			const reader = new FileReader();
+			reader.readAsDataURL(blob);
+			reader.onloadend = () => {
+				const base64data = reader.result as string;
+				resolve(base64data);
+			};
+		});
 		switch (message.action) {
 			case 'get-asset-class-info':
 				sendResponse(await this.getAssetClassInfo(message.appId, message.classId));
@@ -37,36 +45,15 @@ class BackGround {
 				sendResponse(await this.inspectItem(message.link));
 				break;
 			case 'fetch':
-
-				function readBinaryStringFromArrayBuffer(arrayBuffer: ArrayBuffer, onSuccess: (arg0: any/*TODO:better type*/) => void, onFail?: (arg0: any/*TODO:better type*/) => void) {
-					const reader = new FileReader();
-					reader.addEventListener('load', () => onSuccess(reader.result));
-					if (onFail) {
-						reader.addEventListener('error', () => onFail(reader.result));
-					}
-					reader.readAsBinaryString(new Blob([arrayBuffer],
-						{ type: 'application/octet-stream' }));
-				}
 				const response = await fetch(message.resource, message.options);
-				//console.log(response);
-				const ab = await response.arrayBuffer();
-				const foobar = new Uint8Array(ab);
-				//console.log(String.fromCharCode.apply(null, foobar));
+				const url = await convertBlobToBase64(await response.blob());
+				const b64 = url.indexOf(';base64,') + 8;
 
-				//const blob = new Blob([ab], { type: 'application/octet-stream' });
-
-				readBinaryStringFromArrayBuffer(ab, str => {
-					//console.log(ab);
-					//console.log(str);
-
-					sendResponse({
-						ab: ab,
-						//test: Array.apply(null, new Uint8Array(ab)),
-						body: str,//await blob.text(), //String.fromCharCode.apply(null, foobar),//decoder.decode(ab),//await response.text(),//await convertBlobToBase64(await response.blob()),
-						status: response.status,
-						statusText: response.statusText,
-					});
-				})
+				sendResponse({
+					base64: url.substring(b64),
+					status: response.status,
+					statusText: response.statusText,
+				});
 				break;
 		}
 	}

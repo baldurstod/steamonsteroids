@@ -7,6 +7,7 @@ import { controlleraddEventListener, ControllerEvents } from './controller';
 import { CS2Viewer } from './cs2/cs2viewer';
 import { getInventoryAssetDatas, getInventorySteamId, MarketAssets } from './marketassets';
 import { TF2Viewer } from './tf2/tf2viewer';
+import { getCharCodes } from 'harmony-binary-reader';
 
 enum PageType {
 	Unknown = 0,
@@ -64,36 +65,9 @@ export class Application {
 		this.#initGraphics();
 		this.#initScene();
 		this.#initPageType();
-		if (!isChromium()) {
-			setFetchFunction(async (resource, options) => await this.#backgroundFetch(resource, options));
-		}
 		this.#initEvents();
 		this.#initObserver();
 		this.#loadFavorites();
-	}
-
-	async #backgroundFetch(resource: RequestInfo | URL, options?: RequestInit) {
-		const result = await chrome.runtime.sendMessage({
-			action: 'fetch',
-			resource: resource,
-			options: options,
-		});
-		const encoder = new TextEncoder(/*'x-user-defined'*/);
-		let blob;
-		try {
-			blob = new File([result.body], '', { type: 'application/octet-stream' });
-			const blobAB = await blob.arrayBuffer();
-		} catch (e) {
-			console.log(e);
-		}
-
-		const test = new Uint8Array(result.test);
-
-		if (result.ab instanceof ArrayBuffer) {
-			return new Response(result.ab, { status: result.status, statusText: result.statusText });
-		}
-
-		return new Response(test, { status: result.status, statusText: result.statusText });
 	}
 
 	#initGraphics() {
@@ -567,3 +541,19 @@ function getItemDatas(htmlItem: HTMLElement) {
 	}
 	return null;
 }
+
+async function backgroundFetch(input: RequestInfo | URL, init?: RequestInit) {
+	const result = await chrome.runtime.sendMessage({
+		action: 'fetch',
+		resource: String(input),
+		options: init,
+	});
+
+	const ab = getCharCodes(atob(result.base64));
+
+	return new Response(ab, { status: result.status, statusText: result.statusText });
+}
+
+window.fetch = async (...args) => {
+	return backgroundFetch(...args);
+};
