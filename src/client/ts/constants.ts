@@ -7,7 +7,7 @@ export const APP_ID_CS2 = 730;
 export const MOUSE_ENTER_DELAY = 200
 
 export const TF2_REPOSITORY = 'https://tf2content.loadout.tf/';
-export const CSGO_REPOSITORY = 'https://cs2content.csloadout.com/';
+export const CS2_REPOSITORY = 'https://cs2content.csloadout.com/';
 
 export const INVENTORY_ITEM_CLASSNAME = 'item';
 export const ACTIVE_INVENTORY_PAGE = 'active_inventory_page';
@@ -16,12 +16,12 @@ export const TF2_WARPAINT_DEFINITIONS_URL = TF2_REPOSITORY + 'generated/warpaint
 
 export const API_GET_ASSET_CLASS_INFO_ENDPOINT = 'https://assetclassinfo.accurateskins.com/';
 export const TF2_ITEMS_URL = 'https://loadout.tf/generated/items/items_english.json';
-export const CSGO_ITEMS_URL = 'https://csloadout.com/generated/items/items_english.json';
+export const CS2_ITEMS_URL = 'https://csloadout.com/generated/items/items_english.json';
 
 export const API_GET_UCG_IMAGE_ENDPOINT = 'https://loadout.tf/php/steam/getugcimage.php';
 
 export const API_INSPECT_TF2_WEAPON_ENDPOINT = 'https://inspecttf2.accurateskins.com/';
-export const API_INSPECT_CSGO_WEAPON_ENDPOINT = 'https://inspectcsgo.accurateskins.com/';
+export const API_INSPECT_CS2_WEAPON_ENDPOINT = 'https://inspectcsgo.accurateskins.com/';
 
 export const MARKET_LISTING_BACKGROUND_COLOR = vec4.fromValues(0.086, 0.125, 0.176, 1.0);
 export const INVENTORY_BACKGROUND_COLOR = vec4.fromValues(0.11, 0.122, 0.129, 1.0);

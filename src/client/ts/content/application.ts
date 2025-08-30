@@ -1,5 +1,6 @@
 import { quat, vec3 } from 'gl-matrix';
-import { AmbientLight, BoundingBox, Camera, ColorBackground, ContextObserver, Graphics, GraphicsEvent, GraphicsEvents, GraphicTickEvent, OrbitControl, Scene, setFetchFunction, Source1ModelInstance, WebGLStats } from 'harmony-3d';
+import { AmbientLight, BoundingBox, Camera, ColorBackground, ContextObserver, Graphics, GraphicsEvent, GraphicsEvents, GraphicTickEvent, OrbitControl, Scene, Source1ModelInstance, WebGLStats } from 'harmony-3d';
+import { getCharCodes } from 'harmony-binary-reader';
 import { createElement, hide, show } from 'harmony-ui';
 import { ACTIVE_INVENTORY_PAGE, APP_ID_CS2, APP_ID_TF2, INVENTORY_BACKGROUND_COLOR, INVENTORY_ITEM_CLASSNAME, MARKET_LISTING_BACKGROUND_COLOR, MARKET_LISTING_ROW_CLASSNAME, MOUSE_ENTER_DELAY } from '../constants';
 import { GenerationState } from '../enums';
@@ -7,7 +8,6 @@ import { controlleraddEventListener, ControllerEvents } from './controller';
 import { CS2Viewer } from './cs2/cs2viewer';
 import { getInventoryAssetDatas, getInventorySteamId, MarketAssets } from './marketassets';
 import { TF2Viewer } from './tf2/tf2viewer';
-import { getCharCodes } from 'harmony-binary-reader';
 
 enum PageType {
 	Unknown = 0,
@@ -93,7 +93,7 @@ export class Application {
 		new Graphics().play();
 
 		this.#scene.addChild(this.#tf2Viewer.getScene());
-		//this.#scene.addChild(this.csgoViewer.getScene());
+		//this.#scene.addChild(this.cs2Viewer.getScene());
 
 		ContextObserver.observe(GraphicsEvents, this.#camera);
 	}
@@ -165,7 +165,7 @@ export class Application {
 						});
 						break;
 					case APP_ID_CS2:
-						//this.csgoViewer.renderListingCSGO(listingId, asset);
+						//this.cs2Viewer.renderListingCS2(listingId, asset);
 						break;
 				}
 			}
@@ -198,7 +198,7 @@ export class Application {
 						});
 						break;
 					case APP_ID_CS2:
-						this.#cs2Viewer.renderListingCSGO(steamUserId, asset, assetId);
+						this.#cs2Viewer.renderListingCS2(steamUserId, asset, assetId);
 						break;
 				}
 			}
@@ -310,7 +310,7 @@ export class Application {
 		htmlUnFavoriteButton.addEventListener('click', () => this.unfavoriteListing());
 		this.#htmlCanvasItemInfo = createElement('div', { class: 'canvas-container-item-info' });
 
-		this.#canvasContainer.append(htmlFavoriteButton, htmlUnFavoriteButton, this.#htmlCanvasItemInfo, this.#tf2Viewer.initHtml()/*, this.csgoViewer.initHtml()*/);
+		this.#canvasContainer.append(htmlFavoriteButton, htmlUnFavoriteButton, this.#htmlCanvasItemInfo, this.#tf2Viewer.initHtml()/*, this.cs2Viewer.initHtml()*/);
 	}
 
 	#tradeActivate(activate: boolean) {
