@@ -11,7 +11,7 @@ const KillStreakSheenTint = [
 	[16719615],//Hot Rod
 ]
 
-export function getSheenTint(effectId: number, teamId = 0): vec3 {
+export function getSheenTint(effectId: number, teamId: 0 | 1 = 0): vec3 {
 	let sheenTint = 0;
 	let row = KillStreakSheenTint[effectId];
 	if (row) {
