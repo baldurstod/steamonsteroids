@@ -32,25 +32,25 @@ function isChromium() {
 
 export class Application {
 	#htmlTradeAreaContainer?: HTMLElement;
+	#htmlState?: HTMLElement;
+	#htmlRowContainer: HTMLElement = createElement('div');
+	#htmlCanvasItemInfo?: HTMLElement;
+	#inventoryItem?: HTMLElement;
+	#buttons = new Set<HTMLElement>();
 	#pageType: PageType = PageType.Unknown;
 	#tf2Viewer = new TF2Viewer();
 	#cs2Viewer = new CS2Viewer();
-	#htmlState?: HTMLElement;
-	#htmlCanvasItemInfo?: HTMLElement;
-	#htmlRowContainer: HTMLElement = createElement('div');
-	#currentAppId: number = 0;
-	#currentAssetId: number = 0;
-	#currentContextId: number = 0;
-	#inventoryItem: any/*TODO:better type*/;
-	#favorites: { [key: string]: any } = {};
-	#inventoryFavorites: { [key: string]: any } = {};
+	#favorites: Record<string, any/*TODO: create type*/> = {};//TODO:turn into map
+	#inventoryFavorites: Record<string, any/*TODO: create type*/> = {};//TODO:turn into map
 	#canvasContainer = createElement('div', { class: 'canvas-container' });
 	#htmlCanvas = createElement('canvas', { parent: this.#canvasContainer }) as HTMLCanvasElement;
 	#camera = new Camera({ nearPlane: 1, farPlane: 1000, verticalFov: 10 });
 	#scene = new Scene({ camera: this.#camera, background: new ColorBackground({ color: MARKET_LISTING_BACKGROUND_COLOR }), childs: [this.#camera], });
 	#orbitCameraControl = new OrbitControl(this.#camera);
-	#buttons = new Set<HTMLElement>();
 	#currentListingId = '';
+	#currentAppId = 0;
+	#currentContextId = 0;
+	#currentAssetId = 0;
 	#isInventoryPage = false;
 	#isMarketPage = false;
 	#isTradeOffer = false;
