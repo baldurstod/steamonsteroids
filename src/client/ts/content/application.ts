@@ -51,9 +51,6 @@ export class Application {
 	#orbitCameraControl = new OrbitControl(this.#camera);
 	#buttons = new Set<HTMLElement>();
 	#currentListingId = '';
-	currentAppId = 0;
-	currentContextId = 0;
-	currentAssetId = 0;
 	#isInventoryPage = false;
 	#isMarketPage = false;
 	#isTradeOffer = false;
@@ -369,7 +366,7 @@ export class Application {
 
 	async favoriteListing() {
 		if (this.#isInventoryPage) {
-			this.favoriteInventoryListing(this.currentAppId, this.currentContextId, this.currentAssetId, await getInventorySteamId());
+			this.favoriteInventoryListing(this.#currentAppId, this.#currentContextId, this.#currentAssetId, await getInventorySteamId());
 		}
 		if (this.#isMarketPage) {
 			this.#favoriteMarketListing(this.#currentListingId);
@@ -378,7 +375,7 @@ export class Application {
 
 	unfavoriteListing() {
 		if (this.#isInventoryPage) {
-			this.unfavoriteInventoryListing(this.currentAppId, this.currentContextId, this.currentAssetId);
+			this.unfavoriteInventoryListing(this.#currentAppId, this.#currentContextId, this.#currentAssetId);
 		}
 		if (this.#isMarketPage) {
 			this.unfavoriteMarketListing(this.#currentListingId);
