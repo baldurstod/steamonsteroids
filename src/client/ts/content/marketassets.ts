@@ -1,5 +1,5 @@
-const promises = new Map<number, (value: any) => void>();
-let nextPromiseId: number = 1;
+const promises = new Map<number, (value: unknown) => void>();
+let nextPromiseId = 1;
 
 function createPromise(): { promise: Promise<any>, promiseId: number } {
 	let promiseId = nextPromiseId++;
