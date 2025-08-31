@@ -33,7 +33,6 @@ function isChromium() {
 export class Application {
 	#htmlTradeAreaContainer?: HTMLElement;
 	#pageType: PageType = PageType.Unknown;
-	#currentListingId = '';
 	#tf2Viewer = new TF2Viewer();
 	#cs2Viewer = new CS2Viewer();
 	#htmlState?: HTMLElement;
@@ -51,7 +50,7 @@ export class Application {
 	#scene = new Scene({ camera: this.#camera, background: new ColorBackground({ color: MARKET_LISTING_BACKGROUND_COLOR }), childs: [this.#camera], });
 	#orbitCameraControl = new OrbitControl(this.#camera);
 	#buttons = new Set<HTMLElement>();
-	currentListingId = '';
+	#currentListingId = '';
 	currentAppId = 0;
 	currentContextId = 0;
 	currentAssetId = 0;
@@ -373,7 +372,7 @@ export class Application {
 			this.favoriteInventoryListing(this.currentAppId, this.currentContextId, this.currentAssetId, await getInventorySteamId());
 		}
 		if (this.#isMarketPage) {
-			this.#favoriteMarketListing(this.currentListingId);
+			this.#favoriteMarketListing(this.#currentListingId);
 		}
 	}
 
@@ -382,7 +381,7 @@ export class Application {
 			this.unfavoriteInventoryListing(this.currentAppId, this.currentContextId, this.currentAssetId);
 		}
 		if (this.#isMarketPage) {
-			this.unfavoriteMarketListing(this.currentListingId);
+			this.unfavoriteMarketListing(this.#currentListingId);
 		}
 	}
 

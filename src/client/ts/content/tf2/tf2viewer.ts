@@ -68,10 +68,11 @@ export class TF2Viewer {
 
 		for (let weaponName in DECORATED_WEAPONS) {
 			let weaponDefIndex = DECORATED_WEAPONS[weaponName];
-			let weaponOption = document.createElement('option');
-			weaponOption.innerHTML = weaponName;
-			weaponOption.value = String(weaponDefIndex);
-			this.#htmlWeaponSelector.appendChild(weaponOption);
+			createElement('option', {
+				parent: this.#htmlWeaponSelector,
+				innerText: weaponName,
+				value: String(weaponDefIndex),
+			});
 		}
 		sortSelect(this.#htmlWeaponSelector);
 
@@ -348,7 +349,6 @@ export class TF2Viewer {
 		}
 		this.#source1Model = await addSource1Model('tf2', modelPath, this.#group);
 		createModelPromiseResolve(true);
-
 
 		if (this.#source1Model) {
 			let seq = this.#source1Model.sourceModel.mdl.getSequenceById(0);
