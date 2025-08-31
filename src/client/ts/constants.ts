@@ -9,6 +9,15 @@ export const MOUSE_ENTER_DELAY = 200
 export const TF2_REPOSITORY = 'https://tf2content.loadout.tf/';
 export const CS2_REPOSITORY = 'https://cs2content.csloadout.com/';
 
+export const MARKET_LISTING_ROW_CLASSNAME = 'market_recent_listing_row';
+export const MARKET_LISTING_NAME_CLASSNAME = 'market_listing_item_name_block';
+export const MARKET_LISTING_IMG_CLASSNAME = 'market_listing_item_img_container';
+export const MARKET_BUTTON_CLASSNAME = 'market_listing_buy_button';
+export const MARKET_ACTION_BUTTONS_CLASSNAME = 'market_listing_action_buttons';
+
+export const MARKET_LISTING_BACKGROUND_COLOR = vec4.fromValues(0.086, 0.125, 0.176, 1.0);
+export const INVENTORY_BACKGROUND_COLOR = vec4.fromValues(0.11, 0.122, 0.129, 1.0);
+
 export const INVENTORY_ITEM_CLASSNAME = 'item';
 export const ACTIVE_INVENTORY_PAGE = 'active_inventory_page';
 
@@ -22,15 +31,6 @@ export const API_GET_UCG_IMAGE_ENDPOINT = 'https://loadout.tf/php/steam/getugcim
 
 export const API_INSPECT_TF2_WEAPON_ENDPOINT = 'https://inspecttf2.accurateskins.com/';
 export const API_INSPECT_CS2_WEAPON_ENDPOINT = 'https://inspectcsgo.accurateskins.com/';
-
-export const MARKET_LISTING_BACKGROUND_COLOR = vec4.fromValues(0.086, 0.125, 0.176, 1.0);
-export const INVENTORY_BACKGROUND_COLOR = vec4.fromValues(0.11, 0.122, 0.129, 1.0);
-
-export const MARKET_LISTING_ROW_CLASSNAME = 'market_recent_listing_row';
-export const MARKET_LISTING_NAME_CLASSNAME = 'market_listing_item_name_block';
-export const MARKET_LISTING_IMG_CLASSNAME = 'market_listing_item_img_container';
-export const MARKET_BUTTON_CLASSNAME = 'market_listing_buy_button';
-export const MARKET_ACTION_BUTTONS_CLASSNAME = 'market_listing_action_buttons';
 
 export const DECORATED_WEAPONS: Record<string, number> = {
 	'Paint kit Tool': 9536,
