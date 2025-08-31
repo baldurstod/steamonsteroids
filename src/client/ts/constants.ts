@@ -32,7 +32,7 @@ export const MARKET_LISTING_IMG_CLASSNAME = 'market_listing_item_img_container';
 export const MARKET_BUTTON_CLASSNAME = 'market_listing_buy_button';
 export const MARKET_ACTION_BUTTONS_CLASSNAME = 'market_listing_action_buttons';
 
-export const DECORATED_WEAPONS: { [key: string]: number } = {
+export const DECORATED_WEAPONS: Record<string, number> = {
 	'Paint kit Tool': 9536,
 	'Ubersaw': 37,
 	'Scotsman\'s Skullcutter': 172,
