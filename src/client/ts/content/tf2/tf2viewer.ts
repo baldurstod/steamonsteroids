@@ -1,4 +1,3 @@
-
 import { Camera, Group, PointLight, Repositories, RotationControl, Scene, Source1ModelInstance, Source1ParticleControler, WebRepository } from 'harmony-3d';
 import { TextureCombiner, WeaponManager } from 'harmony-3d-utils';
 import { pauseSVG, playSVG } from 'harmony-svg';
@@ -37,7 +36,8 @@ export class TF2Viewer {
 
 	constructor() {
 		Repositories.addRepository(new WebRepository('tf2', TF2_REPOSITORY));
-		//new WeaponManager().reuseTextures = true;
+
+		//WeaponManager.reuseTextures = true;
 		TextureCombiner.setTextureSize(2048);//TODO: set an option
 		this.#initEvents();
 	}
