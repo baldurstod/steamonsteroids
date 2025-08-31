@@ -1,0 +1,46 @@
+{
+	"name": "Steam on steroids",
+	"description": "3D View TF2 Warpaints in the steam community market",
+	"version": "0.0.1",
+	"manifest_version": 3,
+	"permissions": ["storage"],
+	"host_permissions": [
+		"*://*.loadout.tf/*", "*://*.accurateskins.com/*"
+	],
+	"background": {
+		"scripts": [
+			"background.js"
+		]
+	},
+	"action": {
+		"default_popup": "popups/popup.html",
+		"default_icon": {
+			"128": "/images/icon_128.png"
+		}
+	},
+	"icons": {
+		"128": "/images/icon_128.png"
+	},
+	"content_scripts": [
+		{
+			"matches": ["https://steamcommunity.com/market/listings/440/*", "https://steamcommunity.com/*/inventory*", "https://steamcommunity.com/market/", "https://steamcommunity.com/tradeoffer/*"],
+			"js": ["content.js"],
+			"css": ["css/content.css"]
+		}
+	],
+	"web_accessible_resources": [
+		{
+			"resources": ["injected.js", "images/*"],
+			"matches": ["https://steamcommunity.com/*"]
+		}
+	],
+	"options_ui": {
+		"page": "options/options.html",
+		"open_in_tab":false
+	},
+	"browser_specific_settings": {
+		"gecko": {
+		  "id": "{b944e68c-3bde-4d00-8e72-b8306a0934ce}"
+		}
+	}
+}
