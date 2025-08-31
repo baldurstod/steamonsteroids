@@ -50,7 +50,7 @@ window.addEventListener('message', event => {
 			break;
 		case 'activeInventorySetActivePage':
 			if (window.g_ActiveInventory) {
-				let page = Math.max(Math.min(messageData.page, window.g_ActiveInventory.pageTotal), 1);
+				let page = Math.max(Math.min(messageData.page, window.g_ActiveInventory.m_cPages), 1);
 				window.g_ActiveInventory.SetActivePage(page - 1)
 			}
 			break;

@@ -18,6 +18,11 @@ enum PageType {
 
 const CAMERA_DISTANCE = 200;
 
+const AJAX_PAGING_CONTROLS = new Map([
+	['tabContentsMyActiveMarketListings_controls', 'g_oMyListings'],
+	['tabContentsMyMarketHistory_controls', 'g_oMyHistory'],
+]);
+
 function isChromium() {
 	const brands = (navigator as any/*as of now, userAgentData does not exist in typescript*/)?.userAgentData?.brands;
 	if (brands) {
@@ -32,10 +37,15 @@ function isChromium() {
 
 export class Application {
 	#htmlTradeAreaContainer?: HTMLElement;
+	#htmlPageControls: HTMLElement | null = null;
+	#htmlPageControlCur: HTMLElement | null = null;
+	#htmlPageControlMax: HTMLElement | null = null;
+	#htmlPageControlGoto: HTMLInputElement | null = null;
 	#htmlState?: HTMLElement;
 	#htmlRowContainer: HTMLElement = createElement('div');
 	#htmlCanvasItemInfo?: HTMLElement;
 	#inventoryItem?: HTMLElement;
+	#ajaxPagingControls = new Set<string>();
 	#buttons = new Set<HTMLElement>();
 	#pageType: PageType = PageType.Unknown;
 	#tf2Viewer = new TF2Viewer();
@@ -63,6 +73,8 @@ export class Application {
 		this.#initPageType();
 		this.#initEvents();
 		this.#initObserver();
+		this.#initInventoryPageControls();
+		this.#initAjaxPagingControls();
 		this.#loadFavorites();
 	}
 
@@ -291,6 +303,71 @@ export class Application {
 		if (this.#htmlCanvasItemInfo) {
 			this.#htmlCanvasItemInfo.innerHTML = info;
 		}
+	}
+
+	#initInventoryPageControls() {
+		this.#htmlPageControls = document.getElementById('inventory_pagecontrols');
+		if (this.#htmlPageControls) {
+			this.#htmlPageControlCur = document.getElementById('pagecontrol_cur');
+			this.#htmlPageControlMax = document.getElementById('pagecontrol_max');
+			this.#htmlPageControlGoto = createElement('input', {
+				type: 'number', style: 'float: left;width:50px;text-align:center;', events: {
+					change: (event: InputEvent) => window.postMessage({ action: 'activeInventorySetActivePage', page: Number((event.target as HTMLInputElement).value) }, '*')
+				}
+			}) as HTMLInputElement;
+
+			this.#htmlPageControls.insertBefore(this.#htmlPageControlGoto, this.#htmlPageControls.firstChild);
+
+			const mutationCallback: MutationCallback = (mutationsList, observer) => {
+				for (const mutation of mutationsList) {
+					if (mutation.target == this.#htmlPageControlCur && this.#htmlPageControlGoto) {
+						this.#htmlPageControlGoto.value = this.#htmlPageControlCur.innerText;
+					}
+				}
+			};
+
+			let observer = new MutationObserver(mutationCallback);
+			if (this.#htmlPageControls) {
+				observer.observe(this.#htmlPageControls, { childList: true, characterData: true, subtree: true });
+			}
+		}
+	}
+
+	async #initAjaxPagingControls() {
+		const mutationCallback: MutationCallback = (mutationsList, observer) => {
+			for (const mutation of mutationsList) {
+				if (mutation.type === 'childList') {
+					this.#initAjaxPagingControls2();
+				}
+			}
+		};
+
+		let observer = new MutationObserver(mutationCallback);
+		observer.observe(document, { childList: true, subtree: true });
+
+		this.#initAjaxPagingControls2();
+	}
+
+	async #initAjaxPagingControls2() {
+		for (let [controlId, variable] of AJAX_PAGING_CONTROLS) {
+			if (!this.#ajaxPagingControls.has(controlId)) {
+				let control = document.getElementById(controlId);
+				if (control) {
+					this.#initAjaxPagingControls3(control, variable);
+					this.#ajaxPagingControls.add(controlId);
+				}
+			}
+		}
+	}
+
+	async #initAjaxPagingControls3(target: HTMLElement, name: string) {
+		let htmlAjaxPagingControlGoto = createElement('input', {
+			type: 'number', style: 'float: left;width:50px;text-align:center;', events: {
+				change: (event: InputEvent) => window.postMessage({ action: 'AjaxPagingControlsGoToPage', name: name, page: Number((event.target as HTMLInputElement).value) }, '*')
+			}
+		});
+
+		target.insertBefore(htmlAjaxPagingControlGoto, target.firstChild);
 	}
 
 	async favoriteListing() {
