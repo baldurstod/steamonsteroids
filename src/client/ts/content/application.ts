@@ -131,76 +131,6 @@ export class Application {
 		Controller.addEventListener(ControllerEvents.SetItemInfo, (event: Event) => this.#setItemInfo((event as CustomEvent).detail));
 	}
 
-	async #refreshTf2Listing() {
-		switch (this.#pageType) {
-			case PageType.Market:
-				await this.renderListing(this.#currentListingId, true);
-				break;
-			case PageType.Inventory:
-				await this.renderInventoryListing(this.#currentAppId, this.#currentContextId, this.#currentAssetId, undefined, true);
-				break;
-		}
-	}
-
-	#clearMarketListing() {
-		this.#setItemInfo('');
-	}
-
-	async renderListing(listingId: string, force = false) {
-		if (force || (this.#currentListingId != listingId)) {
-			this.#tf2Viewer.hide();
-			this.#cs2Viewer.hide();
-			this.#currentListingId = listingId;
-			let asset = await MarketAssets.getListingAssetData(listingId);
-			if (asset) {
-				this.setGenerationState(GenerationState.RetrievingItemDatas);
-				switch (asset.appid) {
-					case APP_ID_TF2:
-						chrome.runtime.sendMessage({ action: 'get-asset-class-info', appId: asset.appid, classId: asset.classid }, (classInfo) => {
-							this.#tf2Viewer.renderListingTF2(listingId, asset, classInfo);
-						});
-						break;
-					case APP_ID_CS2:
-						//this.cs2Viewer.renderListingCS2(listingId, asset);
-						break;
-				}
-			}
-		}
-	}
-
-	async renderInventoryListing(appId: number, contextId: number, assetId: number, htmlImg?: HTMLImageElement, force = false) {
-		//console.log(assetId);
-		if (force || (this.#currentAssetId != assetId)) {
-			this.#currentAppId = appId;
-			this.#currentContextId = contextId;
-			this.#currentAssetId = assetId;
-			let activeInventoryPage = document.getElementById(ACTIVE_INVENTORY_PAGE);
-			if (activeInventoryPage && this.#htmlRowContainer) {
-				activeInventoryPage.parentNode?.insertBefore(this.#htmlRowContainer, activeInventoryPage);
-			} else {
-				let tradeArea = document.getElementsByClassName('trade_area')[0];
-				if (tradeArea && this.#htmlRowContainer) {
-					tradeArea.parentNode?.insertBefore(this.#htmlRowContainer, tradeArea);
-				}
-			}
-			let asset = await getInventoryAssetDatas(appId, contextId, assetId);
-			if (asset) {
-				this.setGenerationState(GenerationState.RetrievingItemDatas);
-				let steamUserId = await getInventorySteamId();
-				switch (asset.appid) {
-					case APP_ID_TF2:
-						chrome.runtime.sendMessage({ action: 'get-asset-class-info', appId: asset.appid, classId: asset.classid }, (classInfo) => {
-							this.#tf2Viewer.renderListingTF2(steamUserId, asset, classInfo, assetId, htmlImg);
-						});
-						break;
-					case APP_ID_CS2:
-						this.#cs2Viewer.renderListingCS2(steamUserId, asset, assetId);
-						break;
-				}
-			}
-		}
-	}
-
 	async #loadFavorites() {
 		let marketStorage = await chrome.storage.sync.get('app.market.favoritelistings');
 		let marketFavoriteListings = marketStorage['app.market.favoritelistings'];
@@ -506,6 +436,75 @@ export class Application {
 		this.#htmlRowContainer.classList.remove('favorited-market-listing');
 	}
 
+	async #refreshTf2Listing() {
+		switch (this.#pageType) {
+			case PageType.Market:
+				await this.renderListing(this.#currentListingId, true);
+				break;
+			case PageType.Inventory:
+				await this.renderInventoryListing(this.#currentAppId, this.#currentContextId, this.#currentAssetId, undefined, true);
+				break;
+		}
+	}
+
+	#clearMarketListing() {
+		this.#setItemInfo('');
+	}
+
+	async renderListing(listingId: string, force = false) {
+		if (force || (this.#currentListingId != listingId)) {
+			this.#tf2Viewer.hide();
+			this.#cs2Viewer.hide();
+			this.#currentListingId = listingId;
+			let asset = await MarketAssets.getListingAssetData(listingId);
+			if (asset) {
+				this.setGenerationState(GenerationState.RetrievingItemDatas);
+				switch (asset.appid) {
+					case APP_ID_TF2:
+						chrome.runtime.sendMessage({ action: 'get-asset-class-info', appId: asset.appid, classId: asset.classid }, (classInfo) => {
+							this.#tf2Viewer.renderListingTF2(listingId, asset, classInfo);
+						});
+						break;
+					case APP_ID_CS2:
+						//this.cs2Viewer.renderListingCS2(listingId, asset);
+						break;
+				}
+			}
+		}
+	}
+
+	async renderInventoryListing(appId: number, contextId: number, assetId: number, htmlImg?: HTMLImageElement, force = false) {
+		//console.log(assetId);
+		if (force || (this.#currentAssetId != assetId)) {
+			this.#currentAppId = appId;
+			this.#currentContextId = contextId;
+			this.#currentAssetId = assetId;
+			let activeInventoryPage = document.getElementById(ACTIVE_INVENTORY_PAGE);
+			if (activeInventoryPage && this.#htmlRowContainer) {
+				activeInventoryPage.parentNode?.insertBefore(this.#htmlRowContainer, activeInventoryPage);
+			} else {
+				let tradeArea = document.getElementsByClassName('trade_area')[0];
+				if (tradeArea && this.#htmlRowContainer) {
+					tradeArea.parentNode?.insertBefore(this.#htmlRowContainer, tradeArea);
+				}
+			}
+			let asset = await getInventoryAssetDatas(appId, contextId, assetId);
+			if (asset) {
+				this.setGenerationState(GenerationState.RetrievingItemDatas);
+				let steamUserId = await getInventorySteamId();
+				switch (asset.appid) {
+					case APP_ID_TF2:
+						chrome.runtime.sendMessage({ action: 'get-asset-class-info', appId: asset.appid, classId: asset.classid }, (classInfo) => {
+							this.#tf2Viewer.renderListingTF2(steamUserId, asset, classInfo, assetId, htmlImg);
+						});
+						break;
+					case APP_ID_CS2:
+						this.#cs2Viewer.renderListingCS2(steamUserId, asset, assetId);
+						break;
+				}
+			}
+		}
+	}
 
 	isInventory() {
 		return this.#pageType == PageType.Inventory;
