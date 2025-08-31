@@ -1,0 +1,25 @@
+body{
+	margin: 0px;
+	padding: 10px;
+	overflow: hidden;
+}
+#messages{
+	font-size: 2em;
+}
+#messages.success{
+	color: #00CC00;
+}
+#messages.error{
+	color: #CC0000;
+}
+.button{
+	width: 100%;
+	text-align: center;
+	background-color: #265c66;
+	color: white;
+	padding: 4px;
+	margin: 4px;
+	box-sizing: border-box;
+	cursor: pointer;
+	font-size: 2em;
+}
