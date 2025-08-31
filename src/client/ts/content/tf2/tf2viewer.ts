@@ -106,16 +106,7 @@ export class TF2Viewer {
 	}
 
 	#refreshListing() {
-		//Controller.dispatchEvent(new Event(ControllerEvents.Tf2RefreshListing, )
 		Controller.dispatch(ControllerEvents.Tf2RefreshListing);
-		/*
-		if (this.application.isMarketPage) {
-			await this.application.renderListing(this.application.currentListingId, true);
-		}
-		if (this.application.isInventoryPage) {
-			await this.application.renderInventoryListing(this.application.currentAppId, this.application.currentContextId, this.application.currentAssetId, undefined, true);
-		}
-			*/
 	}
 
 	async renderListingTF2(listingOrSteamId: string, listingDatas: any/*TODO: improve type*/, classInfo: any/*TODO: improve type*/, assetId?: number, htmlImg?: HTMLImageElement) {
@@ -142,11 +133,9 @@ export class TF2Viewer {
 				if (modelPlayer) {
 					let inspectLink = getInspectLink(listingDatas, listingOrSteamId, assetId);
 					if (inspectLink) {
-						//this.application.setGenerationState(GENERATION_STATE_LOADING_MODEL);
 						Controller.dispatch(ControllerEvents.SetGenerationState, { detail: GenerationState.LoadingModel });
 						let source1Model = await this.#createTF2Model(modelPlayer);
 						if (source1Model) {
-							//show(this.application.htmlRowContainer);
 							Controller.dispatch(ControllerEvents.ShowRowContainer);
 							if (remappedDefIndex) {
 								chrome.runtime.sendMessage({ action: 'get-tf2-item', defIndex: defIndex }, async (remappedTf2Item) => {
@@ -169,7 +158,6 @@ export class TF2Viewer {
 	#refreshWarpaint(assetId: number | undefined, inspectLink: string, source1Model: Source1ModelInstance, defIndex: number, tf2Item: any/*TODO:improve type*/, htmlImg?: HTMLImageElement, remappedTf2Item?: any/*TODO:improve type*/) {
 		let paintKitId = tf2Item.paintkit_proto_def_index;
 
-		//this.application.setGenerationState(GENERATION_STATE_RETRIEVING_ITEM_DATAS);
 		Controller.dispatch(ControllerEvents.SetGenerationState, { detail: GenerationState.RetrievingItemDatas });
 		chrome.runtime.sendMessage({ action: 'inspect-item', link: inspectLink }, async (item) => {
 
@@ -181,15 +169,12 @@ export class TF2Viewer {
 
 			this.#populateTF2MarketListing(paintKitId, paintKitSeed, craftIndex);
 			if (paintKitId && paintKitWear && paintKitSeed) {
-				//console.log(paintKitId, paintKitWear, paintKitSeed);
 				paintKitWear = (paintKitWear - 0.2) * 5 >> 0; // transform the wear from decimal point to integer
 				WeaponManager.refreshItem({ sourceModel: source1Model, paintKitId: Number(paintKitId), paintKitWear: paintKitWear, id: String(defIndex), paintKitSeed: paintKitSeed }, true);
-				if (htmlImg) {
-					//this.application.setSelectedInventoryItem(assetId, htmlImg);
+				if (htmlImg && assetId) {
 					Controller.dispatch(ControllerEvents.SelectInventoryItem, { detail: { assetId: assetId, htmlImg: htmlImg } });
 				}
 			} else {
-				//this.application.setGenerationState(GENERATION_STATE_SUCCESS);
 				Controller.dispatch(ControllerEvents.SetGenerationState, { detail: GenerationState.Sucess });
 			}
 
@@ -297,7 +282,6 @@ export class TF2Viewer {
 	async #centerCameraOnItem() {
 		await setTimeoutPromise(1000);
 		if (!this.#hasActiveClass() && this.#source1Model) {
-			//this.application.centerCameraTarget(this.#source1Model);
 			Controller.dispatch(ControllerEvents.CenterCameraTarget, { detail: this.#source1Model });
 		}
 	}
@@ -329,7 +313,6 @@ export class TF2Viewer {
 				selectCharacterAnim(className, classModel, tf2Item);
 				classModel.addChild(this.#source1Model);
 
-				//this.application.setCameraTarget(TF2_PLAYER_CAMERA_TARGET, TF2_PLAYER_CAMERA_POSITION);
 				Controller.dispatch(ControllerEvents.SetCameraTarget, {
 					detail: {
 						target: TF2_PLAYER_CAMERA_TARGET,
@@ -378,9 +361,6 @@ export class TF2Viewer {
 	}
 
 	#populateTF2MarketListing(paintKitId: number, seed: bigint, craftIndex: number) {
-		//let div = this.application.htmlCanvasItemInfo;//this.getMarketListingNameDiv(listingId);
-		//if (div) {
-		//div.innerHTML = '';
 		let s: string = '';
 		if (paintKitId && seed) {
 			s = `<div>Seed: ${seed}</div>`;
@@ -388,7 +368,6 @@ export class TF2Viewer {
 		if (craftIndex) {
 			s += `<div>Craft #${craftIndex}</div>`;
 		}
-		//}
 
 		Controller.dispatch(ControllerEvents.SetItemInfo, { detail: s });
 	}
