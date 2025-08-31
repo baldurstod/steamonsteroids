@@ -277,7 +277,6 @@ export class Application {
 			}
 		}
 
-		this.#htmlRowContainer = document.createElement('div');
 		let htmlFilter = document.createElement('div');
 		htmlFilter.className = 'filter_tag_button_ctn';
 		htmlFilter.innerHTML = '<div class="btn_black btn_details btn_small"><span>Tradable warpaints only</span></div>';
@@ -431,7 +430,7 @@ export class Application {
 
 	#createInventoryListener(inventoryItem: HTMLElement) {
 		this.#isInventoryPage = true;
-		new Graphics().clearColor(INVENTORY_BACKGROUND_COLOR);
+		(this.#scene.background as ColorBackground).setColor(INVENTORY_BACKGROUND_COLOR);
 		this.#htmlRowContainer.className = 'as-inventory';
 		if (this.#buttons.has(inventoryItem)) {
 			return;
