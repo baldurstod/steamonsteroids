@@ -7,7 +7,7 @@ import { createElement, hide, show } from 'harmony-ui';
 import { setTimeoutPromise } from 'harmony-utils';
 import { APP_ID_TF2, DECORATED_WEAPONS, TF2_REPOSITORY, TF2_WARPAINT_DEFINITIONS_URL } from '../../constants';
 import { GenerationState } from '../../enums';
-import { Controller, controllerDispatchEvent, ControllerEvents } from '../controller';
+import { Controller, ControllerEvents } from '../controller';
 import { getInspectLink } from '../utils/inspectlink';
 import { sortSelect } from '../utils/sort';
 import { addSource1Model } from '../utils/sourcemodels';
@@ -107,7 +107,7 @@ export class TF2Viewer {
 
 	#refreshListing() {
 		//Controller.dispatchEvent(new Event(ControllerEvents.Tf2RefreshListing, )
-		controllerDispatchEvent(ControllerEvents.Tf2RefreshListing);
+		Controller.dispatch(ControllerEvents.Tf2RefreshListing);
 		/*
 		if (this.application.isMarketPage) {
 			await this.application.renderListing(this.application.currentListingId, true);
@@ -126,7 +126,7 @@ export class TF2Viewer {
 		} else {
 			hide(this.#htmlWeaponSelector);
 		}
-		controllerDispatchEvent(ControllerEvents.ClearMarketListing);
+		Controller.dispatch(ControllerEvents.ClearMarketListing);
 		let defIndex = classInfo?.app_data?.def_index;
 		let remappedDefIndex: number | undefined;
 		if (defIndex) {
@@ -143,11 +143,11 @@ export class TF2Viewer {
 					let inspectLink = getInspectLink(listingDatas, listingOrSteamId, assetId);
 					if (inspectLink) {
 						//this.application.setGenerationState(GENERATION_STATE_LOADING_MODEL);
-						controllerDispatchEvent(ControllerEvents.SetGenerationState, { detail: GenerationState.LoadingModel });
+						Controller.dispatch(ControllerEvents.SetGenerationState, { detail: GenerationState.LoadingModel });
 						let source1Model = await this.#createTF2Model(modelPlayer);
 						if (source1Model) {
 							//show(this.application.htmlRowContainer);
-							controllerDispatchEvent(ControllerEvents.ShowRowContainer);
+							Controller.dispatch(ControllerEvents.ShowRowContainer);
 							if (remappedDefIndex) {
 								chrome.runtime.sendMessage({ action: 'get-tf2-item', defIndex: defIndex }, async (remappedTf2Item) => {
 									this.#refreshWarpaint(assetId, inspectLink, source1Model, remappedDefIndex!, remappedTf2Item, htmlImg, tf2Item);
@@ -157,10 +157,10 @@ export class TF2Viewer {
 							}
 						}
 					} else {
-						controllerDispatchEvent(ControllerEvents.HideRowContainer);
+						Controller.dispatch(ControllerEvents.HideRowContainer);
 					}
 				} else {
-					controllerDispatchEvent(ControllerEvents.HideRowContainer);
+					Controller.dispatch(ControllerEvents.HideRowContainer);
 				}
 			});
 		}
@@ -170,7 +170,7 @@ export class TF2Viewer {
 		let paintKitId = tf2Item.paintkit_proto_def_index;
 
 		//this.application.setGenerationState(GENERATION_STATE_RETRIEVING_ITEM_DATAS);
-		controllerDispatchEvent(ControllerEvents.SetGenerationState, { detail: GenerationState.RetrievingItemDatas });
+		Controller.dispatch(ControllerEvents.SetGenerationState, { detail: GenerationState.RetrievingItemDatas });
 		chrome.runtime.sendMessage({ action: 'inspect-item', link: inspectLink }, async (item) => {
 
 			paintKitId = paintKitId ?? item?.econitem?.paint_index;
@@ -186,11 +186,11 @@ export class TF2Viewer {
 				WeaponManager.refreshItem({ sourceModel: source1Model, paintKitId: Number(paintKitId), paintKitWear: paintKitWear, id: String(defIndex), paintKitSeed: paintKitSeed }, true);
 				if (htmlImg) {
 					//this.application.setSelectedInventoryItem(assetId, htmlImg);
-					controllerDispatchEvent(ControllerEvents.SelectInventoryItem, { detail: { assetId: assetId, htmlImg: htmlImg } });
+					Controller.dispatch(ControllerEvents.SelectInventoryItem, { detail: { assetId: assetId, htmlImg: htmlImg } });
 				}
 			} else {
 				//this.application.setGenerationState(GENERATION_STATE_SUCCESS);
-				controllerDispatchEvent(ControllerEvents.SetGenerationState, { detail: GenerationState.Sucess });
+				Controller.dispatch(ControllerEvents.SetGenerationState, { detail: GenerationState.Sucess });
 			}
 
 			let itemStyleOverride = item?.econitem?.item_style_override;
@@ -298,7 +298,7 @@ export class TF2Viewer {
 		await setTimeoutPromise(1000);
 		if (!this.#hasActiveClass() && this.#source1Model) {
 			//this.application.centerCameraTarget(this.#source1Model);
-			controllerDispatchEvent(ControllerEvents.CenterCameraTarget, { detail: this.#source1Model });
+			Controller.dispatch(ControllerEvents.CenterCameraTarget, { detail: this.#source1Model });
 		}
 	}
 
@@ -330,7 +330,7 @@ export class TF2Viewer {
 				classModel.addChild(this.#source1Model);
 
 				//this.application.setCameraTarget(TF2_PLAYER_CAMERA_TARGET, TF2_PLAYER_CAMERA_POSITION);
-				controllerDispatchEvent(ControllerEvents.SetCameraTarget, {
+				Controller.dispatch(ControllerEvents.SetCameraTarget, {
 					detail: {
 						target: TF2_PLAYER_CAMERA_TARGET,
 						position: TF2_PLAYER_CAMERA_POSITION,
@@ -390,7 +390,7 @@ export class TF2Viewer {
 		}
 		//}
 
-		controllerDispatchEvent(ControllerEvents.SetItemInfo, { detail: s });
+		Controller.dispatch(ControllerEvents.SetItemInfo, { detail: s });
 	}
 
 	async #getClassModel(className: string) {

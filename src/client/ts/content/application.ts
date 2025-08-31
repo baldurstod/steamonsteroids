@@ -4,7 +4,7 @@ import { getCharCodes } from 'harmony-binary-reader';
 import { createElement, hide, show } from 'harmony-ui';
 import { ACTIVE_INVENTORY_PAGE, APP_ID_CS2, APP_ID_TF2, INVENTORY_BACKGROUND_COLOR, INVENTORY_ITEM_CLASSNAME, MARKET_LISTING_BACKGROUND_COLOR, MARKET_LISTING_ROW_CLASSNAME, MOUSE_ENTER_DELAY } from '../constants';
 import { GenerationState } from '../enums';
-import { controlleraddEventListener, ControllerEvents } from './controller';
+import { Controller, ControllerEvents } from './controller';
 import { CS2Viewer } from './cs2/cs2viewer';
 import { getInventoryAssetDatas, getInventorySteamId, MarketAssets } from './marketassets';
 import { TF2Viewer } from './tf2/tf2viewer';
@@ -119,20 +119,20 @@ export class Application {
 	}
 
 	#initEvents() {
-		controlleraddEventListener(ControllerEvents.Tf2RefreshListing, () => this.#refreshTf2Listing());
-		controlleraddEventListener(ControllerEvents.ClearMarketListing, () => this.#clearMarketListing());
-		controlleraddEventListener(ControllerEvents.SetGenerationState, (event: Event) => this.setGenerationState((event as CustomEvent).detail));
-		controlleraddEventListener(ControllerEvents.ShowRowContainer, () => show(this.#htmlRowContainer));
-		controlleraddEventListener(ControllerEvents.SelectInventoryItem, (event: Event) => {
+		Controller.addEventListener(ControllerEvents.Tf2RefreshListing, () => this.#refreshTf2Listing());
+		Controller.addEventListener(ControllerEvents.ClearMarketListing, () => this.#clearMarketListing());
+		Controller.addEventListener(ControllerEvents.SetGenerationState, (event: Event) => this.setGenerationState((event as CustomEvent).detail));
+		Controller.addEventListener(ControllerEvents.ShowRowContainer, () => show(this.#htmlRowContainer));
+		Controller.addEventListener(ControllerEvents.SelectInventoryItem, (event: Event) => {
 			const detail = (event as CustomEvent).detail;
 			this.#setSelectedInventoryItem(detail.assetId, detail.htmlImg);
 		});
-		controlleraddEventListener(ControllerEvents.CenterCameraTarget, (event: Event) => this.#centerCameraTarget((event as CustomEvent).detail));
-		controlleraddEventListener(ControllerEvents.SetCameraTarget, (event: Event) => {
+		Controller.addEventListener(ControllerEvents.CenterCameraTarget, (event: Event) => this.#centerCameraTarget((event as CustomEvent).detail));
+		Controller.addEventListener(ControllerEvents.SetCameraTarget, (event: Event) => {
 			const detail = (event as CustomEvent).detail;
 			this.#setCameraTarget(detail.target, detail.position);
 		});
-		controlleraddEventListener(ControllerEvents.SetItemInfo, (event: Event) => this.#setItemInfo((event as CustomEvent).detail));
+		Controller.addEventListener(ControllerEvents.SetItemInfo, (event: Event) => this.#setItemInfo((event as CustomEvent).detail));
 	}
 
 	async #refreshTf2Listing() {

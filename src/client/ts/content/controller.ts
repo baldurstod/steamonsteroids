@@ -10,12 +10,22 @@ export enum ControllerEvents {
 	SetItemInfo = 'setiteminfo',
 }
 
-export const Controller = new EventTarget();
+export class Controller {
+	static readonly eventTarget = new EventTarget();
 
-export function controllerDispatchEvent(type: ControllerEvents, options?: CustomEventInit) {
-	Controller.dispatchEvent(new CustomEvent(type, options));
-}
+	static addEventListener(type: ControllerEvents, callback: EventListenerOrEventListenerObject | null, options?: AddEventListenerOptions | boolean): void {
+		this.eventTarget.addEventListener(type, callback, options);
+	}
 
-export function controlleraddEventListener(type: ControllerEvents, callback: EventListenerOrEventListenerObject, options?: AddEventListenerOptions): void {
-	Controller.addEventListener(type, callback, options);
+	static dispatch(type: ControllerEvents, options?: CustomEventInit): boolean {
+		return this.eventTarget.dispatchEvent(new CustomEvent(type, options));
+	}
+
+	static dispatchEvent(event: Event): boolean {
+		return this.eventTarget.dispatchEvent(event);
+	}
+
+	static removeEventListener(type: ControllerEvents, callback: EventListenerOrEventListenerObject | null, options?: EventListenerOptions | boolean): void {
+		this.eventTarget.removeEventListener(type, callback, options);
+	}
 }
