@@ -1,5 +1,5 @@
 import { vec3 } from 'gl-matrix';
-import { Camera, Group, PointLight, Repositories, RotationControl, Scene, Source1ModelInstance, Source1ParticleControler, WebRepository } from 'harmony-3d';
+import { Group, PointLight, Repositories, RotationControl, Scene, Source1ModelInstance, Source1ParticleControler, WebRepository } from 'harmony-3d';
 import { TextureCombiner, WeaponManager } from 'harmony-3d-utils';
 import { blockSVG, pauseSVG, playSVG } from 'harmony-svg';
 import { PaintKitDefinitions, Tf2Team } from 'harmony-tf2-utils';
@@ -321,22 +321,29 @@ export class TF2Viewer {
 			if (classModel) {
 				selectCharacterAnim(className, classModel, tf2Item);
 				classModel.addChild(this.#source1Model);
-
-				Controller.dispatch(ControllerEvents.SetCameraTarget, {
-					detail: {
-						target: TF2_PLAYER_CAMERA_TARGET,
-						position: TF2_PLAYER_CAMERA_POSITION,
-					}
-				});
+				this.#setCharacterCamera();
 			} else {
-				Controller.dispatch(ControllerEvents.SetCameraTarget, {
-					detail: {
-						target: vec3.create(),
-						position: vec3.create(),
-					}
-				});
+				this.#setItemCamera();
 			}
 			resolve(true);
+		});
+	}
+
+	#setCharacterCamera() {
+		Controller.dispatch(ControllerEvents.SetCameraTarget, {
+			detail: {
+				target: TF2_PLAYER_CAMERA_TARGET,
+				position: TF2_PLAYER_CAMERA_POSITION,
+			}
+		});
+	}
+
+	#setItemCamera() {
+		Controller.dispatch(ControllerEvents.SetCameraTarget, {
+			detail: {
+				target: vec3.create(),
+				position: vec3.create(),
+			}
 		});
 	}
 
@@ -405,8 +412,11 @@ export class TF2Viewer {
 	}
 
 	#setActiveClass(activeClassName: string | null) {
+		if (activeClassName == null) {
+			this.#setItemCamera();
+		}
 		for (let [className, classModel] of this.#classModels) {
-			classModel.visible = (className == activeClassName);
+			classModel.setVisible(className == activeClassName);
 		}
 	}
 
