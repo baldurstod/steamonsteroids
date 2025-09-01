@@ -3,11 +3,16 @@ import { Source1ModelInstance, Source1TextureManager, TextureManager } from 'har
 import { Tf2Team } from 'harmony-tf2-utils';
 import { API_GET_UCG_IMAGE_ENDPOINT } from '../../constants';
 
-export function getTF2ModelName(item: any/*TODO: improve type*/, className: string) {
+export function getTF2ModelName(item: any/*TODO: improve type*/, className: string): { model: string, attachedModels: string[] | null } | null {
 	if (item) {
+		let attachedModels: string[] | null = null;
+		if (item.attached_models) {
+			attachedModels = [item.attached_models];
+		}
+
 		if (item.model_player_per_class) {
 			if (item.model_player_per_class[className]) {
-				return item.model_player_per_class[className];
+				return { model: item.model_player_per_class[className], attachedModels: attachedModels };
 			}
 
 			let basename = item.model_player_per_class['basename'];
@@ -20,7 +25,7 @@ export function getTF2ModelName(item: any/*TODO: improve type*/, className: stri
 			if (basename) {
 				if (item.used_by_classes) {
 					if (item.used_by_classes[originalClassName] == 1) {
-						return basename.replace(/%s/g, className);
+						return { model: basename.replace(/%s/g, className), attachedModels: attachedModels };
 					} else {
 						let arr = Object.keys(item.used_by_classes);
 						if (arr.length > 0) {
@@ -29,7 +34,7 @@ export function getTF2ModelName(item: any/*TODO: improve type*/, className: stri
 							if (replacementClassName == 'demoman') {
 								replacementClassName = 'demo';
 							}
-							return basename.replace(/%s/g, replacementClassName);
+							return { model: basename.replace(/%s/g, replacementClassName), attachedModels: attachedModels };
 						}
 					}
 				}
@@ -38,17 +43,17 @@ export function getTF2ModelName(item: any/*TODO: improve type*/, className: stri
 		}
 
 		if (item.model_player) {
-			return item.model_player;
+			return { model: item.model_player, attachedModels: attachedModels };
 		}
 
 		if (item.model_player_per_class) {
 			let arr = Object.keys(item.model_player_per_class);
 			if (arr.length > 0) {
-				return item.model_player_per_class[arr[0]];
+				return { model: item.model_player_per_class[arr[0]], attachedModels: attachedModels };
 			}
 		}
 	}
-	return '';
+	return null;
 }
 
 export function setTF2ModelAttributes(model: Source1ModelInstance, item: any/*TODO: improve type*/, teamColor: Tf2Team = Tf2Team.RED) {

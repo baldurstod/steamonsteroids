@@ -130,12 +130,12 @@ export class TF2Viewer {
 			}
 
 			chrome.runtime.sendMessage({ action: 'get-tf2-item', defIndex: remappedDefIndex ?? defIndex }, async (tf2Item) => {
-				let modelPlayer = getTF2ModelName(tf2Item, this.#currentClassName);
+				const modelPlayer = getTF2ModelName(tf2Item, this.#currentClassName);
 				if (modelPlayer) {
 					let inspectLink = getInspectLink(listingDatas, listingOrSteamId, assetId);
 					if (inspectLink) {
 						Controller.dispatch(ControllerEvents.SetGenerationState, { detail: GenerationState.LoadingModel });
-						let source1Model = await this.#createTF2Model(modelPlayer);
+						let source1Model = await this.#createTF2Model(modelPlayer.model);
 						if (source1Model) {
 							Controller.dispatch(ControllerEvents.ShowRowContainer);
 							if (remappedDefIndex) {
@@ -144,6 +144,12 @@ export class TF2Viewer {
 								});
 							} else {
 								this.#refreshWarpaint(assetId, inspectLink, source1Model, defIndex, tf2Item, htmlImg);
+							}
+
+							if (modelPlayer.attachedModels) {
+								for (const attachedModelPath of modelPlayer.attachedModels) {
+									await addSource1Model('tf2', attachedModelPath, source1Model);
+								}
 							}
 						}
 					} else {
