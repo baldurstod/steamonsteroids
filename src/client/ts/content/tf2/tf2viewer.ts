@@ -22,8 +22,9 @@ export class TF2Viewer {
 	#htmlWeaponSelector?: HTMLSelectElement;
 	#htmlClassIcons?: HTMLElement;
 	#scene = new Scene();
-	#pointLight1: PointLight = new PointLight({ range: 500, parent: this.#scene, intensity: 0.5, position: [100, 100, 100] });
-	#pointLight2: PointLight = new PointLight({ range: 500, parent: this.#scene, intensity: 0.5, position: [100, -100, 100] });
+	#lightsGroup = new Group();
+	#pointLight1: PointLight = new PointLight({ range: 500, parent: this.#lightsGroup, intensity: 0.5, position: [100, 100, 100] });
+	#pointLight2: PointLight = new PointLight({ range: 500, parent: this.#lightsGroup, intensity: 0.5, position: [100, -100, 100] });
 	#rotationControl = new RotationControl({ parent: this.#scene });
 	#group = new Group({ parent: this.#rotationControl });
 	#classModels = new Map<string, Source1ModelInstance>();
@@ -47,11 +48,6 @@ export class TF2Viewer {
 		WeaponManager.addEventListener('started', () => Controller.dispatchEvent(new CustomEvent('setgenerationstate', { detail: GenerationState.Started })));
 		WeaponManager.addEventListener('success', () => Controller.dispatchEvent(new CustomEvent('setgenerationstate', { detail: GenerationState.Sucess })));
 		WeaponManager.addEventListener('failure', () => Controller.dispatchEvent(new CustomEvent('setgenerationstate', { detail: GenerationState.Failure })));
-	}
-
-	setCamera(camera: Camera) {
-		camera.addChild(this.#pointLight1);
-		camera.addChild(this.#pointLight2);
 	}
 
 	initHtml() {
@@ -460,5 +456,9 @@ export class TF2Viewer {
 
 	getScene(): Scene {
 		return this.#scene;
+	}
+
+	getCameraGroup(): Group {
+		return this.#lightsGroup;
 	}
 }

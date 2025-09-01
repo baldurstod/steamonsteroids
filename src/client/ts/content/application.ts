@@ -103,6 +103,8 @@ export class Application {
 		this.#scene.addChild(this.#tf2Viewer.getScene());
 		//this.#scene.addChild(this.cs2Viewer.getScene());
 
+		this.#camera.addChild(this.#tf2Viewer.getCameraGroup());
+
 		ContextObserver.observe(GraphicsEvents, this.#camera);
 	}
 
