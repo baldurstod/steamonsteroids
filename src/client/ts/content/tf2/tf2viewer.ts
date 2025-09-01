@@ -267,7 +267,7 @@ export class TF2Viewer {
 		let removeCurrentClassModel = true;
 		if (usedByClasses) {
 			for (let className in usedByClasses) {
-				if (usedByClasses[className] == 1) {
+				if (usedByClasses[className] != "0") {
 					this.#addClassIcon(className, tf2Item);
 
 					if (className == this.#currentClassName) {
