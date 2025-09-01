@@ -1,6 +1,6 @@
 import { Camera, Group, PointLight, Repositories, RotationControl, Scene, Source1ModelInstance, Source1ParticleControler, WebRepository } from 'harmony-3d';
 import { TextureCombiner, WeaponManager } from 'harmony-3d-utils';
-import { pauseSVG, playSVG } from 'harmony-svg';
+import { blockSVG, pauseSVG, playSVG } from 'harmony-svg';
 import { PaintKitDefinitions, Tf2Team } from 'harmony-tf2-utils';
 import { createElement, hide, show } from 'harmony-ui';
 import { setTimeoutPromise } from 'harmony-utils';
@@ -277,6 +277,7 @@ export class TF2Viewer {
 		if (removeCurrentClassModel) {
 			this.#setActiveClass(null);
 		}
+		this.#addClassIcon('', tf2Item);
 		//this.#centerCameraOnItem();
 	}
 
@@ -291,7 +292,11 @@ export class TF2Viewer {
 		let htmlClassIcon = document.createElement('div');
 		htmlClassIcon.className = 'canvas-container-controls-class-icon';
 		let imageUrl = chrome.runtime.getURL(`images/class_icon/${className}.svg`);
-		htmlClassIcon.style.backgroundImage = `url(${imageUrl})`;
+		if (className == '') {
+			htmlClassIcon.innerHTML = blockSVG;
+		} else {
+			htmlClassIcon.style.backgroundImage = `url(${imageUrl})`;
+		}
 
 		this.#htmlClassIcons?.append(htmlClassIcon);
 
