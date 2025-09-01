@@ -1,13 +1,17 @@
-.PHONY: build clean
+.PHONY: build
 
 build:
 	rollup -c
 
 firefox:
 	rollup -c --environment BROWSER:firefox
+	$(call make_zip)
 
 prod:
-	cd ./build && zip -r "../dist/prod_$(shell jq '.version' build/manifest.json)_$(shell date '+%Y_%m_%d').zip" .
+	rollup -c
+	$(call make_zip)
 
-clean:
-	go clean
+define make_zip
+	mkdir dist
+	cd ./build && zip -r "../dist/steamonsteroids_$(shell jq '.version' build/client/manifest.json)_$(shell date '+%Y_%m_%d').zip" .
+endef
