@@ -11,6 +11,7 @@ import { Controller, ControllerEvents } from '../controller';
 import { getInspectLink } from '../utils/inspectlink';
 import { sortSelect } from '../utils/sort';
 import { addSource1Model } from '../utils/sourcemodels';
+import { PAINT_KIT_TOOL_INDEX } from './constants';
 import { getSheenTint } from './killstreak';
 import { getTF2ModelName, selectCharacterAnim, setTF2ModelAttributes } from './tf2';
 import { TF2_CLASSES_REMOVABLE_PARTS, TF2_MERCENARIES, TF2_PLAYER_CAMERA_POSITION, TF2_PLAYER_CAMERA_TARGET } from './tf2constants';
@@ -123,7 +124,7 @@ export class TF2Viewer {
 
 			// If it's a paintkit, give it the defindex of the base paintkit tool
 			if (defIndex >= 16000 && defIndex < 18000) {
-				remappedDefIndex = this.#forcedWeaponIndex ?? 9536;
+				remappedDefIndex = this.#forcedWeaponIndex ?? PAINT_KIT_TOOL_INDEX;
 			}
 
 			chrome.runtime.sendMessage({ action: 'get-tf2-item', defIndex: remappedDefIndex ?? defIndex }, async (tf2Item) => {
@@ -265,7 +266,7 @@ export class TF2Viewer {
 	#displayClassIcons(tf2Item: any/*TODO:improve type*/) {
 		let usedByClasses = tf2Item?.used_by_classes;
 		let removeCurrentClassModel = true;
-		if (usedByClasses) {
+		if (usedByClasses && this.#forcedWeaponIndex != PAINT_KIT_TOOL_INDEX) {
 			for (let className in usedByClasses) {
 				if (usedByClasses[className] != "0") {
 					this.#addClassIcon(className, tf2Item);
@@ -276,11 +277,11 @@ export class TF2Viewer {
 					}
 				}
 			}
+			this.#addClassIcon('', tf2Item);
 		}
 		if (removeCurrentClassModel) {
 			this.#setActiveClass(null);
 		}
-		this.#addClassIcon('', tf2Item);
 		//this.#centerCameraOnItem();
 	}
 
