@@ -1,3 +1,4 @@
+import { vec3 } from 'gl-matrix';
 import { Camera, Group, PointLight, Repositories, RotationControl, Scene, Source1ModelInstance, Source1ParticleControler, WebRepository } from 'harmony-3d';
 import { TextureCombiner, WeaponManager } from 'harmony-3d-utils';
 import { blockSVG, pauseSVG, playSVG } from 'harmony-svg';
@@ -329,6 +330,13 @@ export class TF2Viewer {
 					detail: {
 						target: TF2_PLAYER_CAMERA_TARGET,
 						position: TF2_PLAYER_CAMERA_POSITION,
+					}
+				});
+			} else {
+				Controller.dispatch(ControllerEvents.SetCameraTarget, {
+					detail: {
+						target: vec3.create(),
+						position: vec3.create(),
 					}
 				});
 			}
