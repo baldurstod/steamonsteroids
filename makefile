@@ -4,11 +4,11 @@ build:
 	rollup -c
 
 firefox:
-	rollup -c --environment BROWSER:firefox
+	$(shell rollup -c --environment BROWSER:firefox)
 	$(call make_zip,firefox)
 
 chromium:
-	rollup -c
+	$(shell rollup -c)
 	$(call make_zip,chromium)
 
 define make_zip
