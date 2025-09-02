@@ -1,6 +1,6 @@
 {
   "name": "steamonsteroids",
-  "version": "1.2.7",
+  "version": "1.2.8",
   "type": "module",
   "dependencies": {
     "gl-matrix": "^3.4.3",

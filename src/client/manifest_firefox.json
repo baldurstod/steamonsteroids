@@ -1,7 +1,7 @@
 {
 	"name": "Steam on steroids",
 	"description": "3D View TF2 Warpaints in the steam community market",
-	"version": "1.2.7",
+	"version": "1.2.8",
 	"manifest_version": 3,
 	"permissions": ["storage"],
 	"host_permissions": [
