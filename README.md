@@ -3,10 +3,9 @@
 ## Build
 
 Chromium based browsers
-```test
-
+```
 npm ci
-make prod
+make chromium
 ```
 
 Firefox
