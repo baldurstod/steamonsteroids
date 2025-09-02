@@ -13,5 +13,5 @@ chromium:
 
 define make_zip
 	mkdir -p dist
-	cd ./build && zip -r "../dist/steamonsteroids_$(1)_$(shell jq '.version' build/client/manifest.json)_$(shell date '+%Y_%m_%d').zip" .
+	cd ./build/client && zip -r "../../dist/steamonsteroids_$(1)_$(shell jq '.version' build/client/manifest.json)_$(shell date '+%Y_%m_%d').zip" .
 endef
