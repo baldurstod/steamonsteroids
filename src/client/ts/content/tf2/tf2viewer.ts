@@ -26,8 +26,8 @@ export class TF2Viewer {
 	#lightsGroup = new Group();
 	#pointLight1: PointLight = new PointLight({ range: 500, parent: this.#lightsGroup, intensity: 0.5, position: [100, 100, 100] });
 	#pointLight2: PointLight = new PointLight({ range: 500, parent: this.#lightsGroup, intensity: 0.5, position: [100, -100, 100] });
-	#rotationControl = new RotationControl({ parent: this.#scene });
-	#group = new Group({ parent: this.#rotationControl });
+	#group = new Group({ parent: this.#scene });
+	#rotationControl = new RotationControl({ parent: this.#group });
 	#classModels = new Map<string, Source1ModelInstance>();
 	#teamColor: Tf2Team = Tf2Team.RED;
 	#currentClassName = '';
@@ -88,10 +88,10 @@ export class TF2Viewer {
 				click: () => {
 					buttonState = !buttonState;
 					if (buttonState) {
-						this.#rotationControl.rotationSpeed = 1;
+						this.#rotationControl.setSpeed(1);
 						htmlPlayPauseButton.innerHTML = pauseSVG;
 					} else {
-						this.#rotationControl.rotationSpeed = 0;
+						this.#rotationControl.setSpeed(0);
 						htmlPlayPauseButton.innerHTML = playSVG;
 					}
 				}
