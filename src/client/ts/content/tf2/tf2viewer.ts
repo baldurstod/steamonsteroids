@@ -27,7 +27,7 @@ export class TF2Viewer {
 	#pointLight1: PointLight = new PointLight({ range: 500, parent: this.#lightsGroup, intensity: 0.5, position: [100, 100, 100] });
 	#pointLight2: PointLight = new PointLight({ range: 500, parent: this.#lightsGroup, intensity: 0.5, position: [100, -100, 100] });
 	#group = new Group({ parent: this.#scene });
-	#rotationControl = new RotationControl({ parent: this.#group });
+	#rotationControl = new RotationControl({ parent: this.#group, speed: 0 });
 	#classModels = new Map<string, Source1ModelInstance>();
 	#teamColor: Tf2Team = Tf2Team.RED;
 	#currentClassName = '';
@@ -43,12 +43,19 @@ export class TF2Viewer {
 		//WeaponManager.reuseTextures = true;
 		TextureCombiner.setTextureSize(2048);//TODO: set an option
 		this.#initEvents();
+		this.#initOptions();
 	}
 
 	#initEvents() {
 		WeaponManager.addEventListener('started', () => Controller.dispatchEvent(new CustomEvent('setgenerationstate', { detail: GenerationState.Started })));
 		WeaponManager.addEventListener('success', () => Controller.dispatchEvent(new CustomEvent('setgenerationstate', { detail: GenerationState.Sucess })));
 		WeaponManager.addEventListener('failure', () => Controller.dispatchEvent(new CustomEvent('setgenerationstate', { detail: GenerationState.Failure })));
+	}
+
+	async #initOptions() {
+		const result = await chrome.storage.sync.get('tf2.rotation');
+		const rotation = result['tf2.rotation'];
+		this.#rotationControl.setSpeed(rotation ?? 1);
 	}
 
 	initHtml() {
@@ -88,12 +95,13 @@ export class TF2Viewer {
 				click: () => {
 					buttonState = !buttonState;
 					if (buttonState) {
-						this.#rotationControl.setSpeed(1);
 						htmlPlayPauseButton.innerHTML = pauseSVG;
 					} else {
-						this.#rotationControl.setSpeed(0);
 						htmlPlayPauseButton.innerHTML = playSVG;
 					}
+					const speed = buttonState ? 1 : 0;
+					chrome.storage.sync.set({ 'tf2.rotation': speed });
+					this.#rotationControl.setSpeed(speed);
 				}
 			},
 			buttonState: true,
