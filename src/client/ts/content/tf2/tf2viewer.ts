@@ -107,6 +107,19 @@ export class TF2Viewer {
 			buttonState: true,
 		});
 
+		(async () => {
+			const result = await chrome.storage.sync.get('tf2.rotation');
+			const rotation = result['tf2.rotation'] ?? 1;
+
+			if (rotation) {
+				buttonState = true;
+				htmlPlayPauseButton.innerHTML = pauseSVG;
+			} else {
+				buttonState = false;
+				htmlPlayPauseButton.innerHTML = playSVG;
+			}
+		})();
+
 
 		this.#loadWarpaintWeapon();
 		return this.#htmlControls;
