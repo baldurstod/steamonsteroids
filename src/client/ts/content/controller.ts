@@ -1,3 +1,5 @@
+import { GenerationState } from '../enums';
+
 export enum ControllerEvents {
 	Tf2RefreshListing = 'refreshlisting',
 	ClearMarketListing = 'clearmarketlisting',
@@ -8,6 +10,11 @@ export enum ControllerEvents {
 	CenterCameraTarget = 'centercameratarget',
 	SetCameraTarget = 'setcameratarget',
 	SetItemInfo = 'setiteminfo',
+}
+
+export type SetGenerationState = {
+	state: GenerationState;
+	listingId: string;
 }
 
 export class Controller {

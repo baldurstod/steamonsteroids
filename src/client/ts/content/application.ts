@@ -4,9 +4,11 @@ import { getCharCodes } from 'harmony-binary-reader';
 import { createElement, hide, show } from 'harmony-ui';
 import { ACTIVE_INVENTORY_PAGE, APP_ID_CS2, APP_ID_TF2, INVENTORY_BACKGROUND_COLOR, INVENTORY_ITEM_CLASSNAME, MARKET_LISTING_BACKGROUND_COLOR, MARKET_LISTING_ROW_CLASSNAME, MOUSE_ENTER_DELAY } from '../constants';
 import { GenerationState } from '../enums';
-import { Controller, ControllerEvents } from './controller';
+import { Controller, ControllerEvents, SetGenerationState } from './controller';
 import { CS2Viewer } from './cs2/cs2viewer';
 import { getInventoryAssetDatas, getInventorySteamId, MarketAssets } from './marketassets';
+import { MASKET_LISTING_ROW_PREFIX, SEARCH_RESULT_ROWS } from './steam/constants';
+import { MarketListings } from './steam/marketlistings';
 import { TF2Viewer } from './tf2/tf2viewer';
 
 enum PageType {
@@ -35,13 +37,19 @@ function isChromium() {
 	return false;
 }
 
+type ContextPerListing = {
+	canvas: HTMLCanvasElement;
+	scene: Scene;
+	state: HTMLElement;
+}
+
 export class Application {
 	#htmlTradeAreaContainer?: HTMLElement;
 	#htmlPageControls: HTMLElement | null = null;
 	#htmlPageControlCur: HTMLElement | null = null;
 	#htmlPageControlMax: HTMLElement | null = null;
 	#htmlPageControlGoto: HTMLInputElement | null = null;
-	#htmlState?: HTMLElement;
+	//#htmlState?: HTMLElement;
 	#htmlRowContainer: HTMLElement = createElement('div');
 	#htmlCanvasItemInfo?: HTMLElement;
 	#inventoryItem?: HTMLElement;
@@ -53,7 +61,7 @@ export class Application {
 	#favorites: Record<string, any/*TODO: create type*/> = {};//TODO:turn into map
 	#inventoryFavorites: Record<string, any/*TODO: create type*/> = {};//TODO:turn into map
 	#canvasContainer = createElement('div', { class: 'canvas-container' });
-	#htmlCanvas = createElement('canvas', { parent: this.#canvasContainer }) as HTMLCanvasElement;
+	#htmlCanvas = createElement('canvas', { parent: this.#canvasContainer, awidth: 1000, aheight: 1000 }) as HTMLCanvasElement;
 	#camera = new Camera({ nearPlane: 1, farPlane: 1000, verticalFov: 10 });
 	#scene = new Scene({ camera: this.#camera, background: new ColorBackground({ color: MARKET_LISTING_BACKGROUND_COLOR }), childs: [this.#camera], });
 	#orbitCameraControl = new OrbitControl(this.#camera);
@@ -65,6 +73,9 @@ export class Application {
 	#isMarketPage = false;
 	#isTradeOffer = false;
 	#timeouts = new Map<HTMLElement, ReturnType<typeof setTimeout>>();
+	#marketListings = new MarketListings();
+	#bipmapContext?: ImageBitmapRenderingContext | null;
+	#canvasPerListing = new Map<string, ContextPerListing>();
 
 	constructor() {
 		this.#initHtml();
@@ -79,9 +90,11 @@ export class Application {
 	}
 
 	#initGraphics() {
-		new Graphics().initCanvas({
-			canvas: this.#htmlCanvas,
-			autoResize: true,
+		this.#bipmapContext = this.#htmlCanvas!.getContext('bitmaprenderer');
+		Graphics.initCanvas({
+			//canvas: this.#htmlCanvas,
+			useOffscreenCanvas: true,
+			autoResize: false,
 			webGL: {
 				alpha: true,
 				preserveDrawingBuffer: true,
@@ -89,18 +102,34 @@ export class Application {
 			}
 		});
 
+		Graphics.listenCanvas(this.#htmlCanvas);
+
+		const render = (event: Event) => {
+			WebGLStats.tick();
+			Graphics.renderMultiCanvas((event as CustomEvent<GraphicTickEvent>).detail.delta);
+		}
+
+		/*
 		const render = (event: Event) => {
 			WebGLStats.tick();
 			if (this.#scene.activeCamera) {
-				new Graphics().render(this.#scene, this.#scene.activeCamera, (event as CustomEvent<GraphicTickEvent>).detail.delta, {});
+				let imageBitmap;
+
+				if (this.#bipmapContext) {
+
+					imageBitmap = { context: this.#bipmapContext, width: this.#htmlCanvas.parentElement!.clientWidth, height: this.#htmlCanvas.parentElement!.clientHeight };
+				}
+
+				Graphics.render(this.#scene, this.#scene.activeCamera, (event as CustomEvent<GraphicTickEvent>).detail.delta, { imageBitmap: imageBitmap });
 			}
 		}
+		*/
 
 		GraphicsEvents.addEventListener(GraphicsEvent.Tick, render);
 		GraphicsEvents.addEventListener(GraphicsEvent.Tick, (event) => this.#orbitCameraControl.update((event as CustomEvent<GraphicTickEvent>).detail.delta / 1000));
-		new Graphics().play();
+		Graphics.play();
 
-		this.#scene.addChild(this.#tf2Viewer.getScene());
+		//this.#scene.addChild(this.#tf2Viewer.getScene());
 		//this.#scene.addChild(this.cs2Viewer.getScene());
 
 		this.#camera.addChild(this.#tf2Viewer.getCameraGroup());
@@ -131,7 +160,7 @@ export class Application {
 	#initEvents() {
 		Controller.addEventListener(ControllerEvents.Tf2RefreshListing, () => this.#refreshTf2Listing());
 		Controller.addEventListener(ControllerEvents.ClearMarketListing, () => this.#clearMarketListing());
-		Controller.addEventListener(ControllerEvents.SetGenerationState, (event: Event) => this.setGenerationState((event as CustomEvent).detail));
+		Controller.addEventListener(ControllerEvents.SetGenerationState, (event: Event) => this.setGenerationState((event as CustomEvent<SetGenerationState>).detail.state, (event as CustomEvent<SetGenerationState>).detail.listingId));
 		Controller.addEventListener(ControllerEvents.ShowRowContainer, () => show(this.#htmlRowContainer));
 		Controller.addEventListener(ControllerEvents.SelectInventoryItem, (event: Event) => {
 			const detail = (event as CustomEvent).detail;
@@ -162,31 +191,36 @@ export class Application {
 		this.#createInventoryListeners();
 	}
 
-	setGenerationState(state: GenerationState) {
-		if (!this.#htmlState) {
+	setGenerationState(state: GenerationState, listingId: string) {
+
+		const canvasPerListing = this.#canvasPerListing.get(listingId);
+
+		if (!canvasPerListing) {
 			return;
 		}
-		this.#htmlState.className = 'texture-generation-state';
+
+
+		canvasPerListing.state.className = 'texture-generation-state';
 		switch (state) {
 			case GenerationState.Started:
-				this.#htmlState.innerText = 'Generating...';
-				this.#htmlState.classList.add('waiting');
+				canvasPerListing.state.innerText = 'Generating...';
+				canvasPerListing.state.classList.add('waiting');
 				break;
 			case GenerationState.Sucess:
-				this.#htmlState.innerText = 'Finished';
-				this.#htmlState.classList.add('success');
+				canvasPerListing.state.innerText = 'Finished';
+				canvasPerListing.state.classList.add('success');
 				break;
 			case GenerationState.Failure:
-				this.#htmlState.innerText = 'Failure';
-				this.#htmlState.classList.add('failure');
+				canvasPerListing.state.innerText = 'Failure';
+				canvasPerListing.state.classList.add('failure');
 				break;
 			case GenerationState.LoadingModel:
-				this.#htmlState.innerText = 'Loading model';
-				this.#htmlState.classList.add('waiting');
+				canvasPerListing.state.innerText = 'Loading model';
+				canvasPerListing.state.classList.add('waiting');
 				break;
 			case GenerationState.RetrievingItemDatas:
-				this.#htmlState.innerText = 'Retrieving item datas';
-				this.#htmlState.classList.add('waiting');
+				canvasPerListing.state.innerText = 'Retrieving item datas';
+				canvasPerListing.state.classList.add('waiting');
 				break;
 		}
 	}
@@ -233,9 +267,9 @@ export class Application {
 		}
 
 
-		this.#htmlState = document.createElement('div');
+		//this.#htmlState = document.createElement('div');
 
-		this.#htmlRowContainer.append(this.#canvasContainer, this.#htmlState);
+		this.#htmlRowContainer.append(this.#canvasContainer/*, this.#htmlState*/);
 		hide(this.#htmlRowContainer);
 
 		let htmlFavoriteButton = document.createElement('div');
@@ -412,7 +446,7 @@ export class Application {
 		};
 
 		let observer = new MutationObserver(mutationCallback);
-		let searchResultsRows = document.getElementById('searchResultsRows');
+		let searchResultsRows = document.getElementById(SEARCH_RESULT_ROWS);
 		if (searchResultsRows) {
 			observer.observe(searchResultsRows, config);
 		}
@@ -478,9 +512,17 @@ export class Application {
 		}
 	}
 
-	#renderMarketRow(marketListingRow: HTMLElement) {
+	#renderMarketRow(marketListingRow: HTMLElement): void {
+		const listingId = marketListingRow.id.replace(MASKET_LISTING_ROW_PREFIX, '')
+		const htmlMarketRow = this.#marketListings.getCanvas(listingId);
+		if (htmlMarketRow) {
+			//htmlMarketRow.append(this.#htmlRowContainer);
+			this.renderListing(listingId);
+		}
+		/*
 		marketListingRow.append(this.#htmlRowContainer);
-		this.renderListing(marketListingRow.id.replace('listing_', ''));
+		this.renderListing(marketListingRow.id.replace(MASKET_LISTING_ROW_PREFIX, ''));
+		*/
 	}
 
 	async #favoriteMarketListing(marketListingId: string) {
@@ -530,6 +572,40 @@ export class Application {
 		this.#setItemInfo('');
 	}
 
+	addListing(listingId: string): boolean {
+		if (this.#canvasPerListing.has(listingId)) {
+			return false;
+		}
+
+		const row = this.#marketListings.getCanvas(listingId);
+		if (!row) {
+			return false;
+		}
+
+		const scene = this.#tf2Viewer.getScene(listingId);
+		scene.activeCamera = this.#camera;
+		const htmlCanvas = Graphics.addCanvas(undefined, { scene: scene });
+		const htmlState = document.createElement('div');
+		this.#canvasPerListing.set(listingId, { canvas: htmlCanvas, scene: scene, state: htmlState });
+
+		row.append(htmlCanvas, htmlState);
+		//const htmlCanvas = createElement('canvas', { parent: row }) as HTMLCanvasElement;
+		//const bipmapContext = htmlCanvas.getContext('bitmaprenderer');
+
+		//Graphics.listenCanvas(htmlCanvas);
+
+		/*
+		if (!bipmapContext) {
+			return false;
+		}
+		*/
+		//this.#bipmapContext = this.#htmlCanvas!.getContext('bitmaprenderer');
+
+		//this.#bipmapContextPerListing.set(listingId, { canvas: htmlCanvas, context: bipmapContext, scene: this.#tf2Viewer.getScene(listingId) });
+
+		return true;
+	}
+
 	async renderListing(listingId: string, force = false) {
 		if (force || (this.#currentListingId != listingId)) {
 			this.#tf2Viewer.hide();
@@ -537,7 +613,8 @@ export class Application {
 			this.#currentListingId = listingId;
 			let asset = await MarketAssets.getListingAssetData(listingId);
 			if (asset) {
-				this.setGenerationState(GenerationState.RetrievingItemDatas);
+				this.addListing(listingId);
+				this.setGenerationState(GenerationState.RetrievingItemDatas, listingId);
 				switch (asset.appid) {
 					case APP_ID_TF2:
 						chrome.runtime.sendMessage({ action: 'get-asset-class-info', appId: asset.appid, classId: asset.classid }, (classInfo) => {
@@ -569,7 +646,7 @@ export class Application {
 			}
 			let asset = await getInventoryAssetDatas(appId, contextId, assetId);
 			if (asset) {
-				this.setGenerationState(GenerationState.RetrievingItemDatas);
+				this.setGenerationState(GenerationState.RetrievingItemDatas, String(assetId));
 				let steamUserId = await getInventorySteamId();
 				switch (asset.appid) {
 					case APP_ID_TF2:

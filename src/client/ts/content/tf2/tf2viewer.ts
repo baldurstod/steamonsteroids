@@ -1,12 +1,12 @@
 import { vec3 } from 'gl-matrix';
-import { Group, PointLight, Repositories, RotationControl, Scene, Source1ModelInstance, Source1ParticleControler, WebRepository } from 'harmony-3d';
-import { TextureCombiner, WeaponManager } from 'harmony-3d-utils';
+import { AmbientLight, Group, PointLight, Repositories, RotationControl, Scene, Source1ModelInstance, Source1ParticleControler, WebRepository } from 'harmony-3d';
+import { TextureCombiner, WeaponManager, WeaponManagerItem } from 'harmony-3d-utils';
 import { blockSVG, pauseSVG, playSVG } from 'harmony-svg';
 import { PaintKitDefinitions, Tf2Team } from 'harmony-tf2-utils';
 import { createElement, hide, show } from 'harmony-ui';
 import { setTimeoutPromise } from 'harmony-utils';
 import { APP_ID_TF2, DECORATED_WEAPONS, TF2_REPOSITORY, TF2_WARPAINT_DEFINITIONS_URL } from '../../constants';
-import { GenerationState } from '../../enums';
+import { GenerationState, GenerationStateEvent } from '../../enums';
 import { Controller, ControllerEvents } from '../controller';
 import { getInspectLink } from '../utils/inspectlink';
 import { sortSelect } from '../utils/sort';
@@ -22,12 +22,12 @@ export class TF2Viewer {
 	#htmlControls?: HTMLElement;
 	#htmlWeaponSelector?: HTMLSelectElement;
 	#htmlClassIcons?: HTMLElement;
-	#scene = new Scene();
+	//#scene = new Scene();
 	#lightsGroup = new Group();
 	#pointLight1: PointLight = new PointLight({ range: 500, parent: this.#lightsGroup, intensity: 0.5, position: [100, 100, 100] });
 	#pointLight2: PointLight = new PointLight({ range: 500, parent: this.#lightsGroup, intensity: 0.5, position: [100, -100, 100] });
-	#group = new Group({ parent: this.#scene });
-	#rotationControl = new RotationControl({ parent: this.#group, speed: 0 });
+	//#group = new Group({ parent: this.#scene });
+	#rotationControl = new RotationControl({ /*parent: this.#group, */speed: 0 });
 	#classModels = new Map<string, Source1ModelInstance>();
 	#teamColor: Tf2Team = Tf2Team.RED;
 	#currentClassName = '';
@@ -36,6 +36,7 @@ export class TF2Viewer {
 	#forcedWeaponIndex: number | null = null;
 	#createModelPromise?: Promise<boolean>;
 	#modelPath = '';
+	#scenePerId = new Map<string, Scene>();
 
 	constructor() {
 		Repositories.addRepository(new WebRepository('tf2', TF2_REPOSITORY));
@@ -47,9 +48,9 @@ export class TF2Viewer {
 	}
 
 	#initEvents() {
-		WeaponManager.addEventListener('started', () => Controller.dispatchEvent(new CustomEvent('setgenerationstate', { detail: GenerationState.Started })));
-		WeaponManager.addEventListener('success', () => Controller.dispatchEvent(new CustomEvent('setgenerationstate', { detail: GenerationState.Sucess })));
-		WeaponManager.addEventListener('failure', () => Controller.dispatchEvent(new CustomEvent('setgenerationstate', { detail: GenerationState.Failure })));
+		WeaponManager.addEventListener('started', (event: Event) => Controller.dispatchEvent(new CustomEvent<GenerationStateEvent>('setgenerationstate', { detail: { state: GenerationState.Started, listingId: (event as CustomEvent<WeaponManagerItem>).detail.userData} })));
+		WeaponManager.addEventListener('success', (event: Event) => Controller.dispatchEvent(new CustomEvent<GenerationStateEvent>('setgenerationstate', { detail: { state: GenerationState.Sucess, listingId: (event as CustomEvent<WeaponManagerItem>).detail.userData} })));
+		WeaponManager.addEventListener('failure', (event: Event) => Controller.dispatchEvent(new CustomEvent<GenerationStateEvent>('setgenerationstate', { detail: { state: GenerationState.Failure, listingId: (event as CustomEvent<WeaponManagerItem>).detail.userData} })));
 	}
 
 	async #initOptions() {
@@ -86,7 +87,7 @@ export class TF2Viewer {
 			class: 'canvas-container-controls-class-icons',
 		});
 
-		let buttonState = true;
+		let buttonState = false;
 		const htmlPlayPauseButton = createElement('button', {
 			class: 'canvas-container-controls-playpause play',
 			innerHTML: pauseSVG,
@@ -104,7 +105,6 @@ export class TF2Viewer {
 					this.#rotationControl.setSpeed(speed);
 				}
 			},
-			buttonState: true,
 		});
 
 		(async () => {
@@ -153,16 +153,25 @@ export class TF2Viewer {
 				if (modelPlayer) {
 					let inspectLink = getInspectLink(listingDatas, listingOrSteamId, assetId);
 					if (inspectLink) {
-						Controller.dispatch(ControllerEvents.SetGenerationState, { detail: GenerationState.LoadingModel });
+						Controller.dispatch(ControllerEvents.SetGenerationState, { detail: { state: GenerationState.LoadingModel, listingId: listingOrSteamId } });
+
+						const scene = this.getScene(listingOrSteamId);
+						scene.removeChildren();
+						scene.addChild(new AmbientLight());
+
+						new PointLight({ range: 500, parent: scene, intensity: 0.5, position: [100, 100, 100] });
+						new PointLight({ range: 500, parent: scene, intensity: 0.5, position: [100, -100, 100] });
+
 						let source1Model = await this.#createTF2Model(modelPlayer.model);
 						if (source1Model) {
+							scene.addChild(source1Model);
 							Controller.dispatch(ControllerEvents.ShowRowContainer);
 							if (remappedDefIndex) {
 								chrome.runtime.sendMessage({ action: 'get-tf2-item', defIndex: defIndex }, async (remappedTf2Item) => {
-									this.#refreshWarpaint(assetId, inspectLink, source1Model, remappedDefIndex!, remappedTf2Item, htmlImg, tf2Item);
+									this.#refreshWarpaint(listingOrSteamId, assetId, inspectLink, source1Model, remappedDefIndex!, remappedTf2Item, htmlImg, tf2Item);
 								});
 							} else {
-								this.#refreshWarpaint(assetId, inspectLink, source1Model, defIndex, tf2Item, htmlImg);
+								this.#refreshWarpaint(listingOrSteamId, assetId, inspectLink, source1Model, defIndex, tf2Item, htmlImg);
 							}
 
 							if (modelPlayer.attachedModels) {
@@ -181,10 +190,10 @@ export class TF2Viewer {
 		}
 	}
 
-	#refreshWarpaint(assetId: number | undefined, inspectLink: string, source1Model: Source1ModelInstance, defIndex: number, tf2Item: any/*TODO:improve type*/, htmlImg?: HTMLImageElement, remappedTf2Item?: any/*TODO:improve type*/) {
+	#refreshWarpaint(listingOrSteamId: string, assetId: number | undefined, inspectLink: string, source1Model: Source1ModelInstance, defIndex: number, tf2Item: any/*TODO:improve type*/, htmlImg?: HTMLImageElement, remappedTf2Item?: any/*TODO:improve type*/) {
 		let paintKitId = tf2Item.paintkit_proto_def_index;
 
-		Controller.dispatch(ControllerEvents.SetGenerationState, { detail: GenerationState.RetrievingItemDatas });
+		Controller.dispatch(ControllerEvents.SetGenerationState, { detail: { state: GenerationState.RetrievingItemDatas, listingId: listingOrSteamId } });
 		chrome.runtime.sendMessage({ action: 'inspect-item', link: inspectLink }, async (item) => {
 
 			paintKitId = paintKitId ?? item?.econitem?.paint_index;
@@ -196,12 +205,12 @@ export class TF2Viewer {
 			this.#populateTF2MarketListing(paintKitId, paintKitSeed, craftIndex);
 			if (paintKitId && paintKitWear && paintKitSeed) {
 				paintKitWear = (paintKitWear - 0.2) * 5 >> 0; // transform the wear from decimal point to integer
-				WeaponManager.refreshItem({ sourceModel: source1Model, paintKitId: Number(paintKitId), paintKitWear: paintKitWear, id: String(defIndex), paintKitSeed: paintKitSeed }, true);
+				WeaponManager.refreshItem({ sourceModel: source1Model, paintKitId: Number(paintKitId), paintKitWear: paintKitWear, id: String(defIndex), paintKitSeed: paintKitSeed, userData: listingOrSteamId }, true);
 				if (htmlImg && assetId) {
 					Controller.dispatch(ControllerEvents.SelectInventoryItem, { detail: { assetId: assetId, htmlImg: htmlImg } });
 				}
 			} else {
-				Controller.dispatch(ControllerEvents.SetGenerationState, { detail: GenerationState.Sucess });
+				Controller.dispatch(ControllerEvents.SetGenerationState, { detail: { state: GenerationState.Sucess, listingId: listingOrSteamId } });
 			}
 
 			let itemStyleOverride = item?.econitem?.item_style_override;
@@ -382,16 +391,16 @@ export class TF2Viewer {
 
 	async #createTF2Model(modelPath: string) {
 		if (this.#source1Model) {
-			this.#source1Model.remove();
+			//this.#source1Model.remove();
 		}
 		await this.#createModelPromise;
 		let createModelPromiseResolve: (value: boolean) => void = () => { };
 		this.#createModelPromise = new Promise<boolean>((resolve) => createModelPromiseResolve = resolve);
 		this.#modelPath = modelPath;
 		if (this.#source1Model) {
-			this.#source1Model.remove();
+			//this.#source1Model.remove();
 		}
-		this.#source1Model = await addSource1Model('tf2', modelPath, this.#group);
+		this.#source1Model = await addSource1Model('tf2', modelPath, /*this.#group*/);
 		createModelPromiseResolve(true);
 
 		if (this.#source1Model) {
@@ -421,7 +430,7 @@ export class TF2Viewer {
 		let mercenary = TF2_MERCENARIES.get(className);
 		if (!classModel) {
 			if (mercenary) {
-				let classModel = await addSource1Model('tf2', mercenary.modelPath, this.#group);
+				let classModel = await addSource1Model('tf2', mercenary.modelPath/*, this.#group*/);
 				if (classModel) {
 					this.#classModels.set(className, classModel);
 				}
@@ -486,8 +495,14 @@ export class TF2Viewer {
 		hide(this.#htmlControls);
 	}
 
-	getScene(): Scene {
-		return this.#scene;
+	getScene(listingId: string): Scene {
+		let scene = this.#scenePerId.get(listingId);
+		if (!scene) {
+			scene = new Scene();
+			this.#scenePerId.set(listingId, scene);
+		}
+
+		return scene;
 	}
 
 	getCameraGroup(): Group {

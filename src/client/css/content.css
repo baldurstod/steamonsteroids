@@ -38,6 +38,14 @@
 	position: relative;
 }
 
+.canvas-container>canvas {
+	width: 100%;
+}
+
+.market-listing-canvas>canvas{
+	width: 100%;
+}
+
 .canvas-container-controls {
 	pointer-events: none;
 }

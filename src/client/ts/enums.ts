@@ -5,3 +5,9 @@ export enum GenerationState {
 	LoadingModel,
 	RetrievingItemDatas,
 }
+
+export type GenerationStateEvent = {
+	state: GenerationState;
+	listingId: string;
+
+}
