@@ -4,7 +4,7 @@ import { TextureCombiner, WeaponManager, WeaponManagerItem } from 'harmony-3d-ut
 import { blockSVG, pauseSVG, playSVG } from 'harmony-svg';
 import { PaintKitDefinitions, Tf2Team } from 'harmony-tf2-utils';
 import { createElement, hide, show } from 'harmony-ui';
-import { setTimeoutPromise } from 'harmony-utils';
+import { Map2, setTimeoutPromise } from 'harmony-utils';
 import { APP_ID_TF2, DECORATED_WEAPONS, TF2_REPOSITORY, TF2_WARPAINT_DEFINITIONS_URL } from '../../constants';
 import { GenerationState, GenerationStateEvent } from '../../enums';
 import { Controller, ControllerEvents } from '../controller';
@@ -22,21 +22,24 @@ export class TF2Viewer {
 	#htmlControls?: HTMLElement;
 	#htmlWeaponSelector?: HTMLSelectElement;
 	#htmlClassIcons?: HTMLElement;
-	//#scene = new Scene();
+	#scene = new Scene();
 	#lightsGroup = new Group();
 	#pointLight1: PointLight = new PointLight({ range: 500, parent: this.#lightsGroup, intensity: 0.5, position: [100, 100, 100] });
 	#pointLight2: PointLight = new PointLight({ range: 500, parent: this.#lightsGroup, intensity: 0.5, position: [100, -100, 100] });
 	//#group = new Group({ parent: this.#scene });
-	#rotationControl = new RotationControl({ /*parent: this.#group, */speed: 0 });
+	#rotationControl = new RotationControl({ parent: this.#scene, speed: 0 });
 	#classModels = new Map<string, Source1ModelInstance>();
 	#teamColor: Tf2Team = Tf2Team.RED;
 	#currentClassName = '';
-	#source1Model?: Source1ModelInstance | null;
+	//#source1Model?: Source1ModelInstance | null;
 	#selectClassPromise?: Promise<boolean>;
 	#forcedWeaponIndex: number | null = null;
 	#createModelPromise?: Promise<boolean>;
 	#modelPath = '';
 	#scenePerId = new Map<string, Scene>();
+	//#rotationControlPerId = new Map<string, RotationControl>();
+	#itemModelPerId = new Map2<string, string, Source1ModelInstance>();
+	#activeListing = '';
 
 	constructor() {
 		Repositories.addRepository(new WebRepository('tf2', TF2_REPOSITORY));
@@ -44,7 +47,7 @@ export class TF2Viewer {
 		//WeaponManager.reuseTextures = true;
 		TextureCombiner.setTextureSize(2048);//TODO: set an option
 		this.#initEvents();
-		this.#initOptions();
+		//this.#initOptions();
 	}
 
 	#initEvents() {
@@ -53,11 +56,13 @@ export class TF2Viewer {
 		WeaponManager.addEventListener('failure', (event: Event) => Controller.dispatchEvent(new CustomEvent<GenerationStateEvent>('setgenerationstate', { detail: { state: GenerationState.Failure, listingId: (event as CustomEvent<WeaponManagerItem>).detail.userData } })));
 	}
 
+	/*
 	async #initOptions() {
 		const result = await chrome.storage.sync.get('tf2.rotation');
 		const rotation = result['tf2.rotation'];
 		this.#rotationControl.setSpeed(rotation ?? 1);
 	}
+	*/
 
 	initHtml() {
 		this.#htmlControls = createElement('div', { class: 'canvas-container-controls' });
@@ -103,6 +108,17 @@ export class TF2Viewer {
 					const speed = buttonState ? 1 : 0;
 					chrome.storage.sync.set({ 'tf2.rotation': speed });
 					this.#rotationControl.setSpeed(speed);
+
+					/*
+					for (const [_, rotationControl] of this.#rotationControlPerId) {
+						rotationControl.setSpeed(speed);
+						if (speed) {
+							//rotationControl.reset();
+						}
+					}
+					*/
+
+					//(async () => (await this.#getRotationControl()).setSpeed(speed))();
 				}
 			},
 		});
@@ -123,6 +139,14 @@ export class TF2Viewer {
 
 		this.#loadWarpaintWeapon();
 		return this.#htmlControls;
+	}
+
+	setActiveListing(listingId: string): void {
+		this.#activeListing = listingId;
+	}
+
+	#synchronize() {
+
 	}
 
 	#refreshListing() {
@@ -155,23 +179,28 @@ export class TF2Viewer {
 					if (inspectLink) {
 						Controller.dispatch(ControllerEvents.SetGenerationState, { detail: { state: GenerationState.LoadingModel, listingId: listingOrSteamId } });
 
-						const scene = this.getScene(listingOrSteamId);
+						const scene = this.getListingScene(listingOrSteamId);
 						scene.removeChildren();
 						scene.addChild(new AmbientLight());
 
 						new PointLight({ range: 500, parent: scene, intensity: 0.5, position: [100, 100, 100] });
 						new PointLight({ range: 500, parent: scene, intensity: 0.5, position: [100, -100, 100] });
 
-						let source1Model = await this.#createTF2Model(modelPlayer.model);
+						let source1Model = await this.#getModel(listingOrSteamId, modelPlayer.model);
 						if (source1Model) {
-							scene.addChild(source1Model);
+							const group = new Group({ childs: [source1Model] });
+							scene.addChild(group);
+
+							//const rotationControl = await this.#getRotationControl(listingOrSteamId);
+							//group.addChild(rotationControl);
+
 							Controller.dispatch(ControllerEvents.ShowRowContainer);
 							if (remappedDefIndex) {
 								chrome.runtime.sendMessage({ action: 'get-tf2-item', defIndex: defIndex }, async (remappedTf2Item) => {
-									this.#refreshWarpaint(listingOrSteamId, assetId, inspectLink, source1Model, remappedDefIndex!, remappedTf2Item, htmlImg, tf2Item);
+									this.#refreshWarpaint(listingOrSteamId, modelPlayer.model, assetId, inspectLink, source1Model, remappedDefIndex!, remappedTf2Item, htmlImg, tf2Item);
 								});
 							} else {
-								this.#refreshWarpaint(listingOrSteamId, assetId, inspectLink, source1Model, defIndex, tf2Item, htmlImg);
+								this.#refreshWarpaint(listingOrSteamId, modelPlayer.model, assetId, inspectLink, source1Model, defIndex, tf2Item, htmlImg);
 							}
 
 							if (modelPlayer.attachedModels) {
@@ -190,7 +219,7 @@ export class TF2Viewer {
 		}
 	}
 
-	#refreshWarpaint(listingOrSteamId: string, assetId: number | undefined, inspectLink: string, source1Model: Source1ModelInstance, defIndex: number, tf2Item: any/*TODO:improve type*/, htmlImg?: HTMLImageElement, remappedTf2Item?: any/*TODO:improve type*/) {
+	#refreshWarpaint(listingOrSteamId: string, path: string, assetId: number | undefined, inspectLink: string, source1Model: Source1ModelInstance, defIndex: number, tf2Item: any/*TODO:improve type*/, htmlImg?: HTMLImageElement, remappedTf2Item?: any/*TODO:improve type*/) {
 		let paintKitId = tf2Item.paintkit_proto_def_index;
 
 		Controller.dispatch(ControllerEvents.SetGenerationState, { detail: { state: GenerationState.RetrievingItemDatas, listingId: listingOrSteamId } });
@@ -225,7 +254,7 @@ export class TF2Viewer {
 			this.#attachModels(source1Model, remappedTf2Item ?? tf2Item, item?.econitem);
 			this.#attachTF2Effects(source1Model, remappedTf2Item ?? tf2Item, item?.econitem);
 			setTF2ModelAttributes(source1Model, item?.econitem);
-			this.#displayClassIcons(remappedTf2Item ?? tf2Item);
+			this.#displayClassIcons(listingOrSteamId, path, remappedTf2Item ?? tf2Item);
 		});
 	}
 
@@ -293,21 +322,21 @@ export class TF2Viewer {
 		});
 	}
 
-	#displayClassIcons(tf2Item: any/*TODO:improve type*/) {
+	#displayClassIcons(listingId: string, path: string, tf2Item: any/*TODO:improve type*/) {
 		let usedByClasses = tf2Item?.used_by_classes;
 		let removeCurrentClassModel = true;
 		if (usedByClasses && this.#forcedWeaponIndex != PAINT_KIT_TOOL_INDEX) {
 			for (let className in usedByClasses) {
 				if (usedByClasses[className] != "0") {
-					this.#addClassIcon(className, tf2Item);
+					this.#addClassIcon(listingId, path, className, tf2Item);
 
 					if (className == this.#currentClassName) {
-						this.#selectClass(className, tf2Item);
+						this.#selectClass(listingId, path, className, tf2Item);
 						removeCurrentClassModel = false;
 					}
 				}
 			}
-			this.#addClassIcon('', tf2Item);
+			this.#addClassIcon(listingId, path, '', tf2Item);
 		}
 		if (removeCurrentClassModel) {
 			this.#setActiveClass(null);
@@ -315,14 +344,17 @@ export class TF2Viewer {
 		//this.#centerCameraOnItem();
 	}
 
-	async #centerCameraOnItem() {
+	async #centerCameraOnItem(listingId: string, path: string) {
 		await setTimeoutPromise(1000);
-		if (!this.#hasActiveClass() && this.#source1Model) {
-			Controller.dispatch(ControllerEvents.CenterCameraTarget, { detail: this.#source1Model });
+		if (!this.#hasActiveClass()) {
+			const source1Model = await this.#getModel(listingId, path);
+			if (source1Model) {
+				Controller.dispatch(ControllerEvents.CenterCameraTarget, { detail: source1Model });
+			}
 		}
 	}
 
-	#addClassIcon(className: string, tf2Item: any/*TODO:improve type*/) {
+	#addClassIcon(listingId: string, path: string, className: string, tf2Item: any/*TODO:improve type*/) {
 		let htmlClassIcon = document.createElement('div');
 		htmlClassIcon.className = 'canvas-container-controls-class-icon';
 		let imageUrl = chrome.runtime.getURL(`images/class_icon/${className}.svg`);
@@ -336,11 +368,11 @@ export class TF2Viewer {
 
 		htmlClassIcon.addEventListener('click', async () => {
 			await this.#refreshListing();
-			this.#selectClass(className, tf2Item);
+			this.#selectClass(listingId, path, className, tf2Item);
 		});
 	}
 
-	async #selectClass(className: string, tf2Item: any/*TODO:improve type*/) {
+	async #selectClass(listingId: string, path: string, className: string, tf2Item: any/*TODO:improve type*/) {
 		await this.#selectClassPromise;
 		this.#selectClassPromise = new Promise(async (resolve, reject) => {
 			this.#currentClassName = className;
@@ -351,7 +383,7 @@ export class TF2Viewer {
 			this.#checkBodyGroups(className, tf2Item);
 			if (classModel) {
 				selectCharacterAnim(className, classModel, tf2Item);
-				classModel.addChild(this.#source1Model);
+				classModel.addChild(await this.#getModel(listingId, path));
 				this.#setCharacterCamera();
 			} else {
 				this.#setItemCamera();
@@ -389,28 +421,38 @@ export class TF2Viewer {
 		}
 	}
 
-	async #createTF2Model(modelPath: string) {
-		if (this.#source1Model) {
-			//this.#source1Model.remove();
+	async #getModel(listingId: string, modelPath: string): Promise<Source1ModelInstance | null> {
+		let model: Source1ModelInstance | null | undefined = this.#itemModelPerId.get(listingId, modelPath);
+		if (model) {
+			return model;
 		}
+
+		model = await this.#createTF2Model(listingId, modelPath);
+
+		if (model) {
+			this.#itemModelPerId.set(listingId, modelPath, model);
+		}
+
+		return model;
+	}
+
+	async #createTF2Model(listingId: string, modelPath: string): Promise<Source1ModelInstance | null> {
 		await this.#createModelPromise;
 		let createModelPromiseResolve: (value: boolean) => void = () => { };
 		this.#createModelPromise = new Promise<boolean>((resolve) => createModelPromiseResolve = resolve);
 		this.#modelPath = modelPath;
-		if (this.#source1Model) {
-			//this.#source1Model.remove();
-		}
-		this.#source1Model = await addSource1Model('tf2', modelPath, /*this.#group*/);
+
+		const source1Model = await addSource1Model('tf2', modelPath, /*this.#group*/);
 		createModelPromiseResolve(true);
 
-		if (this.#source1Model) {
-			let seq = this.#source1Model.sourceModel.mdl.getSequenceById(0);
+		if (source1Model) {
+			let seq = source1Model.sourceModel.mdl.getSequenceById(0);
 			if (seq) {
-				this.#source1Model.playSequence(seq.name);
+				source1Model.playSequence(seq.name);
 			}
 		}
-		this.#centerCameraOnItem();
-		return this.#source1Model;
+		this.#centerCameraOnItem(listingId, modelPath);
+		return source1Model;
 	}
 
 	#populateTF2MarketListing(listingOrSteamId: string, paintKitId: number, seed: bigint, craftIndex: number) {
@@ -495,15 +537,35 @@ export class TF2Viewer {
 		hide(this.#htmlControls);
 	}
 
-	getScene(listingId: string): Scene {
+	getScene(): Scene {
+		return this.#scene;
+	}
+
+	getListingScene(listingId: string): Scene {
 		let scene = this.#scenePerId.get(listingId);
 		if (!scene) {
-			scene = new Scene();
+			scene = new Scene({ parent: this.#scene });
 			this.#scenePerId.set(listingId, scene);
 		}
 
 		return scene;
 	}
+
+	/*
+	async #getRotationControl(listingId: string): Promise<RotationControl> {
+		let rotationControl = this.#rotationControlPerId.get(listingId);
+		if (!rotationControl) {
+			rotationControl = new RotationControl();
+			this.#rotationControlPerId.set(listingId, rotationControl);
+
+			const result = await chrome.storage.sync.get('tf2.rotation');
+			const rotation = result['tf2.rotation'];
+			rotationControl.setSpeed(rotation ?? 1);
+		}
+
+		return rotationControl;
+	}
+	*/
 
 	getCameraGroup(): Group {
 		return this.#lightsGroup;

@@ -39,6 +39,7 @@ function isChromium() {
 
 type ContextPerListing = {
 	canvas: HTMLCanvasElement;
+	container: HTMLElement;
 	scene: Scene;
 	state: HTMLElement;
 	info: HTMLElement;
@@ -130,7 +131,7 @@ export class Application {
 		GraphicsEvents.addEventListener(GraphicsEvent.Tick, (event) => this.#orbitCameraControl.update((event as CustomEvent<GraphicTickEvent>).detail.delta / 1000));
 		Graphics.play();
 
-		//this.#scene.addChild(this.#tf2Viewer.getScene());
+		this.#scene.addChild(this.#tf2Viewer.getScene());
 		//this.#scene.addChild(this.cs2Viewer.getScene());
 
 		this.#camera.addChild(this.#tf2Viewer.getCameraGroup());
@@ -576,7 +577,9 @@ export class Application {
 	}
 
 	addListing(listingId: string): boolean {
-		if (this.#canvasPerListing.has(listingId)) {
+		const c = this.#canvasPerListing.get(listingId);
+		if (c) {
+			c.container.appendChild(this.#tf2Viewer.initHtml());
 			return false;
 		}
 
@@ -585,16 +588,24 @@ export class Application {
 			return false;
 		}
 
-		const scene = this.#tf2Viewer.getScene(listingId);
+		const scene = this.#tf2Viewer.getListingScene(listingId);
 		scene.activeCamera = this.#camera;
 		const htmlCanvas = Graphics.addCanvas(undefined, { scene: scene });
-		const htmlState = document.createElement('div');
+		const htmlState = createElement('div');
 		const htmlInfo = createElement('div', { class: 'canvas-container-item-info' });
-		this.#canvasPerListing.set(listingId, { canvas: htmlCanvas, scene: scene, state: htmlState, info: htmlInfo },);
+		const htmlContainer = createElement('div', {
+			class: 'canvas-container',
+			childs: [
+				htmlCanvas,
+				htmlInfo,
+				this.#tf2Viewer.initHtml(),
+			]
+		});
+		this.#canvasPerListing.set(listingId, { container: htmlContainer, canvas: htmlCanvas, scene: scene, state: htmlState, info: htmlInfo },);
 
 
 
-		row.append(htmlCanvas, htmlState, htmlInfo, this.#tf2Viewer.initHtml(),);
+		row.append(htmlContainer, htmlState,);
 		//const htmlCanvas = createElement('canvas', { parent: row }) as HTMLCanvasElement;
 		//const bipmapContext = htmlCanvas.getContext('bitmaprenderer');
 
