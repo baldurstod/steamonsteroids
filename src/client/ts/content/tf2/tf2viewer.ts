@@ -48,9 +48,9 @@ export class TF2Viewer {
 	}
 
 	#initEvents() {
-		WeaponManager.addEventListener('started', (event: Event) => Controller.dispatchEvent(new CustomEvent<GenerationStateEvent>('setgenerationstate', { detail: { state: GenerationState.Started, listingId: (event as CustomEvent<WeaponManagerItem>).detail.userData} })));
-		WeaponManager.addEventListener('success', (event: Event) => Controller.dispatchEvent(new CustomEvent<GenerationStateEvent>('setgenerationstate', { detail: { state: GenerationState.Sucess, listingId: (event as CustomEvent<WeaponManagerItem>).detail.userData} })));
-		WeaponManager.addEventListener('failure', (event: Event) => Controller.dispatchEvent(new CustomEvent<GenerationStateEvent>('setgenerationstate', { detail: { state: GenerationState.Failure, listingId: (event as CustomEvent<WeaponManagerItem>).detail.userData} })));
+		WeaponManager.addEventListener('started', (event: Event) => Controller.dispatchEvent(new CustomEvent<GenerationStateEvent>('setgenerationstate', { detail: { state: GenerationState.Started, listingId: (event as CustomEvent<WeaponManagerItem>).detail.userData } })));
+		WeaponManager.addEventListener('success', (event: Event) => Controller.dispatchEvent(new CustomEvent<GenerationStateEvent>('setgenerationstate', { detail: { state: GenerationState.Sucess, listingId: (event as CustomEvent<WeaponManagerItem>).detail.userData } })));
+		WeaponManager.addEventListener('failure', (event: Event) => Controller.dispatchEvent(new CustomEvent<GenerationStateEvent>('setgenerationstate', { detail: { state: GenerationState.Failure, listingId: (event as CustomEvent<WeaponManagerItem>).detail.userData } })));
 	}
 
 	async #initOptions() {
@@ -137,7 +137,7 @@ export class TF2Viewer {
 		} else {
 			hide(this.#htmlWeaponSelector);
 		}
-		Controller.dispatch(ControllerEvents.ClearMarketListing);
+		Controller.dispatch(ControllerEvents.ClearMarketListing, { detail: { listingId: listingOrSteamId } });
 		let defIndex = classInfo?.app_data?.def_index;
 		let remappedDefIndex: number | undefined;
 		if (defIndex) {
@@ -202,7 +202,7 @@ export class TF2Viewer {
 			let paintKitSeed = BigInt(item?.econitem?.custom_paintkit_seed ?? item?.econitem?.original_id ?? item?.econitem?.id ?? 0);
 			let craftIndex = item?.econitem?.unique_craft_index;
 
-			this.#populateTF2MarketListing(paintKitId, paintKitSeed, craftIndex);
+			this.#populateTF2MarketListing(listingOrSteamId, paintKitId, paintKitSeed, craftIndex);
 			if (paintKitId && paintKitWear && paintKitSeed) {
 				paintKitWear = (paintKitWear - 0.2) * 5 >> 0; // transform the wear from decimal point to integer
 				WeaponManager.refreshItem({ sourceModel: source1Model, paintKitId: Number(paintKitId), paintKitWear: paintKitWear, id: String(defIndex), paintKitSeed: paintKitSeed, userData: listingOrSteamId }, true);
@@ -413,7 +413,7 @@ export class TF2Viewer {
 		return this.#source1Model;
 	}
 
-	#populateTF2MarketListing(paintKitId: number, seed: bigint, craftIndex: number) {
+	#populateTF2MarketListing(listingOrSteamId: string, paintKitId: number, seed: bigint, craftIndex: number) {
 		let s: string = '';
 		if (paintKitId && seed) {
 			s = `<div>Seed: ${seed}</div>`;
@@ -422,7 +422,7 @@ export class TF2Viewer {
 			s += `<div>Craft #${craftIndex}</div>`;
 		}
 
-		Controller.dispatch(ControllerEvents.SetItemInfo, { detail: s });
+		Controller.dispatch(ControllerEvents.SetItemInfo, { detail: { listingId: listingOrSteamId, info: s } });
 	}
 
 	async #getClassModel(className: string) {

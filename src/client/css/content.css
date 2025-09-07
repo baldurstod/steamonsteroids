@@ -42,8 +42,12 @@
 	width: 100%;
 }
 
-.market-listing-canvas>canvas{
+.market-listing-canvas>canvas {
 	width: 100%;
+}
+
+canvas:focus {
+	outline: none;
 }
 
 .canvas-container-controls {

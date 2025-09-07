@@ -12,9 +12,18 @@ export enum ControllerEvents {
 	SetItemInfo = 'setiteminfo',
 }
 
-export type SetGenerationState = {
+export type ClearMarketListingEvent = {
+	listingId: string;
+}
+
+export type SetGenerationStateEvent = {
 	state: GenerationState;
 	listingId: string;
+}
+
+export type SetItemInfoEvent = {
+	listingId: string;
+	info: string;
 }
 
 export class Controller {

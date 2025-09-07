@@ -4,7 +4,7 @@ import { getCharCodes } from 'harmony-binary-reader';
 import { createElement, hide, show } from 'harmony-ui';
 import { ACTIVE_INVENTORY_PAGE, APP_ID_CS2, APP_ID_TF2, INVENTORY_BACKGROUND_COLOR, INVENTORY_ITEM_CLASSNAME, MARKET_LISTING_BACKGROUND_COLOR, MARKET_LISTING_ROW_CLASSNAME, MOUSE_ENTER_DELAY } from '../constants';
 import { GenerationState } from '../enums';
-import { Controller, ControllerEvents, SetGenerationState } from './controller';
+import { ClearMarketListingEvent, Controller, ControllerEvents, SetGenerationStateEvent, SetItemInfoEvent } from './controller';
 import { CS2Viewer } from './cs2/cs2viewer';
 import { getInventoryAssetDatas, getInventorySteamId, MarketAssets } from './marketassets';
 import { MASKET_LISTING_ROW_PREFIX, SEARCH_RESULT_ROWS } from './steam/constants';
@@ -41,6 +41,7 @@ type ContextPerListing = {
 	canvas: HTMLCanvasElement;
 	scene: Scene;
 	state: HTMLElement;
+	info: HTMLElement;
 }
 
 export class Application {
@@ -51,7 +52,7 @@ export class Application {
 	#htmlPageControlGoto: HTMLInputElement | null = null;
 	//#htmlState?: HTMLElement;
 	#htmlRowContainer: HTMLElement = createElement('div');
-	#htmlCanvasItemInfo?: HTMLElement;
+	//#htmlCanvasItemInfo?: HTMLElement;
 	#inventoryItem?: HTMLElement;
 	#ajaxPagingControls = new Set<string>();
 	#buttons = new Set<HTMLElement>();
@@ -159,8 +160,8 @@ export class Application {
 
 	#initEvents() {
 		Controller.addEventListener(ControllerEvents.Tf2RefreshListing, () => this.#refreshTf2Listing());
-		Controller.addEventListener(ControllerEvents.ClearMarketListing, () => this.#clearMarketListing());
-		Controller.addEventListener(ControllerEvents.SetGenerationState, (event: Event) => this.setGenerationState((event as CustomEvent<SetGenerationState>).detail.state, (event as CustomEvent<SetGenerationState>).detail.listingId));
+		Controller.addEventListener(ControllerEvents.ClearMarketListing, (event: Event) => this.#clearMarketListing((event as CustomEvent<ClearMarketListingEvent>).detail.listingId));
+		Controller.addEventListener(ControllerEvents.SetGenerationState, (event: Event) => this.setGenerationState((event as CustomEvent<SetGenerationStateEvent>).detail.state, (event as CustomEvent<SetGenerationStateEvent>).detail.listingId));
 		Controller.addEventListener(ControllerEvents.ShowRowContainer, () => show(this.#htmlRowContainer));
 		Controller.addEventListener(ControllerEvents.SelectInventoryItem, (event: Event) => {
 			const detail = (event as CustomEvent).detail;
@@ -171,7 +172,7 @@ export class Application {
 			const detail = (event as CustomEvent).detail;
 			this.#setCameraTarget(detail.target, detail.position);
 		});
-		Controller.addEventListener(ControllerEvents.SetItemInfo, (event: Event) => this.#setItemInfo((event as CustomEvent).detail));
+		Controller.addEventListener(ControllerEvents.SetItemInfo, (event: Event) => this.#setItemInfo((event as CustomEvent<SetItemInfoEvent>).detail.listingId, (event as CustomEvent<SetItemInfoEvent>).detail.info));
 	}
 
 	async #loadFavorites() {
@@ -192,13 +193,11 @@ export class Application {
 	}
 
 	setGenerationState(state: GenerationState, listingId: string) {
-
 		const canvasPerListing = this.#canvasPerListing.get(listingId);
 
 		if (!canvasPerListing) {
 			return;
 		}
-
 
 		canvasPerListing.state.className = 'texture-generation-state';
 		switch (state) {
@@ -281,9 +280,9 @@ export class Application {
 		htmlUnFavoriteButton.className = 'unfavorite-button';
 		htmlUnFavoriteButton.innerHTML = '<a class="item_market_action_button btn_green_white_innerfade btn_small"><span>Unfavorite</span></a>';
 		htmlUnFavoriteButton.addEventListener('click', () => this.unfavoriteListing());
-		this.#htmlCanvasItemInfo = createElement('div', { class: 'canvas-container-item-info' });
+		//this.#htmlCanvasItemInfo = createElement('div', { class: 'canvas-container-item-info' });
 
-		this.#canvasContainer.append(htmlFavoriteButton, htmlUnFavoriteButton, this.#htmlCanvasItemInfo, this.#tf2Viewer.initHtml()/*, this.cs2Viewer.initHtml()*/);
+		this.#canvasContainer.append(htmlFavoriteButton, htmlUnFavoriteButton, /*this.#htmlCanvasItemInfo, */this.#tf2Viewer.initHtml()/*, this.cs2Viewer.initHtml()*/);
 	}
 
 	#tradeActivate(activate: boolean) {
@@ -335,10 +334,14 @@ export class Application {
 		this.#orbitCameraControl.update();
 	}
 
-	#setItemInfo(info: string) {
-		if (this.#htmlCanvasItemInfo) {
-			this.#htmlCanvasItemInfo.innerHTML = info;
+	#setItemInfo(listingId: string, info: string): void {
+		const canvasPerListing = this.#canvasPerListing.get(listingId);
+
+		if (!canvasPerListing) {
+			return;
 		}
+
+		canvasPerListing.info.innerHTML = info;
 	}
 
 	#initInventoryPageControls() {
@@ -568,8 +571,8 @@ export class Application {
 		}
 	}
 
-	#clearMarketListing() {
-		this.#setItemInfo('');
+	#clearMarketListing(listingId: string) {
+		this.#setItemInfo(listingId, '');
 	}
 
 	addListing(listingId: string): boolean {
@@ -586,9 +589,12 @@ export class Application {
 		scene.activeCamera = this.#camera;
 		const htmlCanvas = Graphics.addCanvas(undefined, { scene: scene });
 		const htmlState = document.createElement('div');
-		this.#canvasPerListing.set(listingId, { canvas: htmlCanvas, scene: scene, state: htmlState });
+		const htmlInfo = createElement('div', { class: 'canvas-container-item-info' });
+		this.#canvasPerListing.set(listingId, { canvas: htmlCanvas, scene: scene, state: htmlState, info: htmlInfo },);
 
-		row.append(htmlCanvas, htmlState);
+
+
+		row.append(htmlCanvas, htmlState, htmlInfo, this.#tf2Viewer.initHtml(),);
 		//const htmlCanvas = createElement('canvas', { parent: row }) as HTMLCanvasElement;
 		//const bipmapContext = htmlCanvas.getContext('bitmaprenderer');
 
