@@ -19,7 +19,7 @@ import { TF2_CLASSES_REMOVABLE_PARTS, TF2_MERCENARIES, TF2_PLAYER_CAMERA_POSITIO
 PaintKitDefinitions.setWarpaintDefinitionsURL(TF2_WARPAINT_DEFINITIONS_URL);
 
 export class TF2Viewer {
-	//#htmlControls?: HTMLElement;
+	#htmlControls?: HTMLElement;
 	#htmlWeaponSelector?: HTMLSelectElement;
 	#htmlClassIcons?: HTMLElement;
 	//#scene = new Scene();
@@ -27,7 +27,7 @@ export class TF2Viewer {
 	#pointLight1: PointLight = new PointLight({ range: 500, parent: this.#lightsGroup, intensity: 0.5, position: [100, 100, 100] });
 	#pointLight2: PointLight = new PointLight({ range: 500, parent: this.#lightsGroup, intensity: 0.5, position: [100, -100, 100] });
 	//#group = new Group({ parent: this.#scene });
-	//#rotationControl = new RotationControl({ /*parent: this.#group, */speed: 0 });
+	#rotationControl = new RotationControl({ /*parent: this.#group, */speed: 0 });
 	#classModels = new Map<string, Source1ModelInstance>();
 	#teamColor: Tf2Team = Tf2Team.RED;
 	#currentClassName = '';
@@ -37,8 +37,6 @@ export class TF2Viewer {
 	#createModelPromise?: Promise<boolean>;
 	#modelPath = '';
 	#scenePerId = new Map<string, Scene>();
-	#rotationControlPerId = new Map<string, RotationControl>();
-	#controlsPerId = new Map<string, HTMLElement>();
 
 	constructor() {
 		Repositories.addRepository(new WebRepository('tf2', TF2_REPOSITORY));
@@ -46,7 +44,7 @@ export class TF2Viewer {
 		//WeaponManager.reuseTextures = true;
 		TextureCombiner.setTextureSize(2048);//TODO: set an option
 		this.#initEvents();
-		//this.#initOptions();
+		this.#initOptions();
 	}
 
 	#initEvents() {
@@ -55,25 +53,17 @@ export class TF2Viewer {
 		WeaponManager.addEventListener('failure', (event: Event) => Controller.dispatchEvent(new CustomEvent<GenerationStateEvent>('setgenerationstate', { detail: { state: GenerationState.Failure, listingId: (event as CustomEvent<WeaponManagerItem>).detail.userData } })));
 	}
 
-	/*
 	async #initOptions() {
 		const result = await chrome.storage.sync.get('tf2.rotation');
 		const rotation = result['tf2.rotation'];
 		this.#rotationControl.setSpeed(rotation ?? 1);
 	}
-	*/
 
-	getControls(listingId: string): HTMLElement {
-		let htmlControls = this.#controlsPerId.get(listingId);
-		if (htmlControls) {
-			return htmlControls;
-		}
-
-		htmlControls = createElement('div', { class: 'canvas-container-controls' });
-		this.#controlsPerId.set(listingId, htmlControls);
+	initHtml() {
+		this.#htmlControls = createElement('div', { class: 'canvas-container-controls' });
 
 		this.#htmlWeaponSelector = createElement('select', {
-			parent: htmlControls,
+			parent: this.#htmlControls,
 			class: 'weapon-selector',
 			$change: (event: Event) => {
 				this.#forcedWeaponIndex = Number((event.target as HTMLSelectElement).value);
@@ -93,7 +83,7 @@ export class TF2Viewer {
 		sortSelect(this.#htmlWeaponSelector);
 
 		this.#htmlClassIcons = createElement('div', {
-			parent: htmlControls,
+			parent: this.#htmlControls,
 			class: 'canvas-container-controls-class-icons',
 		});
 
@@ -101,7 +91,7 @@ export class TF2Viewer {
 		const htmlPlayPauseButton = createElement('button', {
 			class: 'canvas-container-controls-playpause play',
 			innerHTML: pauseSVG,
-			parent: htmlControls,
+			parent: this.#htmlControls,
 			events: {
 				click: () => {
 					buttonState = !buttonState;
@@ -112,8 +102,7 @@ export class TF2Viewer {
 					}
 					const speed = buttonState ? 1 : 0;
 					chrome.storage.sync.set({ 'tf2.rotation': speed });
-					(async () => (await this.#getRotationControl(listingId)).setSpeed(speed))();
-					//this.#rotationControl.setSpeed(speed);
+					this.#rotationControl.setSpeed(speed);
 				}
 			},
 		});
@@ -133,7 +122,7 @@ export class TF2Viewer {
 
 
 		this.#loadWarpaintWeapon();
-		return htmlControls;
+		return this.#htmlControls;
 	}
 
 	#refreshListing() {
@@ -141,8 +130,7 @@ export class TF2Viewer {
 	}
 
 	async renderListingTF2(listingOrSteamId: string, listingDatas: any/*TODO: improve type*/, classInfo: any/*TODO: improve type*/, assetId?: number, htmlImg?: HTMLImageElement) {
-		const htmlControls = this.getControls(listingOrSteamId);
-		//show(this.#htmlControls);
+		show(this.#htmlControls);
 		this.#htmlClassIcons?.replaceChildren();
 		if ((listingDatas.appid == APP_ID_TF2) && listingDatas.market_hash_name.includes('War Paint')/* && this.application.canInspectWarpaintWeapons()*/) {
 			show(this.#htmlWeaponSelector);
@@ -177,11 +165,6 @@ export class TF2Viewer {
 						let source1Model = await this.#createTF2Model(modelPlayer.model);
 						if (source1Model) {
 							scene.addChild(source1Model);
-
-							const rotationControl = await this.#getRotationControl(listingOrSteamId);
-							source1Model.addChild(rotationControl);
-
-
 							Controller.dispatch(ControllerEvents.ShowRowContainer);
 							if (remappedDefIndex) {
 								chrome.runtime.sendMessage({ action: 'get-tf2-item', defIndex: defIndex }, async (remappedTf2Item) => {
@@ -508,11 +491,9 @@ export class TF2Viewer {
 		}
 	}
 
-	/*
 	hide() {
 		hide(this.#htmlControls);
 	}
-	*/
 
 	getScene(listingId: string): Scene {
 		let scene = this.#scenePerId.get(listingId);
@@ -522,20 +503,6 @@ export class TF2Viewer {
 		}
 
 		return scene;
-	}
-
-	async #getRotationControl(listingId: string): Promise<RotationControl> {
-		let rotationControl = this.#rotationControlPerId.get(listingId);
-		if (!rotationControl) {
-			rotationControl = new RotationControl();
-			this.#rotationControlPerId.set(listingId, rotationControl);
-
-			const result = await chrome.storage.sync.get('tf2.rotation');
-			const rotation = result['tf2.rotation'];
-			rotationControl.setSpeed(rotation ?? 1);
-		}
-
-		return rotationControl;
 	}
 
 	getCameraGroup(): Group {

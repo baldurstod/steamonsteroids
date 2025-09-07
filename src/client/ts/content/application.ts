@@ -39,7 +39,6 @@ function isChromium() {
 
 type ContextPerListing = {
 	canvas: HTMLCanvasElement;
-	container: HTMLElement;
 	scene: Scene;
 	state: HTMLElement;
 	info: HTMLElement;
@@ -283,7 +282,7 @@ export class Application {
 		htmlUnFavoriteButton.addEventListener('click', () => this.unfavoriteListing());
 		//this.#htmlCanvasItemInfo = createElement('div', { class: 'canvas-container-item-info' });
 
-		this.#canvasContainer.append(htmlFavoriteButton, htmlUnFavoriteButton, /*this.#htmlCanvasItemInfo, *//*this.#tf2Viewer.getControls()*//*, this.cs2Viewer.initHtml()*/);
+		this.#canvasContainer.append(htmlFavoriteButton, htmlUnFavoriteButton, /*this.#htmlCanvasItemInfo, */this.#tf2Viewer.initHtml()/*, this.cs2Viewer.initHtml()*/);
 	}
 
 	#tradeActivate(activate: boolean) {
@@ -589,21 +588,13 @@ export class Application {
 		const scene = this.#tf2Viewer.getScene(listingId);
 		scene.activeCamera = this.#camera;
 		const htmlCanvas = Graphics.addCanvas(undefined, { scene: scene });
-		const htmlState = createElement('div');
+		const htmlState = document.createElement('div');
 		const htmlInfo = createElement('div', { class: 'canvas-container-item-info' });
-		const htmlContainer = createElement('div', {
-			class: 'canvas-container',
-			childs: [
-				htmlCanvas,
-				htmlInfo,
-				this.#tf2Viewer.getControls(listingId),
-			]
-		});
-		this.#canvasPerListing.set(listingId, { container: htmlContainer, canvas: htmlCanvas, scene: scene, state: htmlState, info: htmlInfo },);
+		this.#canvasPerListing.set(listingId, { canvas: htmlCanvas, scene: scene, state: htmlState, info: htmlInfo },);
 
 
 
-		row.append(htmlContainer, htmlState,);
+		row.append(htmlCanvas, htmlState, htmlInfo, this.#tf2Viewer.initHtml(),);
 		//const htmlCanvas = createElement('canvas', { parent: row }) as HTMLCanvasElement;
 		//const bipmapContext = htmlCanvas.getContext('bitmaprenderer');
 
@@ -623,7 +614,7 @@ export class Application {
 
 	async renderListing(listingId: string, force = false) {
 		if (force || (this.#currentListingId != listingId)) {
-			//this.#tf2Viewer.hide();
+			this.#tf2Viewer.hide();
 			this.#cs2Viewer.hide();
 			this.#currentListingId = listingId;
 			let asset = await MarketAssets.getListingAssetData(listingId);
