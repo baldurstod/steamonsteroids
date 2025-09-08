@@ -1,5 +1,5 @@
 import { vec3 } from 'gl-matrix';
-import { AmbientLight, Group, PointLight, Repositories, RotationControl, Scene, Source1ModelInstance, Source1ParticleControler, WebRepository } from 'harmony-3d';
+import { AmbientLight, Group, PointLight, Repositories, RotationControl, Scene, Source1ModelInstance, Source1ParticleControler, Texture, WebRepository } from 'harmony-3d';
 import { TextureCombiner, WeaponManager, WeaponManagerItem } from 'harmony-3d-utils';
 import { blockSVG, pauseSVG, playSVG } from 'harmony-svg';
 import { PaintKitDefinitions, Tf2Team } from 'harmony-tf2-utils';
@@ -14,9 +14,15 @@ import { addSource1Model } from '../utils/sourcemodels';
 import { PAINT_KIT_TOOL_INDEX } from './constants';
 import { getSheenTint } from './killstreak';
 import { getTF2ModelName, selectCharacterAnim, setTF2ModelAttributes } from './tf2';
-import { TF2_CLASSES_REMOVABLE_PARTS, TF2_MERCENARIES, TF2_PLAYER_CAMERA_POSITION, TF2_PLAYER_CAMERA_TARGET } from './tf2constants';
+import { TF2_CLASSES_REMOVABLE_PARTS, TF2_ITEM_CAMERA_POSITION, TF2_MERCENARIES, TF2_PLAYER_CAMERA_POSITION, TF2_PLAYER_CAMERA_TARGET } from './tf2constants';
 
 PaintKitDefinitions.setWarpaintDefinitionsURL(TF2_WARPAINT_DEFINITIONS_URL);
+
+type WarPaint = {
+	model: Source1ModelInstance;
+	texture?: Texture;
+	dirty: boolean;
+}
 
 export class TF2Viewer {
 	#htmlControls?: HTMLElement;
@@ -38,7 +44,7 @@ export class TF2Viewer {
 	#modelPath = '';
 	#scenePerId = new Map<string, Scene>();
 	//#rotationControlPerId = new Map<string, RotationControl>();
-	#itemModelPerId = new Map2<string, string, Source1ModelInstance>();
+	#itemModelPerId = new Map2<string, string, WarPaint>();
 	#activeListing = '';
 
 	constructor() {
@@ -73,7 +79,7 @@ export class TF2Viewer {
 			$change: (event: Event) => {
 				this.#forcedWeaponIndex = Number((event.target as HTMLSelectElement).value);
 				chrome.storage.sync.set({ warpaintWeaponIndex: (event.target as HTMLSelectElement).value });
-				this.#refreshListing();
+				this.#refreshVisibleListings();
 			},
 		}) as HTMLSelectElement;
 
@@ -149,8 +155,8 @@ export class TF2Viewer {
 
 	}
 
-	#refreshListing() {
-		Controller.dispatch(ControllerEvents.Tf2RefreshListing);
+	#refreshVisibleListings() {
+		Controller.dispatch(ControllerEvents.Tf2RefreshVisibleListing);
 	}
 
 	async renderListingTF2(listingOrSteamId: string, listingDatas: any/*TODO: improve type*/, classInfo: any/*TODO: improve type*/, assetId?: number, htmlImg?: HTMLImageElement) {
@@ -175,6 +181,13 @@ export class TF2Viewer {
 			chrome.runtime.sendMessage({ action: 'get-tf2-item', defIndex: remappedDefIndex ?? defIndex }, async (tf2Item) => {
 				const modelPlayer = getTF2ModelName(tf2Item, this.#currentClassName);
 				if (modelPlayer) {
+					const warPaint = await this.#getWarPaint(listingOrSteamId, modelPlayer.model);
+
+					if (!warPaint?.dirty) {
+						return;
+					}
+					warPaint.dirty = false;
+
 					let inspectLink = getInspectLink(listingDatas, listingOrSteamId, assetId);
 					if (inspectLink) {
 						Controller.dispatch(ControllerEvents.SetGenerationState, { detail: { state: GenerationState.LoadingModel, listingId: listingOrSteamId } });
@@ -186,9 +199,10 @@ export class TF2Viewer {
 						new PointLight({ range: 500, parent: scene, intensity: 0.5, position: [100, 100, 100] });
 						new PointLight({ range: 500, parent: scene, intensity: 0.5, position: [100, -100, 100] });
 
-						let source1Model = await this.#getModel(listingOrSteamId, modelPlayer.model);
-						if (source1Model) {
-							const group = new Group({ childs: [source1Model] });
+						const warPaint = await this.#getWarPaint(listingOrSteamId, modelPlayer.model);
+						const source1Model = warPaint?.model;
+						if (warPaint && source1Model) {
+							const group = new Group({ childs: [warPaint.model] });
 							scene.addChild(group);
 
 							//const rotationControl = await this.#getRotationControl(listingOrSteamId);
@@ -233,6 +247,7 @@ export class TF2Viewer {
 
 			this.#populateTF2MarketListing(listingOrSteamId, paintKitId, paintKitSeed, craftIndex);
 			if (paintKitId && paintKitWear && paintKitSeed) {
+				Controller.dispatch(ControllerEvents.SetGenerationState, { detail: { state: GenerationState.WaitingForGeneration, listingId: listingOrSteamId } });
 				paintKitWear = (paintKitWear - 0.2) * 5 >> 0; // transform the wear from decimal point to integer
 				WeaponManager.refreshItem({ sourceModel: source1Model, paintKitId: Number(paintKitId), paintKitWear: paintKitWear, id: String(defIndex), paintKitSeed: paintKitSeed, userData: listingOrSteamId }, true);
 				if (htmlImg && assetId) {
@@ -347,9 +362,9 @@ export class TF2Viewer {
 	async #centerCameraOnItem(listingId: string, path: string) {
 		await setTimeoutPromise(1000);
 		if (!this.#hasActiveClass()) {
-			const source1Model = await this.#getModel(listingId, path);
-			if (source1Model) {
-				Controller.dispatch(ControllerEvents.CenterCameraTarget, { detail: source1Model });
+			const warPaint = await this.#getWarPaint(listingId, path);
+			if (warPaint) {
+				Controller.dispatch(ControllerEvents.CenterCameraTarget, { detail: warPaint.model });
 			}
 		}
 	}
@@ -367,7 +382,7 @@ export class TF2Viewer {
 		this.#htmlClassIcons?.append(htmlClassIcon);
 
 		htmlClassIcon.addEventListener('click', async () => {
-			await this.#refreshListing();
+			await this.#refreshVisibleListings();
 			this.#selectClass(listingId, path, className, tf2Item);
 		});
 	}
@@ -383,7 +398,7 @@ export class TF2Viewer {
 			this.#checkBodyGroups(className, tf2Item);
 			if (classModel) {
 				selectCharacterAnim(className, classModel, tf2Item);
-				classModel.addChild(await this.#getModel(listingId, path));
+				classModel.addChild((await this.#getWarPaint(listingId, path))?.model);
 				this.#setCharacterCamera();
 			} else {
 				this.#setItemCamera();
@@ -405,7 +420,7 @@ export class TF2Viewer {
 		Controller.dispatch(ControllerEvents.SetCameraTarget, {
 			detail: {
 				target: vec3.create(),
-				position: vec3.create(),
+				position: TF2_ITEM_CAMERA_POSITION,
 			}
 		});
 	}
@@ -421,19 +436,21 @@ export class TF2Viewer {
 		}
 	}
 
-	async #getModel(listingId: string, modelPath: string): Promise<Source1ModelInstance | null> {
-		let model: Source1ModelInstance | null | undefined = this.#itemModelPerId.get(listingId, modelPath);
-		if (model) {
-			return model;
+	async #getWarPaint(listingId: string, modelPath: string): Promise<WarPaint | null> {
+		let warPaint: WarPaint | null | undefined = this.#itemModelPerId.get(listingId, modelPath);
+		if (warPaint) {
+			return warPaint;
 		}
 
-		model = await this.#createTF2Model(listingId, modelPath);
+		const model = await this.#createTF2Model(listingId, modelPath);
 
 		if (model) {
-			this.#itemModelPerId.set(listingId, modelPath, model);
+			warPaint = { model: model, dirty: true };
+			this.#itemModelPerId.set(listingId, modelPath, warPaint);
+			return warPaint;
 		}
 
-		return model;
+		return null;
 	}
 
 	async #createTF2Model(listingId: string, modelPath: string): Promise<Source1ModelInstance | null> {

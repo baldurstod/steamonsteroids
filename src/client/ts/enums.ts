@@ -4,6 +4,7 @@ export enum GenerationState {
 	Failure,
 	LoadingModel,
 	RetrievingItemDatas,
+	WaitingForGeneration,
 }
 
 export type GenerationStateEvent = {

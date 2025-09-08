@@ -160,7 +160,7 @@ export class Application {
 	}
 
 	#initEvents() {
-		Controller.addEventListener(ControllerEvents.Tf2RefreshListing, () => this.#refreshTf2Listing());
+		Controller.addEventListener(ControllerEvents.Tf2RefreshVisibleListing, () => this.#refreshTf2VisibleListings());
 		Controller.addEventListener(ControllerEvents.ClearMarketListing, (event: Event) => this.#clearMarketListing((event as CustomEvent<ClearMarketListingEvent>).detail.listingId));
 		Controller.addEventListener(ControllerEvents.SetGenerationState, (event: Event) => this.setGenerationState((event as CustomEvent<SetGenerationStateEvent>).detail.state, (event as CustomEvent<SetGenerationStateEvent>).detail.listingId));
 		Controller.addEventListener(ControllerEvents.ShowRowContainer, () => show(this.#htmlRowContainer));
@@ -220,6 +220,10 @@ export class Application {
 				break;
 			case GenerationState.RetrievingItemDatas:
 				canvasPerListing.state.innerText = 'Retrieving item datas';
+				canvasPerListing.state.classList.add('waiting');
+				break;
+			case GenerationState.WaitingForGeneration:
+				canvasPerListing.state.innerText = 'Waiting for generation';
 				canvasPerListing.state.classList.add('waiting');
 				break;
 		}
@@ -494,7 +498,7 @@ export class Application {
 			let itemDatas = getItemDatas(inventoryItem);
 			if (itemDatas) {
 				let htmlImg = inventoryItem.getElementsByTagName('img')[0];
-				this.renderInventoryListing(itemDatas.appId, itemDatas.contextId, itemDatas.assetId, htmlImg);
+				this.#renderInventoryListing(itemDatas.appId, itemDatas.contextId, itemDatas.assetId, htmlImg);
 			}
 		});
 	}
@@ -521,7 +525,7 @@ export class Application {
 		const htmlMarketRow = this.#marketListings.getCanvas(listingId);
 		if (htmlMarketRow) {
 			//htmlMarketRow.append(this.#htmlRowContainer);
-			this.renderListing(listingId);
+			this.#renderMarketListing(listingId);
 		}
 		/*
 		marketListingRow.append(this.#htmlRowContainer);
@@ -561,13 +565,14 @@ export class Application {
 		this.#htmlRowContainer.classList.remove('favorited-market-listing');
 	}
 
-	async #refreshTf2Listing() {
+	async #refreshTf2VisibleListings() {
 		switch (this.#pageType) {
 			case PageType.Market:
-				await this.renderListing(this.#currentListingId, true);
+				//await this.#renderMarketListing(this.#currentListingId, true);
+				await this.#renderVisibleMarketListing();
 				break;
 			case PageType.Inventory:
-				await this.renderInventoryListing(this.#currentAppId, this.#currentContextId, this.#currentAssetId, undefined, true);
+				await this.#renderInventoryListing(this.#currentAppId, this.#currentContextId, this.#currentAssetId, undefined, true);
 				break;
 		}
 	}
@@ -590,7 +595,7 @@ export class Application {
 
 		const scene = this.#tf2Viewer.getListingScene(listingId);
 		scene.activeCamera = this.#camera;
-		const htmlCanvas = Graphics.addCanvas(undefined, { scene: scene });
+		const htmlCanvas = Graphics.addCanvas(undefined, { scene: scene, autoResize: true });
 		const htmlState = createElement('div');
 		const htmlInfo = createElement('div', { class: 'canvas-container-item-info' });
 		const htmlContainer = createElement('div', {
@@ -623,7 +628,15 @@ export class Application {
 		return true;
 	}
 
-	async renderListing(listingId: string, force = false) {
+	async #renderVisibleMarketListing(): Promise<void> {
+		for (const [listingId, listing] of this.#canvasPerListing) {
+			if (listing.canvas.checkVisibility()) {
+				await this.#renderMarketListing(listingId, true);
+			}
+		}
+	}
+
+	async #renderMarketListing(listingId: string, force = false) {
 		if (force || (this.#currentListingId != listingId)) {
 			this.#tf2Viewer.hide();
 			this.#cs2Viewer.hide();
@@ -631,7 +644,7 @@ export class Application {
 			let asset = await MarketAssets.getListingAssetData(listingId);
 			if (asset) {
 				this.addListing(listingId);
-				this.setGenerationState(GenerationState.RetrievingItemDatas, listingId);
+				//this.setGenerationState(GenerationState.RetrievingItemDatas, listingId);
 				switch (asset.appid) {
 					case APP_ID_TF2:
 						chrome.runtime.sendMessage({ action: 'get-asset-class-info', appId: asset.appid, classId: asset.classid }, (classInfo) => {
@@ -646,7 +659,7 @@ export class Application {
 		}
 	}
 
-	async renderInventoryListing(appId: number, contextId: number, assetId: number, htmlImg?: HTMLImageElement, force = false) {
+	async #renderInventoryListing(appId: number, contextId: number, assetId: number, htmlImg?: HTMLImageElement, force = false) {
 		//console.log(assetId);
 		if (force || (this.#currentAssetId != assetId)) {
 			this.#currentAppId = appId;
@@ -663,7 +676,7 @@ export class Application {
 			}
 			let asset = await getInventoryAssetDatas(appId, contextId, assetId);
 			if (asset) {
-				this.setGenerationState(GenerationState.RetrievingItemDatas, String(assetId));
+				//this.setGenerationState(GenerationState.RetrievingItemDatas, String(assetId));
 				let steamUserId = await getInventorySteamId();
 				switch (asset.appid) {
 					case APP_ID_TF2:

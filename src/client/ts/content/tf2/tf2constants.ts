@@ -42,5 +42,6 @@ export const TF2_MERCENARIES = new Map<string, { modelPath: string, defaultAnima
 );
 
 export const TF2_PLAYER_CAMERA_TARGET = vec3.fromValues(0, 0, 45);
-export const TF2_PLAYER_CAMERA_POSITION = vec3.fromValues(300, -300, 45);
+export const TF2_PLAYER_CAMERA_POSITION = vec3.fromValues(0, 300, 45);
+export const TF2_ITEM_CAMERA_POSITION = vec3.fromValues(0, 300, 0);
 export const TF2_CLASSES_REMOVABLE_PARTS: string[] = ['heavy_hand_dex_bodygroup', 'robotarm_bodygroup', 'darts_bodygroup', 'spyMask', 'rocket', 'medal_bodygroup', 'demo_smiley'];

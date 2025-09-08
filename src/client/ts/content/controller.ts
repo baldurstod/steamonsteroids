@@ -1,7 +1,7 @@
 import { GenerationState } from '../enums';
 
 export enum ControllerEvents {
-	Tf2RefreshListing = 'refreshlisting',
+	Tf2RefreshVisibleListing = 'refreshvisiblelisting',
 	ClearMarketListing = 'clearmarketlisting',
 	SetGenerationState = 'setgenerationstate',
 	ShowRowContainer = 'showrowcontainer',
