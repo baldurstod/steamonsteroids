@@ -249,7 +249,7 @@ export class TF2Viewer {
 			if (paintKitId && paintKitWear && paintKitSeed) {
 				Controller.dispatch(ControllerEvents.SetGenerationState, { detail: { state: GenerationState.WaitingForGeneration, listingId: listingOrSteamId } });
 				paintKitWear = (paintKitWear - 0.2) * 5 >> 0; // transform the wear from decimal point to integer
-				WeaponManager.refreshItem({ sourceModel: source1Model, paintKitId: Number(paintKitId), paintKitWear: paintKitWear, id: String(defIndex), paintKitSeed: paintKitSeed, userData: listingOrSteamId }, true);
+				WeaponManager.refreshItem({ sourceModel: source1Model, paintKitId: Number(paintKitId), paintKitWear: paintKitWear, id: String(defIndex), paintKitSeed: paintKitSeed, userData: listingOrSteamId }, false);
 				if (htmlImg && assetId) {
 					Controller.dispatch(ControllerEvents.SelectInventoryItem, { detail: { assetId: assetId, htmlImg: htmlImg } });
 				}
