@@ -23,6 +23,7 @@ const CAMERA_DISTANCE = 200;
 const AJAX_PAGING_CONTROLS = new Map([
 	['tabContentsMyActiveMarketListings_controls', 'g_oMyListings'],
 	['tabContentsMyMarketHistory_controls', 'g_oMyHistory'],
+	['searchResults_controls', 'g_oSearchResults'],
 ]);
 
 function isChromium() {
