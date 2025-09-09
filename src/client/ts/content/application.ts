@@ -335,7 +335,9 @@ export class Application {
 
 	#setCameraTarget(target: vec3, position: vec3) {
 		this.#orbitCameraControl.target.setPosition(target);
-		this.#camera.position = position;
+		const pos = this.#camera.getPosition();//TODO: optimize
+		pos[2] = position[2];
+		this.#camera.setPosition(position);
 		this.#orbitCameraControl.update();
 	}
 
