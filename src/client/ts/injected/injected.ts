@@ -2,20 +2,20 @@ window.addEventListener('message', event => {
 	let messageData = event.data;
 	switch (messageData.action) {
 		case 'requestListingAssets':
-			window.postMessage({action: 'responseListingAssets', listingAssets: window.g_rgAssets, promiseId:messageData.promiseId}, '*');
+			window.postMessage({ action: 'responseListingAssets', listingAssets: window.g_rgAssets, promiseId: messageData.promiseId }, '*');
 			break;
 		case 'requestListingAsset':
 			let asset;
 			try {
 				asset = window.g_rgAssets[messageData.appId][messageData.contextId][messageData.assetId];
-			} catch (e) {}
+			} catch (e) { }
 			if (asset) {
 				delete asset.$row;//delete the junk added by SIH
 			}
-			window.postMessage({action: 'responseListingAsset', listingAssetDatas: asset, promiseId:messageData.promiseId}, '*');
+			window.postMessage({ action: 'responseListingAsset', listingAssetDatas: asset, promiseId: messageData.promiseId }, '*');
 			break;
 		case 'requestListingInfo':
-			window.postMessage({action: 'responseListingInfo', listingInfo: window.g_rgListingInfo, promiseId:messageData.promiseId}, '*');
+			window.postMessage({ action: 'responseListingInfo', listingInfo: window.g_rgListingInfo, promiseId: messageData.promiseId }, '*');
 			break;
 		case 'requestInventoryAssetDatas':
 			let description;
@@ -28,7 +28,7 @@ window.addEventListener('message', event => {
 					// We are in a trade window. Search the asset in both inventories
 					description = window.UserYou?.rgAppInfo?.[appId]?.rgContexts?.[contextId]?.inventory?.rgInventory?.[assetId] ?? window.UserThem?.rgAppInfo?.[appId]?.rgContexts?.[contextId]?.inventory?.rgInventory?.[assetId];
 				}
-			} catch (e) {}
+			} catch (e) { }
 			if (description) {
 				let assetDatas = {
 					market_hash_name: description.market_hash_name,
@@ -37,11 +37,11 @@ window.addEventListener('message', event => {
 					actions: description.actions,
 					id: description.id
 				};
-				window.postMessage({action: 'responseInventoryAssetDatas', inventoryAssetDatas: assetDatas, promiseId:messageData.promiseId}, '*');
+				window.postMessage({ action: 'responseInventoryAssetDatas', inventoryAssetDatas: assetDatas, promiseId: messageData.promiseId }, '*');
 			}
 			break;
 		case 'requestInventorySteamId':
-			window.postMessage({action: 'responseInventorySteamId', steamId: window.g_ActiveUser?.strSteamId, promiseId:messageData.promiseId}, '*');
+			window.postMessage({ action: 'responseInventorySteamId', steamId: window.g_ActiveUser?.strSteamId, promiseId: messageData.promiseId }, '*');
 			break;
 		case 'setInventoryFilter':
 			if (window.g_ActiveInventory && window.g_ActiveInventory.LoadCompleteInventory) {
