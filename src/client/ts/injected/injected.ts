@@ -1,5 +1,6 @@
 window.addEventListener('message', event => {
 	let messageData = event.data;
+	let controlName: string;
 	switch (messageData.action) {
 		case 'requestListingAssets':
 			window.postMessage({ action: 'responseListingAssets', listingAssets: window.g_rgAssets, promiseId: messageData.promiseId }, '*');
@@ -55,13 +56,27 @@ window.addEventListener('message', event => {
 			}
 			break;
 		case 'AjaxPagingControlsGoToPage':
-			let controlName = messageData.name;
+			controlName = messageData.name;
 			if (controlName) {
-				let control = window[controlName] as any;
+				let control = (window as any)[controlName] as any;
 				if (control) {
 					let page = Math.max(Math.min(messageData.page, control.m_cMaxPages), 1);
 					control.GoToPage(page - 1);
 				}
+			}
+			break;
+		case 'AjaxPagingControlsSetPageSize':
+			controlName = messageData.name;
+			let control = (window as any)[controlName] as any;
+			if (control) {
+				const oldPage = control.m_iCurrentPage;
+				const oldPageSize = control.m_cPageSize;
+				control.m_cPageSize = messageData.pageSize;
+				const page = Math.floor((oldPage * oldPageSize) / messageData.pageSize);
+				if (!isNaN(page)) {
+					control.GoToPage(page, true);
+				}
+
 			}
 			break;
 	}

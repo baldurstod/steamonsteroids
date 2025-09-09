@@ -407,13 +407,29 @@ export class Application {
 		}
 	}
 
-	async #initAjaxPagingControls3(target: HTMLElement, name: string) {
-		let htmlAjaxPagingControlGoto = createElement('input', {
-			type: 'number', style: 'float: left;width:50px;text-align:center;', events: {
-				change: (event: InputEvent) => window.postMessage({ action: 'AjaxPagingControlsGoToPage', name: name, page: Number((event.target as HTMLInputElement).value) }, '*')
-			}
+	async #initAjaxPagingControls3(target: HTMLElement, name: string): Promise<void> {
+		const htmlAjaxPagingControlGoto = createElement('input', {
+			type: 'number',
+			min: 1,
+			value: 1,
+			style: 'float: left;width:50px;text-align:center;',
+			$change: (event: InputEvent) => window.postMessage({ action: 'AjaxPagingControlsGoToPage', name: name, page: Number((event.target as HTMLInputElement).value) }, '*'),
 		});
 
+		const htmlAjaxPagingControlPageSize = createElement('select', {
+			class: 'steam-select',
+			$change: (event: InputEvent) => window.postMessage({ action: 'AjaxPagingControlsSetPageSize', name: name, pageSize: Number((event.target as HTMLInputElement).value) }, '*'),
+		});
+
+		for (let i = 10; i <= 20; i += 10) {
+			createElement('option', {
+				parent: htmlAjaxPagingControlPageSize,
+				value: i,
+				innerText: String(i),
+			});
+		}
+
+		target.insertBefore(htmlAjaxPagingControlPageSize, target.firstChild);
 		target.insertBefore(htmlAjaxPagingControlGoto, target.firstChild);
 	}
 

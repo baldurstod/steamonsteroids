@@ -75,7 +75,7 @@ export class TF2Viewer {
 
 		this.#htmlWeaponSelector = createElement('select', {
 			parent: this.#htmlControls,
-			class: 'weapon-selector',
+			class: 'weapon-selector steam-select',
 			$change: (event: Event) => {
 				this.#forcedWeaponIndex = Number((event.target as HTMLSelectElement).value);
 				chrome.storage.sync.set({ warpaintWeaponIndex: (event.target as HTMLSelectElement).value });
