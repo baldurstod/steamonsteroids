@@ -5,7 +5,6 @@ import { MASKET_LISTING_ROW_PREFIX } from './constants';
 export type ListingElement = {
 	row: HTMLElement;
 	canvas?: HTMLElement;
-	picture?: HTMLElement;
 }
 
 export class MarketListings {
@@ -17,10 +16,6 @@ export class MarketListings {
 
 	getCanvas(listing: string): HTMLElement | null {
 		return this.#getListing(listing)?.canvas ?? null;
-	}
-
-	getPicture(listing: string): HTMLElement | null {
-		return this.#getListing(listing)?.picture ?? null;
 	}
 
 	#getListing(listing: string): ListingElement | null {
@@ -48,10 +43,6 @@ export class MarketListings {
 					row: htmlListingRow as HTMLElement,
 					canvas: createElement('div', {
 						class: 'market-listing-canvas',
-						parent: htmlListingRow as HTMLElement,
-					}),
-					picture: createElement('div', {
-						class: 'market-listing-picture',
 						parent: htmlListingRow as HTMLElement,
 					}),
 				});
