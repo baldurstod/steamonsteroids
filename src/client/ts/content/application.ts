@@ -10,6 +10,7 @@ import { getInventoryAssetDatas, getInventorySteamId, MarketAssets } from './mar
 import { MASKET_LISTING_ROW_PREFIX, SEARCH_RESULT_ROWS } from './steam/constants';
 import { MarketListings } from './steam/marketlistings';
 import { TF2Viewer } from './tf2/tf2viewer';
+import { fullscreenExitSVG, fullscreenSVG } from 'harmony-svg';
 
 enum PageType {
 	Unknown = 0,
@@ -276,17 +277,17 @@ export class Application {
 
 		this.#htmlRowContainer.append(this.#canvasContainer/*, this.#htmlState*/);
 		hide(this.#htmlRowContainer);
-/*
-		let htmlFavoriteButton = document.createElement('div');
-		htmlFavoriteButton.className = 'favorite-button';
-		htmlFavoriteButton.innerHTML = '<a class="item_market_action_button btn_green_white_innerfade btn_small"><span>Favorite</span></a>';
-		htmlFavoriteButton.addEventListener('click', () => this.#favoriteListing());
+		/*
+				let htmlFavoriteButton = document.createElement('div');
+				htmlFavoriteButton.className = 'favorite-button';
+				htmlFavoriteButton.innerHTML = '<a class="item_market_action_button btn_green_white_innerfade btn_small"><span>Favorite</span></a>';
+				htmlFavoriteButton.addEventListener('click', () => this.#favoriteListing());
 
-		let htmlUnFavoriteButton = document.createElement('div');
-		htmlUnFavoriteButton.className = 'unfavorite-button';
-		htmlUnFavoriteButton.innerHTML = '<a class="item_market_action_button btn_green_white_innerfade btn_small"><span>Unfavorite</span></a>';
-		htmlUnFavoriteButton.addEventListener('click', () => this.#unfavoriteListing());
-		*/
+				let htmlUnFavoriteButton = document.createElement('div');
+				htmlUnFavoriteButton.className = 'unfavorite-button';
+				htmlUnFavoriteButton.innerHTML = '<a class="item_market_action_button btn_green_white_innerfade btn_small"><span>Unfavorite</span></a>';
+				htmlUnFavoriteButton.addEventListener('click', () => this.#unfavoriteListing());
+				*/
 		//this.#htmlCanvasItemInfo = createElement('div', { class: 'canvas-container-item-info' });
 
 		this.#canvasContainer.append(/*htmlFavoriteButton, htmlUnFavoriteButton, *//*this.#htmlCanvasItemInfo, */this.#tf2Viewer.initHtml()/*, this.cs2Viewer.initHtml()*/);
@@ -625,6 +626,7 @@ export class Application {
 				htmlInfo,
 				this.#tf2Viewer.initHtml(),
 				...this.#createFavoritesButtons(listingId),
+				...this.#createFullscreenButtons(listingId),
 			]
 		});
 		this.#canvasPerListing.set(listingId, { container: htmlContainer, canvas: htmlCanvas, scene: scene, state: htmlState, info: htmlInfo },);
@@ -661,7 +663,28 @@ export class Application {
 		htmlUnFavoriteButton.innerHTML = '<a class="item_market_action_button btn_green_white_innerfade btn_small"><span>Unfavorite</span></a>';
 		htmlUnFavoriteButton.addEventListener('click', () => this.#unfavoriteListing(listingId));
 
-		return [htmlFavoriteButton, htmlUnFavoriteButton]
+		return [htmlFavoriteButton, htmlUnFavoriteButton];
+	}
+
+	#createFullscreenButtons(listingId: string): [HTMLElement, HTMLElement] {
+		const htmlFullscreenButton = createElement('div', {
+			class: 'fullscreen-button',
+			innerHTML: fullscreenSVG,
+			$click: () => {
+				const canvasPerListing = this.#canvasPerListing.get(listingId);
+				if(canvasPerListing) {
+					canvasPerListing.container.requestFullscreen();
+				}
+			}
+		});
+
+		const htmlExitFullscreenButton = createElement('div', {
+			class: 'exit-fullscreen-button',
+			innerHTML: fullscreenExitSVG,
+			$click: () => document.exitFullscreen(),
+		});
+
+		return [htmlFullscreenButton, htmlExitFullscreenButton];
 	}
 
 	async #renderVisibleMarketListing(): Promise<void> {

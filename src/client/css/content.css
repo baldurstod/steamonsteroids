@@ -66,6 +66,26 @@ canvas:focus {
 	display: none;
 }
 
+.fullscreen-button,
+.exit-fullscreen-button {
+	position: absolute;
+	top: 25px;
+	right: 0px;
+	margin-right: 25px;
+}
+
+.exit-fullscreen-button{
+	display: none;
+}
+
+:fullscreen .fullscreen-button{
+	display: none;
+}
+
+:fullscreen .exit-fullscreen-button{
+	display: block;
+}
+
 .favorited-market-listing {
 	border: 2px solid #c3a700 !important;
 }
