@@ -1,6 +1,7 @@
 import { quat, vec3 } from 'gl-matrix';
 import { AmbientLight, BoundingBox, Camera, ColorBackground, ContextObserver, Graphics, GraphicsEvent, GraphicsEvents, GraphicTickEvent, OrbitControl, Scene, Source1ModelInstance, WebGLStats } from 'harmony-3d';
 import { getCharCodes } from 'harmony-binary-reader';
+import { fullscreenExitSVG, fullscreenSVG } from 'harmony-svg';
 import { createElement, hide, show } from 'harmony-ui';
 import { ACTIVE_INVENTORY_PAGE, APP_ID_CS2, APP_ID_TF2, INVENTORY_BACKGROUND_COLOR, INVENTORY_ITEM_CLASSNAME, MARKET_LISTING_BACKGROUND_COLOR, MARKET_LISTING_ROW_CLASSNAME, MOUSE_ENTER_DELAY } from '../constants';
 import { GenerationState } from '../enums';
@@ -10,7 +11,6 @@ import { getInventoryAssetDatas, getInventorySteamId, MarketAssets } from './mar
 import { MASKET_LISTING_ROW_PREFIX, SEARCH_RESULT_ROWS } from './steam/constants';
 import { MarketListings } from './steam/marketlistings';
 import { TF2Viewer } from './tf2/tf2viewer';
-import { fullscreenExitSVG, fullscreenSVG } from 'harmony-svg';
 
 enum PageType {
 	Unknown = 0,
@@ -45,6 +45,7 @@ type ContextPerListing = {
 	scene: Scene;
 	state: HTMLElement;
 	info: HTMLElement;
+	row: HTMLElement;
 }
 
 export class Application {
@@ -66,7 +67,7 @@ export class Application {
 	#inventoryFavorites: Record<string, any/*TODO: create type*/> = {};//TODO:turn into map
 	#canvasContainer = createElement('div', { class: 'canvas-container' });
 	#htmlCanvas = createElement('canvas', { parent: this.#canvasContainer, awidth: 1000, aheight: 1000 }) as HTMLCanvasElement;
-	#camera = new Camera({ nearPlane: 1, farPlane: 1000, verticalFov: 10 });
+	#camera = new Camera({ nearPlane: 1, farPlane: 1000, verticalFov: 10, autoResize: true });
 	#scene = new Scene({ camera: this.#camera, background: new ColorBackground({ color: MARKET_LISTING_BACKGROUND_COLOR }), childs: [this.#camera], });
 	#orbitCameraControl = new OrbitControl(this.#camera);
 	#currentListingId = '';
@@ -609,7 +610,12 @@ export class Application {
 			return false;
 		}
 
-		const row = this.#marketListings.getCanvas(listingId);
+		const rowCanvas = this.#marketListings.getCanvas(listingId);
+		if (!rowCanvas) {
+			return false;
+		}
+
+		const row = this.#marketListings.getRow(listingId);
 		if (!row) {
 			return false;
 		}
@@ -629,11 +635,11 @@ export class Application {
 				...this.#createFullscreenButtons(listingId),
 			]
 		});
-		this.#canvasPerListing.set(listingId, { container: htmlContainer, canvas: htmlCanvas, scene: scene, state: htmlState, info: htmlInfo },);
+		this.#canvasPerListing.set(listingId, { container: htmlContainer, canvas: htmlCanvas, scene: scene, state: htmlState, info: htmlInfo, row: row },);
 
 
 
-		row.append(htmlContainer, htmlState,);
+		rowCanvas.append(htmlContainer, htmlState,);
 		//const htmlCanvas = createElement('canvas', { parent: row }) as HTMLCanvasElement;
 		//const bipmapContext = htmlCanvas.getContext('bitmaprenderer');
 
@@ -672,8 +678,8 @@ export class Application {
 			innerHTML: fullscreenSVG,
 			$click: () => {
 				const canvasPerListing = this.#canvasPerListing.get(listingId);
-				if(canvasPerListing) {
-					canvasPerListing.container.requestFullscreen();
+				if (canvasPerListing) {
+					canvasPerListing.row.requestFullscreen();
 				}
 			}
 		});

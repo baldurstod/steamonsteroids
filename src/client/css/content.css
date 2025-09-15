@@ -30,15 +30,70 @@
 	left: 0px;
 	font-size: 1.5em;
 	pointer-events: all;
+}
+
+.steam-select {
 	background-color: #121A24;
 }
 
 .canvas-container {
+	/*background-color: #121A24;*/
 	height: 500px;
 	position: relative;
+	width: 100%;
+}
+
+#listings:fullscreen {
+	background-color: #121A24;
+	display: flex;
+}
+
+:fullscreen .canvas-container {
+	width: 900px;
+}
+
+:fullscreen .market_listing_table_header,
+:fullscreen .market_large_tab_well,
+:fullscreen .market_listing_filter,
+:fullscreen #market_buyorder_info,
+:fullscreen .resultsbluebg {
+	display: none;
+}
+
+:fullscreen #searchResultsTable {
+	display: flex;
+	flex-direction: column;
+}
+
+:fullscreen #searchResults_ctn {
+	flex: 0;
+}
+
+:fullscreen #searchResultsRows {
+	display: flex;
+	flex-direction: row;
+	flex-wrap: wrap;
+	justify-content: center;
+	align-items: center;
+	height: 100%;
+	overflow: auto;
+	background-color: #121A24;
 }
 
 .canvas-container>canvas {
+	width: 100%;
+}
+
+.market_listing_row:fullscreen {
+	background-color: #121A24;
+}
+
+:fullscreen .market-listing-canvas {
+	height: calc(100% - 74px);
+}
+
+:fullscreen .canvas-container {
+	height: 100%;
 	width: 100%;
 }
 
@@ -74,15 +129,15 @@ canvas:focus {
 	margin-right: 25px;
 }
 
-.exit-fullscreen-button{
+.exit-fullscreen-button {
 	display: none;
 }
 
-:fullscreen .fullscreen-button{
+:fullscreen .fullscreen-button {
 	display: none;
 }
 
-:fullscreen .exit-fullscreen-button{
+:fullscreen .exit-fullscreen-button {
 	display: block;
 }
 
