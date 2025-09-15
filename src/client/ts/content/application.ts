@@ -276,19 +276,20 @@ export class Application {
 
 		this.#htmlRowContainer.append(this.#canvasContainer/*, this.#htmlState*/);
 		hide(this.#htmlRowContainer);
-
+/*
 		let htmlFavoriteButton = document.createElement('div');
 		htmlFavoriteButton.className = 'favorite-button';
 		htmlFavoriteButton.innerHTML = '<a class="item_market_action_button btn_green_white_innerfade btn_small"><span>Favorite</span></a>';
-		htmlFavoriteButton.addEventListener('click', () => this.favoriteListing());
+		htmlFavoriteButton.addEventListener('click', () => this.#favoriteListing());
 
 		let htmlUnFavoriteButton = document.createElement('div');
 		htmlUnFavoriteButton.className = 'unfavorite-button';
 		htmlUnFavoriteButton.innerHTML = '<a class="item_market_action_button btn_green_white_innerfade btn_small"><span>Unfavorite</span></a>';
-		htmlUnFavoriteButton.addEventListener('click', () => this.unfavoriteListing());
+		htmlUnFavoriteButton.addEventListener('click', () => this.#unfavoriteListing());
+		*/
 		//this.#htmlCanvasItemInfo = createElement('div', { class: 'canvas-container-item-info' });
 
-		this.#canvasContainer.append(htmlFavoriteButton, htmlUnFavoriteButton, /*this.#htmlCanvasItemInfo, */this.#tf2Viewer.initHtml()/*, this.cs2Viewer.initHtml()*/);
+		this.#canvasContainer.append(/*htmlFavoriteButton, htmlUnFavoriteButton, *//*this.#htmlCanvasItemInfo, */this.#tf2Viewer.initHtml()/*, this.cs2Viewer.initHtml()*/);
 	}
 
 	#tradeActivate(activate: boolean) {
@@ -433,21 +434,21 @@ export class Application {
 		target.insertBefore(htmlAjaxPagingControlGoto, target.firstChild);
 	}
 
-	async favoriteListing() {
+	async #favoriteListing(listingId: string) {
 		if (this.#isInventoryPage) {
 			this.favoriteInventoryListing(this.#currentAppId, this.#currentContextId, this.#currentAssetId, await getInventorySteamId());
 		}
 		if (this.#isMarketPage) {
-			this.#favoriteMarketListing(this.#currentListingId);
+			this.#favoriteMarketListing(listingId);
 		}
 	}
 
-	unfavoriteListing() {
+	#unfavoriteListing(listingId: string) {
 		if (this.#isInventoryPage) {
 			this.unfavoriteInventoryListing(this.#currentAppId, this.#currentContextId, this.#currentAssetId);
 		}
 		if (this.#isMarketPage) {
-			this.unfavoriteMarketListing(this.#currentListingId);
+			this.unfavoriteMarketListing(listingId);
 		}
 	}
 
@@ -623,6 +624,7 @@ export class Application {
 				htmlCanvas,
 				htmlInfo,
 				this.#tf2Viewer.initHtml(),
+				...this.#createFavoritesButtons(listingId),
 			]
 		});
 		this.#canvasPerListing.set(listingId, { container: htmlContainer, canvas: htmlCanvas, scene: scene, state: htmlState, info: htmlInfo },);
@@ -645,6 +647,21 @@ export class Application {
 		//this.#bipmapContextPerListing.set(listingId, { canvas: htmlCanvas, context: bipmapContext, scene: this.#tf2Viewer.getScene(listingId) });
 
 		return true;
+	}
+
+	#createFavoritesButtons(listingId: string): [HTMLElement, HTMLElement] {
+
+		let htmlFavoriteButton = document.createElement('div');
+		htmlFavoriteButton.className = 'favorite-button';
+		htmlFavoriteButton.innerHTML = '<a class="item_market_action_button btn_green_white_innerfade btn_small"><span>Favorite</span></a>';
+		htmlFavoriteButton.addEventListener('click', () => this.#favoriteListing(listingId));
+
+		let htmlUnFavoriteButton = document.createElement('div');
+		htmlUnFavoriteButton.className = 'unfavorite-button';
+		htmlUnFavoriteButton.innerHTML = '<a class="item_market_action_button btn_green_white_innerfade btn_small"><span>Unfavorite</span></a>';
+		htmlUnFavoriteButton.addEventListener('click', () => this.#unfavoriteListing(listingId));
+
+		return [htmlFavoriteButton, htmlUnFavoriteButton]
 	}
 
 	async #renderVisibleMarketListing(): Promise<void> {
