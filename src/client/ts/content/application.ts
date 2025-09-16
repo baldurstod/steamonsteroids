@@ -724,7 +724,8 @@ export class Application {
 			innerHTML: fullscreenSVG,
 			$click: () => {
 				setFullscreenMode(FullscreenMode.MarketPerPage);
-				document.getElementById(MASKET_LISTINGS_ID)!.requestFullscreen()
+				document.getElementById(MASKET_LISTINGS_ID)!.requestFullscreen();
+				this.#renderAllRows();
 			}
 		});
 
@@ -736,6 +737,13 @@ export class Application {
 			if (listing.canvas.checkVisibility()) {
 				await this.#renderMarketListing(listingId, true);
 			}
+		}
+	}
+
+	async #renderAllRows(): Promise<void> {
+		let listings = document.getElementsByClassName(MARKET_LISTING_ROW_CLASSNAME);
+		for (let listing of listings) {
+			this.#renderMarketRow(listing as HTMLElement);
 		}
 	}
 
