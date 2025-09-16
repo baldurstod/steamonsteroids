@@ -447,7 +447,8 @@ export class Application {
 			$change: (event: InputEvent) => window.postMessage({ action: 'AjaxPagingControlsSetPageSize', name: name, pageSize: Number((event.target as HTMLInputElement).value) }, '*'),
 		});
 
-		for (let i = 10; i <= 20; i += 10) {
+		const pageLen = [10, 20, 100]
+		for (let i of pageLen) {
 			createElement('option', {
 				parent: htmlAjaxPagingControlPageSize,
 				value: i,
