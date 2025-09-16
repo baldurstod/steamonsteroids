@@ -629,7 +629,7 @@ export class Application {
 	addListing(listingId: string): boolean {
 		const c = this.#canvasPerListing.get(listingId);
 		if (c) {
-			c.container.appendChild(this.#tf2Viewer.initHtml());
+			//c.container.appendChild(this.#tf2Viewer.initHtml());
 			return false;
 		}
 
@@ -749,7 +749,7 @@ export class Application {
 
 	async #renderMarketListing(listingId: string, force = false) {
 		if (force || (this.#currentListingId != listingId)) {
-			this.#tf2Viewer.hide();
+			//this.#tf2Viewer.hide();
 			this.#cs2Viewer.hide();
 			this.#currentListingId = listingId;
 			let asset = await MarketAssets.getListingAssetData(listingId);
