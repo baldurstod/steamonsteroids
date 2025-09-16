@@ -42,20 +42,6 @@ function isChromium() {
 	return false;
 }
 
-function setFullscreenMode(mode: FullscreenMode) {
-	document.body.classList.remove(MARKET_FULLSCREEN_PER_LISTING);
-	document.body.classList.remove(MARKET_FULLSCREEN_PER_PAGE);
-
-	switch (mode) {
-		case FullscreenMode.MarketPerPage:
-			document.body.classList.add(MARKET_FULLSCREEN_PER_PAGE);
-			break;
-		case FullscreenMode.MarketPerListing:
-			document.body.classList.add(MARKET_FULLSCREEN_PER_LISTING);
-			break;
-	}
-}
-
 type ContextPerListing = {
 	canvas: HTMLCanvasElement;
 	container: HTMLElement;
@@ -65,7 +51,7 @@ type ContextPerListing = {
 	row: HTMLElement;
 }
 
-enum FullscreenMode {
+enum FullScreenMode {
 	None = 0,
 	MarketPerPage = 1,
 	MarketPerListing = 2,
@@ -93,7 +79,7 @@ export class Application {
 	#camera = new Camera({ nearPlane: 1, farPlane: 1000, verticalFov: 10, autoResize: true });
 	#scene = new Scene({ camera: this.#camera, background: new ColorBackground({ color: MARKET_LISTING_BACKGROUND_COLOR }), childs: [this.#camera], });
 	#orbitCameraControl = new OrbitControl(this.#camera);
-	#currentListingId = '';
+	//#currentListingId = '';
 	#currentAppId = 0;
 	#currentContextId = 0;
 	#currentAssetId = 0;
@@ -105,6 +91,8 @@ export class Application {
 	#bipmapContext?: ImageBitmapRenderingContext | null;
 	#canvasPerListing = new Map<string, ContextPerListing>();
 	#active = true;
+	#isFullScreen = false;
+	#fullScreenMode = FullScreenMode.None;
 
 	constructor() {
 		this.#initHtml();
@@ -116,6 +104,7 @@ export class Application {
 		this.#initInventoryPageControls();
 		this.#initAjaxPagingControls();
 		this.#loadFavorites();
+
 	}
 
 	#initGraphics() {
@@ -201,6 +190,15 @@ export class Application {
 			this.#setCameraTarget(detail.target, detail.position);
 		});
 		Controller.addEventListener(ControllerEvents.SetItemInfo, (event: Event) => this.#setItemInfo((event as CustomEvent<SetItemInfoEvent>).detail.listingId, (event as CustomEvent<SetItemInfoEvent>).detail.info));
+
+		document.addEventListener('fullscreenchange', () => this.#handleFullScreenChange());
+	}
+
+	#handleFullScreenChange() {
+		this.#isFullScreen = document.fullscreenElement != null;
+		if (!document.fullscreenElement) {
+			this.#setFullScreenMode(FullScreenMode.None);
+		}
 	}
 
 	async #loadFavorites() {
@@ -489,6 +487,9 @@ export class Application {
 						switch (true) {
 							case (addedNode as HTMLElement).classList.contains(MARKET_LISTING_ROW_CLASSNAME):
 								this.#createButton(addedNode as HTMLElement);
+								if (this.#fullScreenMode === FullScreenMode.MarketPerPage) {
+									this.#renderMarketRow(addedNode as HTMLElement);
+								}
 								break;
 							case (addedNode as HTMLElement).classList.contains(INVENTORY_ITEM_CLASSNAME):
 								this.#createInventoryListener(addedNode as HTMLElement);
@@ -660,7 +661,7 @@ export class Application {
 					class: 'canvas-container-toolbar',
 					childs: [
 						...this.#createFavoritesButtons(listingId),
-						...this.#createFullscreenButtons(listingId),
+						...this.#createFullScreenButtons(listingId),
 					],
 				}),
 			]
@@ -702,36 +703,51 @@ export class Application {
 		return [htmlFavoriteButton, htmlUnFavoriteButton];
 	}
 
-	#createFullscreenButtons(listingId: string): [HTMLElement, HTMLElement, HTMLElement] {
-		const htmlFullscreenButton = createElement('div', {
+	#createFullScreenButtons(listingId: string): [HTMLElement, HTMLElement, HTMLElement] {
+		const htmlFullScreenButton = createElement('div', {
 			class: 'fullscreen-button',
 			innerHTML: fullscreenSVG,
 			$click: () => {
 				const canvasPerListing = this.#canvasPerListing.get(listingId);
 				if (canvasPerListing) {
-					setFullscreenMode(FullscreenMode.MarketPerListing);
+					this.#setFullScreenMode(FullScreenMode.MarketPerListing);
 					canvasPerListing.row.requestFullscreen();
 				}
 			}
 		});
 
-		const htmlExitFullscreenButton = createElement('div', {
+		const htmlExitFullScreenButton = createElement('div', {
 			class: 'exit-fullscreen-button',
 			innerHTML: fullscreenExitSVG,
 			$click: () => document.exitFullscreen(),
 		});
 
-		const htmlFullscreenButton2 = createElement('div', {
+		const htmlFullScreenButton2 = createElement('div', {
 			class: 'fullscreen-button',
 			innerHTML: fullscreenSVG,
 			$click: () => {
-				setFullscreenMode(FullscreenMode.MarketPerPage);
+				this.#setFullScreenMode(FullScreenMode.MarketPerPage);
 				document.getElementById(MASKET_LISTINGS_ID)!.requestFullscreen();
 				this.#renderAllRows();
 			}
 		});
 
-		return [htmlFullscreenButton, htmlExitFullscreenButton, htmlFullscreenButton2];
+		return [htmlFullScreenButton, htmlExitFullScreenButton, htmlFullScreenButton2];
+	}
+
+	#setFullScreenMode(mode: FullScreenMode) {
+		this.#fullScreenMode = mode;
+		document.body.classList.remove(MARKET_FULLSCREEN_PER_LISTING);
+		document.body.classList.remove(MARKET_FULLSCREEN_PER_PAGE);
+
+		switch (mode) {
+			case FullScreenMode.MarketPerPage:
+				document.body.classList.add(MARKET_FULLSCREEN_PER_PAGE);
+				break;
+			case FullScreenMode.MarketPerListing:
+				document.body.classList.add(MARKET_FULLSCREEN_PER_LISTING);
+				break;
+		}
 	}
 
 	async #renderVisibleMarketListing(): Promise<void> {
@@ -750,24 +766,22 @@ export class Application {
 	}
 
 	async #renderMarketListing(listingId: string, force = false) {
-		if (force || (this.#currentListingId != listingId)) {
-			//this.#tf2Viewer.hide();
-			this.#cs2Viewer.hide();
-			this.#currentListingId = listingId;
-			let asset = await MarketAssets.getListingAssetData(listingId);
-			if (asset) {
-				this.addListing(listingId);
-				//this.setGenerationState(GenerationState.RetrievingItemDatas, listingId);
-				switch (asset.appid) {
-					case APP_ID_TF2:
-						chrome.runtime.sendMessage({ action: 'get-asset-class-info', appId: asset.appid, classId: asset.classid }, (classInfo) => {
-							this.#tf2Viewer.renderListingTF2(listingId, asset, classInfo);
-						});
-						break;
-					case APP_ID_CS2:
-						//this.cs2Viewer.renderListingCS2(listingId, asset);
-						break;
-				}
+		//this.#tf2Viewer.hide();
+		this.#cs2Viewer.hide();
+		//this.#currentListingId = listingId;
+		let asset = await MarketAssets.getListingAssetData(listingId);
+		if (asset) {
+			this.addListing(listingId);
+			//this.setGenerationState(GenerationState.RetrievingItemDatas, listingId);
+			switch (asset.appid) {
+				case APP_ID_TF2:
+					chrome.runtime.sendMessage({ action: 'get-asset-class-info', appId: asset.appid, classId: asset.classid }, (classInfo) => {
+						this.#tf2Viewer.renderListingTF2(listingId, asset, classInfo);
+					});
+					break;
+				case APP_ID_CS2:
+					//this.cs2Viewer.renderListingCS2(listingId, asset);
+					break;
 			}
 		}
 	}

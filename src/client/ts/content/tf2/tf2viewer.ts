@@ -183,9 +183,14 @@ export class TF2Viewer {
 				if (modelPlayer) {
 					const warPaint = await this.#getWarPaint(listingOrSteamId, modelPlayer.model);
 
+					if (!warPaint) {
+						return;
+					}
+					/*
 					if (!warPaint?.dirty) {
 						return;
 					}
+					*/
 					warPaint.dirty = false;
 
 					let inspectLink = getInspectLink(listingDatas, listingOrSteamId, assetId);
