@@ -104,6 +104,7 @@ export class Application {
 	#marketListings = new MarketListings();
 	#bipmapContext?: ImageBitmapRenderingContext | null;
 	#canvasPerListing = new Map<string, ContextPerListing>();
+	#active = true;
 
 	constructor() {
 		this.#initHtml();
@@ -656,8 +657,8 @@ export class Application {
 				htmlInfo,
 				this.#tf2Viewer.initHtml(),
 				createElement('div', {
-					class:'canvas-container-toolbar',
-					childs:[
+					class: 'canvas-container-toolbar',
+					childs: [
 						...this.#createFavoritesButtons(listingId),
 						...this.#createFullscreenButtons(listingId),
 					],
@@ -814,6 +815,16 @@ export class Application {
 
 	isTradeOffer() {
 		return this.#pageType == PageType.TradeOffer;
+	}
+
+	setActive(active: boolean): void {
+		this.#active = active;
+		const method = active ? 'add' : 'remove';
+		document.body.classList[method]('steamonsteroids-active');
+	}
+
+	isActive(): boolean {
+		return this.#active;
 	}
 }
 
