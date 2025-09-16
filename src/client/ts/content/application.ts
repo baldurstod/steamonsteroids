@@ -8,7 +8,7 @@ import { GenerationState } from '../enums';
 import { ClearMarketListingEvent, Controller, ControllerEvents, SetGenerationStateEvent, SetItemInfoEvent } from './controller';
 import { CS2Viewer } from './cs2/cs2viewer';
 import { getInventoryAssetDatas, getInventorySteamId, MarketAssets } from './marketassets';
-import { MASKET_LISTING_ROW_PREFIX, SEARCH_RESULT_ROWS } from './steam/constants';
+import { MASKET_LISTING_ROW_PREFIX, MASKET_LISTINGS_ID, SEARCH_RESULT_ROWS } from './steam/constants';
 import { MarketListings } from './steam/marketlistings';
 import { TF2Viewer } from './tf2/tf2viewer';
 
@@ -27,6 +27,9 @@ const AJAX_PAGING_CONTROLS = new Map([
 	['searchResults_controls', 'g_oSearchResults'],
 ]);
 
+const MARKET_FULLSCREEN_PER_PAGE = 'steamonsteroids-market-fullscreen-per-page';
+const MARKET_FULLSCREEN_PER_LISTING = 'steamonsteroids-market-fullscreen-per-listing';
+
 function isChromium() {
 	const brands = (navigator as any/*as of now, userAgentData does not exist in typescript*/)?.userAgentData?.brands;
 	if (brands) {
@@ -39,6 +42,20 @@ function isChromium() {
 	return false;
 }
 
+function setFullscreenMode(mode: FullscreenMode) {
+	document.body.classList.remove(MARKET_FULLSCREEN_PER_LISTING);
+	document.body.classList.remove(MARKET_FULLSCREEN_PER_PAGE);
+
+	switch (mode) {
+		case FullscreenMode.MarketPerPage:
+			document.body.classList.add(MARKET_FULLSCREEN_PER_PAGE);
+			break;
+		case FullscreenMode.MarketPerListing:
+			document.body.classList.add(MARKET_FULLSCREEN_PER_LISTING);
+			break;
+	}
+}
+
 type ContextPerListing = {
 	canvas: HTMLCanvasElement;
 	container: HTMLElement;
@@ -46,6 +63,12 @@ type ContextPerListing = {
 	state: HTMLElement;
 	info: HTMLElement;
 	row: HTMLElement;
+}
+
+enum FullscreenMode {
+	None = 0,
+	MarketPerPage = 1,
+	MarketPerListing = 2,
 }
 
 export class Application {
@@ -631,8 +654,13 @@ export class Application {
 				htmlCanvas,
 				htmlInfo,
 				this.#tf2Viewer.initHtml(),
-				...this.#createFavoritesButtons(listingId),
-				...this.#createFullscreenButtons(listingId),
+				createElement('div', {
+					class:'canvas-container-toolbar',
+					childs:[
+						...this.#createFavoritesButtons(listingId),
+						...this.#createFullscreenButtons(listingId),
+					],
+				}),
 			]
 		});
 		this.#canvasPerListing.set(listingId, { container: htmlContainer, canvas: htmlCanvas, scene: scene, state: htmlState, info: htmlInfo, row: row },);
@@ -672,13 +700,14 @@ export class Application {
 		return [htmlFavoriteButton, htmlUnFavoriteButton];
 	}
 
-	#createFullscreenButtons(listingId: string): [HTMLElement, HTMLElement] {
+	#createFullscreenButtons(listingId: string): [HTMLElement, HTMLElement, HTMLElement] {
 		const htmlFullscreenButton = createElement('div', {
 			class: 'fullscreen-button',
 			innerHTML: fullscreenSVG,
 			$click: () => {
 				const canvasPerListing = this.#canvasPerListing.get(listingId);
 				if (canvasPerListing) {
+					setFullscreenMode(FullscreenMode.MarketPerListing);
 					canvasPerListing.row.requestFullscreen();
 				}
 			}
@@ -690,7 +719,16 @@ export class Application {
 			$click: () => document.exitFullscreen(),
 		});
 
-		return [htmlFullscreenButton, htmlExitFullscreenButton];
+		const htmlFullscreenButton2 = createElement('div', {
+			class: 'fullscreen-button',
+			innerHTML: fullscreenSVG,
+			$click: () => {
+				setFullscreenMode(FullscreenMode.MarketPerPage);
+				document.getElementById(MASKET_LISTINGS_ID)!.requestFullscreen()
+			}
+		});
+
+		return [htmlFullscreenButton, htmlExitFullscreenButton, htmlFullscreenButton2];
 	}
 
 	async #renderVisibleMarketListing(): Promise<void> {

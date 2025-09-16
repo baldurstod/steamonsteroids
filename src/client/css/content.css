@@ -48,8 +48,13 @@
 	display: flex;
 }
 
-:fullscreen .canvas-container {
+.steamonsteroids-market-fullscreen-per-page :fullscreen .canvas-container {
 	width: 900px;
+}
+
+.steamonsteroids-market-fullscreen-per-listing :fullscreen .canvas-container {
+	width: 100%;
+	height: 100%;
 }
 
 :fullscreen .market_listing_table_header,
@@ -78,6 +83,7 @@
 	height: 100%;
 	overflow: auto;
 	background-color: #121A24;
+	gap: 0.5rem;
 }
 
 .canvas-container>canvas {
@@ -90,11 +96,6 @@
 
 :fullscreen .market-listing-canvas {
 	height: calc(100% - 74px);
-}
-
-:fullscreen .canvas-container {
-	height: 100%;
-	width: 100%;
 }
 
 .market-listing-canvas>canvas {
@@ -111,10 +112,9 @@ canvas:focus {
 
 .favorite-button,
 .unfavorite-button {
-	position: absolute;
+	/*position: absolute;*/
 	top: 0px;
 	right: 0px;
-	margin-right: 25px;
 }
 
 .unfavorite-button {
@@ -123,10 +123,9 @@ canvas:focus {
 
 .fullscreen-button,
 .exit-fullscreen-button {
-	position: absolute;
+	/*position: absolute;*/
 	top: 25px;
 	right: 0px;
-	margin-right: 25px;
 }
 
 .exit-fullscreen-button {
@@ -208,4 +207,11 @@ canvas:focus {
 .canvas-container-controls-playpause svg {
 	height: 100%;
 	width: 100%;
+}
+
+.canvas-container-toolbar {
+	position: absolute;
+	top: 25px;
+	right: 0px;
+	display: flex;
 }

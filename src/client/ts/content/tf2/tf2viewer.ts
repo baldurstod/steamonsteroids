@@ -101,7 +101,7 @@ export class TF2Viewer {
 		let buttonState = false;
 		const htmlPlayPauseButton = createElement('button', {
 			class: 'canvas-container-controls-playpause play',
-			innerHTML: pauseSVG,
+			innerHTML: playSVG,
 			parent: this.#htmlControls,
 			events: {
 				click: () => {
