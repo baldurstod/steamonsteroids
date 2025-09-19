@@ -8,7 +8,7 @@ import { GenerationState } from '../enums';
 import { ClearMarketListingEvent, Controller, ControllerEvents, SetGenerationStateEvent, SetItemInfoEvent } from './controller';
 import { CS2Viewer } from './cs2/cs2viewer';
 import { getInventoryAssetDatas, getInventorySteamId, MarketAssets } from './marketassets';
-import { MASKET_LISTING_ROW_PREFIX, MASKET_LISTINGS_ID, SEARCH_RESULT_ROWS } from './steam/constants';
+import { MARKET_LISTING_ROW_PREFIX, MARKET_LISTINGS_ID, SEARCH_RESULT_ROWS } from './steam/constants';
 import { MarketListings } from './steam/marketlistings';
 import { TF2Viewer } from './tf2/tf2viewer';
 
@@ -570,7 +570,7 @@ export class Application {
 	}
 
 	#renderMarketRow(marketListingRow: HTMLElement): void {
-		const listingId = marketListingRow.id.replace(MASKET_LISTING_ROW_PREFIX, '')
+		const listingId = marketListingRow.id.replace(MARKET_LISTING_ROW_PREFIX, '')
 		const htmlMarketRow = this.#marketListings.getCanvas(listingId);
 		if (htmlMarketRow) {
 			//htmlMarketRow.append(this.#htmlRowContainer);
@@ -734,7 +734,7 @@ export class Application {
 			innerHTML: fullscreenSVG,
 			$click: () => {
 				this.#setFullScreenMode(FullScreenMode.MarketPerPage);
-				document.getElementById(MASKET_LISTINGS_ID)!.requestFullscreen().then(() => {
+				document.getElementById(MARKET_LISTINGS_ID)!.requestFullscreen().then(() => {
 					this.#enableAllCanvas(true);
 					const context = this.#canvasPerListing.get(listingId);
 					if (context) {

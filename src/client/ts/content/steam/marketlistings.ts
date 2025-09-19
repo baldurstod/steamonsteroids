@@ -1,6 +1,6 @@
 import { createElement } from 'harmony-ui';
 import { MARKET_LISTING_ROW_CLASSNAME } from '../../constants';
-import { MASKET_LISTING_ROW_PREFIX } from './constants';
+import { MARKET_LISTING_ROW_PREFIX } from './constants';
 
 export type ListingElement = {
 	row: HTMLElement;
@@ -17,7 +17,7 @@ export class MarketListings {
 	getCanvas(listing: string): HTMLElement | null {
 		const htmlListing = this.#getListing(listing);
 		if (htmlListing) {
-			const parent = document.getElementById(`${MASKET_LISTING_ROW_PREFIX}${listing}`);
+			const parent = document.getElementById(`${MARKET_LISTING_ROW_PREFIX}${listing}`);
 			if (parent) {
 				parent.append(htmlListing.canvas);
 			}
@@ -44,7 +44,7 @@ export class MarketListings {
 	#refreshListings(): void {
 		const htmlListingRows = document.getElementsByClassName(MARKET_LISTING_ROW_CLASSNAME);
 		for (let htmlListingRow of htmlListingRows) {
-			const marketListingId = htmlListingRow.id.replace(MASKET_LISTING_ROW_PREFIX, '');
+			const marketListingId = htmlListingRow.id.replace(MARKET_LISTING_ROW_PREFIX, '');
 			if (marketListingId) {
 				this.#rows.set(marketListingId, {
 					row: htmlListingRow as HTMLElement,
