@@ -631,14 +631,15 @@ export class Application {
 	}
 
 	addListing(listingId: string): boolean {
-		const c = this.#canvasPerListing.get(listingId);
-		if (c) {
-			//c.container.appendChild(this.#tf2Viewer.initHtml());
+		const rowCanvas = this.#marketListings.getCanvas(listingId);
+		if (!rowCanvas) {
 			return false;
 		}
 
-		const rowCanvas = this.#marketListings.getCanvas(listingId);
-		if (!rowCanvas) {
+		const c = this.#canvasPerListing.get(listingId);
+		if (c) {
+			//c.container.appendChild(this.#tf2Viewer.initHtml());
+			rowCanvas.append(c.container, c.state,);
 			return false;
 		}
 

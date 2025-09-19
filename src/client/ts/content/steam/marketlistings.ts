@@ -4,7 +4,7 @@ import { MASKET_LISTING_ROW_PREFIX } from './constants';
 
 export type ListingElement = {
 	row: HTMLElement;
-	canvas?: HTMLElement;
+	canvas: HTMLElement;
 }
 
 export class MarketListings {
@@ -15,7 +15,14 @@ export class MarketListings {
 	}
 
 	getCanvas(listing: string): HTMLElement | null {
-		return this.#getListing(listing)?.canvas ?? null;
+		const htmlListing = this.#getListing(listing);
+		if (htmlListing) {
+			const parent = document.getElementById(`${MASKET_LISTING_ROW_PREFIX}${listing}`);
+			if (parent) {
+				parent.append(htmlListing.canvas);
+			}
+		}
+		return htmlListing?.canvas ?? null;
 	}
 
 	#getListing(listing: string): ListingElement | null {
