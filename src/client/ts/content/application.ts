@@ -198,6 +198,7 @@ export class Application {
 		this.#isFullScreen = document.fullscreenElement != null;
 		if (!document.fullscreenElement) {
 			this.#setFullScreenMode(FullScreenMode.None);
+			this.#enableAllCanvas(true);
 		}
 	}
 
@@ -648,7 +649,7 @@ export class Application {
 
 		const scene = this.#tf2Viewer.getListingScene(listingId);
 		scene.activeCamera = this.#camera;
-		const htmlCanvas = Graphics.addCanvas(undefined, { scene: scene, autoResize: true });
+		const htmlCanvas = Graphics.addCanvas(undefined, { name: listingId, scene: scene, autoResize: true });
 		const htmlState = createElement('div');
 		const htmlInfo = createElement('div', { class: 'canvas-container-item-info' });
 		const htmlContainer = createElement('div', {
@@ -712,6 +713,11 @@ export class Application {
 				if (canvasPerListing) {
 					this.#setFullScreenMode(FullScreenMode.MarketPerListing);
 					canvasPerListing.row.requestFullscreen();
+					this.#enableAllCanvas(false);
+					const context = this.#canvasPerListing.get(listingId);
+					if (context) {
+						this.#enableCanvas(context.canvas, true);
+					}
 				}
 			}
 		});
@@ -727,12 +733,28 @@ export class Application {
 			innerHTML: fullscreenSVG,
 			$click: () => {
 				this.#setFullScreenMode(FullScreenMode.MarketPerPage);
-				document.getElementById(MASKET_LISTINGS_ID)!.requestFullscreen();
+				document.getElementById(MASKET_LISTINGS_ID)!.requestFullscreen().then(() => {
+					this.#enableAllCanvas(true);
+					const context = this.#canvasPerListing.get(listingId);
+					if (context) {
+						this.#enableCanvas(context.canvas, true);
+					}
+				});
 				this.#renderAllRows();
 			}
 		});
 
 		return [htmlFullScreenButton, htmlExitFullScreenButton, htmlFullScreenButton2];
+	}
+
+	#enableAllCanvas(enable: boolean): void {
+		for (const [_, canvasPerListing] of this.#canvasPerListing) {
+			Graphics.enableCanvas(canvasPerListing.canvas, enable);
+		}
+	}
+
+	#enableCanvas(canvas: HTMLCanvasElement, enable: boolean): void {
+		Graphics.enableCanvas(canvas, enable);
 	}
 
 	#setFullScreenMode(mode: FullScreenMode) {
