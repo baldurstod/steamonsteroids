@@ -10,6 +10,7 @@
     "harmony-browser-utils": "github:baldurstod/harmony-browser-utils",
     "harmony-svg": "github:baldurstod/harmony-svg",
     "harmony-tf2-utils": "github:baldurstod/harmony-tf2-utils",
+    "harmony-types": "github:baldurstod/harmony-types",
     "harmony-ui": "github:baldurstod/harmony-ui",
     "harmony-utils": "github:baldurstod/harmony-utils"
   },

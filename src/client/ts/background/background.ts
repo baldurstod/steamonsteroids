@@ -1,9 +1,9 @@
 import { PaintKitDefinitions } from 'harmony-tf2-utils';
-import { JSONObject } from 'harmony-utils';
+import { JSONObject } from 'harmony-types';
 import { API_GET_ASSET_CLASS_INFO_ENDPOINT, API_INSPECT_CS2_WEAPON_ENDPOINT, API_INSPECT_TF2_WEAPON_ENDPOINT, CS2_ITEMS_URL, TF2_ITEMS_URL } from '../constants';
 
 class BackGround {
-	static #assetClassInfos = new Map<number, Map<number, any/*TODO: improve type*/>>();
+	static #assetClassInfos = new Map<number, Map<number, any/*TODO: improve type*/>>();//TODO: turn into Map2
 	static #inspectedWeapons = new Map<string, any/*TODO: improve type*/>();
 	static #tf2Schema?: JSONObject/*TODO: improve type*/;
 	static #cs2Schema?: JSONObject/*TODO: improve type*/;
