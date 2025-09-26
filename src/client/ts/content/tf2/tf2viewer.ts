@@ -280,7 +280,7 @@ export class TF2Viewer {
 		if (model && tf2Item) {
 			let skin = Number(this.#teamColor == Tf2Team.RED ? tf2Item.skin_red : tf2Item.skin_blu ?? tf2Item.skin_red);
 			if (skin) {
-				model.skin = skin;
+				model.skin = String(skin);
 			}
 		}
 	}
