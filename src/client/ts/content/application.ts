@@ -75,7 +75,7 @@ export class Application {
 	#favorites: Record<string, any/*TODO: create type*/> = {};//TODO:turn into map
 	#inventoryFavorites: Record<string, any/*TODO: create type*/> = {};//TODO:turn into map
 	#canvasContainer = createElement('div', { class: 'canvas-container' });
-	#htmlCanvas = createElement('canvas', { parent: this.#canvasContainer, awidth: 1000, aheight: 1000 }) as HTMLCanvasElement;
+	//#htmlCanvas = createElement('canvas', { parent: this.#canvasContainer, awidth: 1000, aheight: 1000 }) as HTMLCanvasElement;
 	#camera = new Camera({ nearPlane: 1, farPlane: 1000, verticalFov: 10, autoResize: true });
 	#scene = new Scene({ camera: this.#camera, background: new ColorBackground({ color: MARKET_LISTING_BACKGROUND_COLOR }), childs: [this.#camera], });
 	#orbitCameraControl = new OrbitControl(this.#camera);
@@ -88,7 +88,7 @@ export class Application {
 	#isTradeOffer = false;
 	#timeouts = new Map<HTMLElement, ReturnType<typeof setTimeout>>();
 	#marketListings = new MarketListings();
-	#bipmapContext?: ImageBitmapRenderingContext | null;
+	//#bipmapContext?: ImageBitmapRenderingContext | null;
 	#canvasPerListing = new Map<string, ContextPerListing>();
 	#active = true;
 	#isFullScreen = false;
@@ -108,7 +108,7 @@ export class Application {
 	}
 
 	#initGraphics() {
-		this.#bipmapContext = this.#htmlCanvas!.getContext('bitmaprenderer');
+		//this.#bipmapContext = this.#htmlCanvas!.getContext('bitmaprenderer');
 		Graphics.initCanvas({
 			//canvas: this.#htmlCanvas,
 			useOffscreenCanvas: true,
@@ -120,7 +120,7 @@ export class Application {
 			}
 		});
 
-		Graphics.listenCanvas(this.#htmlCanvas);
+		//Graphics.listenCanvas(this.#htmlCanvas);
 
 		const render = (event: Event) => {
 			WebGLStats.tick();
