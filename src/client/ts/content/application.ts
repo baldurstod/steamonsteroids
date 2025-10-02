@@ -152,7 +152,7 @@ export class Application {
 
 		this.#camera.addChild(this.#tf2Viewer.getCameraGroup());
 
-		ContextObserver.observe(GraphicsEvents, this.#camera);
+		//ContextObserver.observe(GraphicsEvents, this.#camera);
 	}
 
 	#initScene() {
