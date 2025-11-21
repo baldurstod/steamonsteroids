@@ -33,13 +33,15 @@ export class Controller {
 		this.eventTarget.addEventListener(type, callback, options);
 	}
 
-	static dispatch(type: ControllerEvents, options?: CustomEventInit): boolean {
-		return this.eventTarget.dispatchEvent(new CustomEvent(type, options));
+	static dispatchEvent<T>(type: ControllerEvents, options?: CustomEventInit<T>): boolean {
+		return this.eventTarget.dispatchEvent(new CustomEvent<T>(type, options));
 	}
 
+	/*
 	static dispatchEvent(event: Event): boolean {
 		return this.eventTarget.dispatchEvent(event);
 	}
+	*/
 
 	static removeEventListener(type: ControllerEvents, callback: EventListenerOrEventListenerObject | null, options?: EventListenerOptions | boolean): void {
 		this.eventTarget.removeEventListener(type, callback, options);
