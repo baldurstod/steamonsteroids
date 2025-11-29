@@ -1,11 +1,11 @@
 import { vec3 } from 'gl-matrix';
-import { AmbientLight, Group, PointLight, Repositories, RotationControl, Scene, Source1ModelInstance, Source1ParticleControler, Texture, WebRepository } from 'harmony-3d';
+import { AmbientLight, ColorBackground, Group, PointLight, Repositories, RotationControl, Scene, Source1ModelInstance, Source1ParticleControler, Texture, WebRepository } from 'harmony-3d';
 import { TextureCombiner, WeaponManager, WeaponManagerItem } from 'harmony-3d-utils';
 import { blockSVG, pauseSVG, playSVG } from 'harmony-svg';
 import { Tf2Team, WarpaintDefinitions } from 'harmony-tf2-utils';
 import { createElement, hide, show } from 'harmony-ui';
 import { Map2, setTimeoutPromise } from 'harmony-utils';
-import { APP_ID_TF2, DECORATED_WEAPONS, TF2_REPOSITORY, TF2_WARPAINT_DEFINITIONS_URL } from '../../constants';
+import { APP_ID_TF2, DECORATED_WEAPONS, MARKET_LISTING_BACKGROUND_COLOR, TF2_REPOSITORY, TF2_WARPAINT_DEFINITIONS_URL } from '../../constants';
 import { GenerationState } from '../../enums';
 import { Controller, ControllerEvents } from '../controller';
 import { getInspectLink } from '../utils/inspectlink';
@@ -566,7 +566,7 @@ export class TF2Viewer {
 	getListingScene(listingId: string): Scene {
 		let scene = this.#scenePerId.get(listingId);
 		if (!scene) {
-			scene = new Scene({ parent: this.#scene });
+			scene = new Scene({ parent: this.#scene, background: new ColorBackground({ color: MARKET_LISTING_BACKGROUND_COLOR }) });
 			this.#scenePerId.set(listingId, scene);
 		}
 

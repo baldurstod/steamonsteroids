@@ -1,5 +1,5 @@
 import { quat, vec3 } from 'gl-matrix';
-import { AmbientLight, BoundingBox, Camera, ColorBackground, ContextObserver, Graphics, GraphicsEvent, GraphicsEvents, GraphicTickEvent, OrbitControl, Scene, Source1ModelInstance, WebGLStats } from 'harmony-3d';
+import { AmbientLight, BoundingBox, Camera, CanvasAttributes, ColorBackground, Graphics, GraphicsEvent, GraphicsEvents, GraphicTickEvent, OrbitControl, Scene, Source1ModelInstance, WebGLStats } from 'harmony-3d';
 import { getCharCodes } from 'harmony-binary-reader';
 import { fullscreenExitSVG, fullscreenSVG } from 'harmony-svg';
 import { createElement, hide, show } from 'harmony-ui';
@@ -43,7 +43,8 @@ function isChromium() {
 }
 
 type ContextPerListing = {
-	canvas: HTMLCanvasElement;
+	//canvas: HTMLCanvasElement;
+	attributes: CanvasAttributes;
 	container: HTMLElement;
 	scene: Scene;
 	state: HTMLElement;
@@ -650,13 +651,16 @@ export class Application {
 
 		const scene = this.#tf2Viewer.getListingScene(listingId);
 		scene.activeCamera = this.#camera;
-		const htmlCanvas = Graphics.addCanvas(undefined, { name: listingId, scene: scene, autoResize: true });
+		const canvasAttributes = Graphics.addCanvas({ name: listingId, scene: scene, autoResize: true });
+		if (!canvasAttributes) {
+			return false;
+		}
 		const htmlState = createElement('div');
 		const htmlInfo = createElement('div', { class: 'canvas-container-item-info' });
 		const htmlContainer = createElement('div', {
 			class: 'canvas-container',
 			childs: [
-				htmlCanvas,
+				canvasAttributes.canvas,
 				htmlInfo,
 				this.#tf2Viewer.initHtml(),
 				createElement('div', {
@@ -668,7 +672,7 @@ export class Application {
 				}),
 			]
 		});
-		this.#canvasPerListing.set(listingId, { container: htmlContainer, canvas: htmlCanvas, scene: scene, state: htmlState, info: htmlInfo, row: row },);
+		this.#canvasPerListing.set(listingId, { container: htmlContainer, attributes: canvasAttributes, scene: scene, state: htmlState, info: htmlInfo, row: row },);
 
 
 
@@ -717,7 +721,7 @@ export class Application {
 					this.#enableAllCanvas(false);
 					const context = this.#canvasPerListing.get(listingId);
 					if (context) {
-						this.#enableCanvas(context.canvas, true);
+						this.#enableCanvas(listingId, true);
 					}
 				}
 			}
@@ -738,7 +742,7 @@ export class Application {
 					this.#enableAllCanvas(true);
 					const context = this.#canvasPerListing.get(listingId);
 					if (context) {
-						this.#enableCanvas(context.canvas, true);
+						this.#enableCanvas(listingId, true);
 					}
 				});
 				this.#renderAllRows();
@@ -749,13 +753,13 @@ export class Application {
 	}
 
 	#enableAllCanvas(enable: boolean): void {
-		for (const [_, canvasPerListing] of this.#canvasPerListing) {
-			Graphics.enableCanvas(canvasPerListing.canvas, enable);
+		for (const [id, canvasPerListing] of this.#canvasPerListing) {
+			Graphics.enableCanvas(id, enable);
 		}
 	}
 
-	#enableCanvas(canvas: HTMLCanvasElement, enable: boolean): void {
-		Graphics.enableCanvas(canvas, enable);
+	#enableCanvas(id: string, enable: boolean): void {
+		Graphics.enableCanvas(id, enable);
 	}
 
 	#setFullScreenMode(mode: FullScreenMode) {
@@ -775,7 +779,7 @@ export class Application {
 
 	async #renderVisibleMarketListing(): Promise<void> {
 		for (const [listingId, listing] of this.#canvasPerListing) {
-			if (listing.canvas.checkVisibility()) {
+			if (listing.attributes.canvas.checkVisibility()) {
 				await this.#renderMarketListing(listingId, true);
 			}
 		}
