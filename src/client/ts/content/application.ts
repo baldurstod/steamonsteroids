@@ -1,7 +1,7 @@
 import { quat, vec3 } from 'gl-matrix';
 import { AmbientLight, BoundingBox, Camera, CanvasAttributes, ColorBackground, Graphics, GraphicsEvent, GraphicsEvents, GraphicTickEvent, OrbitControl, Scene, Source1ModelInstance, WebGLStats } from 'harmony-3d';
 import { getCharCodes } from 'harmony-binary-reader';
-import { fullscreenExitSVG, fullscreenSVG } from 'harmony-svg';
+import { fullscreenExitSVG } from 'harmony-svg';
 import { createElement, hide, show } from 'harmony-ui';
 import { ACTIVE_INVENTORY_PAGE, APP_ID_CS2, APP_ID_TF2, INVENTORY_BACKGROUND_COLOR, INVENTORY_ITEM_CLASSNAME, MARKET_LISTING_BACKGROUND_COLOR, MARKET_LISTING_ROW_CLASSNAME, MOUSE_ENTER_DELAY } from '../constants';
 import { GenerationState } from '../enums';
@@ -695,24 +695,26 @@ export class Application {
 	}
 
 	#createFavoritesButtons(listingId: string): [HTMLElement, HTMLElement] {
+		let htmlFavoriteButton = createElement('div', {
+			class: 'button favorite-button',
+			innerHTML: '<a class="item_market_action_button btn_green_white_innerfade btn_small"><span>Favorite</span></a>',
+			$click: () => this.#favoriteListing(listingId),
+		});
 
-		let htmlFavoriteButton = document.createElement('div');
-		htmlFavoriteButton.className = 'favorite-button';
-		htmlFavoriteButton.innerHTML = '<a class="item_market_action_button btn_green_white_innerfade btn_small"><span>Favorite</span></a>';
-		htmlFavoriteButton.addEventListener('click', () => this.#favoriteListing(listingId));
-
-		let htmlUnFavoriteButton = document.createElement('div');
-		htmlUnFavoriteButton.className = 'unfavorite-button';
-		htmlUnFavoriteButton.innerHTML = '<a class="item_market_action_button btn_green_white_innerfade btn_small"><span>Unfavorite</span></a>';
-		htmlUnFavoriteButton.addEventListener('click', () => this.#unfavoriteListing(listingId));
+		let htmlUnFavoriteButton = createElement('div', {
+			class: 'button unfavorite-button',
+			innerHTML: '<a class="item_market_action_button btn_green_white_innerfade btn_small"><span>Unfavorite</span></a>',
+			$click: () => this.#unfavoriteListing(listingId),
+		});
 
 		return [htmlFavoriteButton, htmlUnFavoriteButton];
 	}
 
 	#createFullScreenButtons(listingId: string): [HTMLElement, HTMLElement, HTMLElement] {
 		const htmlFullScreenButton = createElement('div', {
-			class: 'fullscreen-button',
-			innerHTML: fullscreenSVG,
+			class: 'button fullscreen-button',
+			//innerHTML: fullscreenSVG,
+			innerHTML: '<a class="item_market_action_button btn_green_white_innerfade btn_small"><span>Fullscreen this item</span></a>',
 			$click: () => {
 				const canvasPerListing = this.#canvasPerListing.get(listingId);
 				if (canvasPerListing) {
@@ -728,14 +730,14 @@ export class Application {
 		});
 
 		const htmlExitFullScreenButton = createElement('div', {
-			class: 'exit-fullscreen-button',
-			innerHTML: fullscreenExitSVG,
+			class: 'button exit-fullscreen-button',
+			innerHTML: '<a class="item_market_action_button btn_green_white_innerfade btn_small"><span>Exit fullscreen</span></a>',
 			$click: () => document.exitFullscreen(),
 		});
 
 		const htmlFullScreenButton2 = createElement('div', {
-			class: 'fullscreen-button',
-			innerHTML: fullscreenSVG,
+			class: 'button fullscreen-button',
+			innerHTML: '<a class="item_market_action_button btn_green_white_innerfade btn_small"><span>Fullscreen all items</span></a>',
 			$click: () => {
 				this.#setFullScreenMode(FullScreenMode.MarketPerPage);
 				document.getElementById(MARKET_LISTINGS_ID)!.requestFullscreen().then(() => {

@@ -112,22 +112,8 @@ canvas:focus {
 	pointer-events: none;
 }
 
-.favorite-button,
-.unfavorite-button {
-	/*position: absolute;*/
-	top: 0px;
-	right: 0px;
-}
-
 .unfavorite-button {
 	display: none;
-}
-
-.fullscreen-button,
-.exit-fullscreen-button {
-	/*position: absolute;*/
-	top: 25px;
-	right: 0px;
 }
 
 .exit-fullscreen-button {
@@ -216,4 +202,10 @@ canvas:focus {
 	top: 25px;
 	right: 0px;
 	display: flex;
+	flex-direction: column;
+	gap: 0.5rem;
+}
+
+.button {
+	width: 100%;
 }
