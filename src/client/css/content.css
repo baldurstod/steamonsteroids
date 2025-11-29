@@ -112,6 +112,12 @@ canvas:focus {
 	pointer-events: none;
 }
 
+.favorite-button {
+	position: absolute;
+	top: 0rem;
+	right: 0.5rem;
+}
+
 .favorite-button svg {
 	width: 2rem;
 	height: 2rem;
@@ -199,13 +205,20 @@ canvas:focus {
 	width: 100%;
 }
 
-.canvas-container-toolbar {
+.fullscreen-toolbar {
 	position: absolute;
-	top: 25px;
-	right: 0px;
+	top: 0;
+	left: 0;
 	display: flex;
-	flex-direction: column;
 	gap: 0.5rem;
+	justify-content: center;
+	width: 100%;
+	pointer-events: none;
+}
+
+.fullscreen-toolbar>* {
+	flex: 0;
+	pointer-events: all;
 }
 
 .button {

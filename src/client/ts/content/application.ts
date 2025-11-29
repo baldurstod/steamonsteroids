@@ -671,12 +671,12 @@ export class Application {
 				htmlInfo,
 				this.#tf2Viewer.initHtml(),
 				createElement('div', {
-					class: 'canvas-container-toolbar',
+					class: 'fullscreen-toolbar',
 					childs: [
-						this.#createFavoritesButtons(listingId),
 						...this.#createFullScreenButtons(listingId),
 					],
 				}),
+				this.#createFavoritesButton(listingId),
 			]
 		});
 		this.#canvasPerListing.set(listingId, { container: htmlContainer, attributes: canvasAttributes, scene: scene, state: htmlState, info: htmlInfo, row: row },);
@@ -701,22 +701,12 @@ export class Application {
 		return true;
 	}
 
-	#createFavoritesButtons(listingId: string): HTMLElement {
-		let htmlFavoriteButton = createElement('div', {
+	#createFavoritesButton(listingId: string): HTMLElement {
+		return createElement('div', {
 			class: 'favorite-button',
 			innerHTML: starSVG,
 			$click: () => this.#toggleFavoriteListing(listingId),
 		});
-
-		/*
-		let htmlUnFavoriteButton = createElement('div', {
-			class: 'button unfavorite-button',
-			innerHTML: '<a class="item_market_action_button btn_green_white_innerfade btn_small"><span>Unfavorite</span></a>',
-			$click: () => this.#unfavoriteListing(listingId),
-		});
-		*/
-
-		return htmlFavoriteButton;
 	}
 
 	#createFullScreenButtons(listingId: string): [HTMLElement, HTMLElement, HTMLElement] {
