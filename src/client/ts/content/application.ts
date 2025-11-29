@@ -1,7 +1,7 @@
 import { quat, vec3 } from 'gl-matrix';
 import { AmbientLight, BoundingBox, Camera, CanvasAttributes, ColorBackground, Graphics, GraphicsEvent, GraphicsEvents, GraphicTickEvent, OrbitControl, Scene, Source1ModelInstance, WebGLStats } from 'harmony-3d';
 import { getCharCodes } from 'harmony-binary-reader';
-import { fullscreenExitSVG } from 'harmony-svg';
+import { starSVG } from 'harmony-svg';
 import { createElement, hide, show } from 'harmony-ui';
 import { ACTIVE_INVENTORY_PAGE, APP_ID_CS2, APP_ID_TF2, INVENTORY_BACKGROUND_COLOR, INVENTORY_ITEM_CLASSNAME, MARKET_LISTING_BACKGROUND_COLOR, MARKET_LISTING_ROW_CLASSNAME, MOUSE_ENTER_DELAY } from '../constants';
 import { GenerationState } from '../enums';
@@ -461,21 +461,12 @@ export class Application {
 		target.insertBefore(htmlAjaxPagingControlGoto, target.firstChild);
 	}
 
-	async #favoriteListing(listingId: string) {
+	async #toggleFavoriteListing(listingId: string) {
 		if (this.#isInventoryPage) {
-			this.favoriteInventoryListing(this.#currentAppId, this.#currentContextId, this.#currentAssetId, await getInventorySteamId());
+			this.#toggleInventoryListing(this.#currentAppId, this.#currentContextId, this.#currentAssetId, await getInventorySteamId());
 		}
 		if (this.#isMarketPage) {
-			this.#favoriteMarketListing(listingId);
-		}
-	}
-
-	#unfavoriteListing(listingId: string) {
-		if (this.#isInventoryPage) {
-			this.unfavoriteInventoryListing(this.#currentAppId, this.#currentContextId, this.#currentAssetId);
-		}
-		if (this.#isMarketPage) {
-			this.unfavoriteMarketListing(listingId);
+			this.#toggleMarketListing(listingId);
 		}
 	}
 
@@ -583,6 +574,14 @@ export class Application {
 		*/
 	}
 
+	async #toggleMarketListing(marketListingId: string) {
+		if (this.#favorites[marketListingId]) {
+			this.#unfavoriteMarketListing(marketListingId);
+		} else {
+			this.#favoriteMarketListing(marketListingId);
+		}
+	}
+
 	async #favoriteMarketListing(marketListingId: string) {
 		let asset = await MarketAssets.getListingAssetData(marketListingId);
 		if (asset) {
@@ -592,13 +591,21 @@ export class Application {
 		document.getElementById('listing_' + marketListingId)?.classList.add('favorited-market-listing');
 	}
 
-	unfavoriteMarketListing(marketListingId: string) {
+	#unfavoriteMarketListing(marketListingId: string) {
 		delete this.#favorites[marketListingId];
 		chrome.storage.sync.set({ 'app.market.favoritelistings': this.#favorites });
 		document.getElementById('listing_' + marketListingId)?.classList.remove('favorited-market-listing');
 	}
 
-	async favoriteInventoryListing(appId: number, contextId: number, assetId: number, steamUserId: string) {
+	async #toggleInventoryListing(appId: number, contextId: number, assetId: number, steamUserId: string) {
+		if (this.#inventoryFavorites[assetId]) {
+			this.#unfavoriteInventoryListing(appId, contextId, assetId);
+		} else {
+			this.#favoriteInventoryListing(appId, contextId, assetId, steamUserId);
+		}
+	}
+
+	async #favoriteInventoryListing(appId: number, contextId: number, assetId: number, steamUserId: string) {
 		let asset = await getInventoryAssetDatas(appId, contextId, assetId);
 		if (asset) {
 			this.#inventoryFavorites[assetId] = { steamUserId: steamUserId, appId: appId, contextId: contextId, marketHashName: asset.market_hash_name };
@@ -608,7 +615,7 @@ export class Application {
 		this.#htmlRowContainer.classList.add('favorited-market-listing');
 	}
 
-	unfavoriteInventoryListing(appId: number, contextId: number, assetId: number) {
+	#unfavoriteInventoryListing(appId: number, contextId: number, assetId: number) {
 		delete this.#inventoryFavorites[assetId];
 		chrome.storage.sync.set({ 'app.inventory.favoritelistings': this.#inventoryFavorites });
 		(document.getElementById(`${appId}_${contextId}_${assetId}`)?.parentNode as HTMLElement)?.classList.remove('as-favorited-inventory-listing');
@@ -666,7 +673,7 @@ export class Application {
 				createElement('div', {
 					class: 'canvas-container-toolbar',
 					childs: [
-						...this.#createFavoritesButtons(listingId),
+						this.#createFavoritesButtons(listingId),
 						...this.#createFullScreenButtons(listingId),
 					],
 				}),
@@ -694,20 +701,22 @@ export class Application {
 		return true;
 	}
 
-	#createFavoritesButtons(listingId: string): [HTMLElement, HTMLElement] {
+	#createFavoritesButtons(listingId: string): HTMLElement {
 		let htmlFavoriteButton = createElement('div', {
-			class: 'button favorite-button',
-			innerHTML: '<a class="item_market_action_button btn_green_white_innerfade btn_small"><span>Favorite</span></a>',
-			$click: () => this.#favoriteListing(listingId),
+			class: 'favorite-button',
+			innerHTML: starSVG,
+			$click: () => this.#toggleFavoriteListing(listingId),
 		});
 
+		/*
 		let htmlUnFavoriteButton = createElement('div', {
 			class: 'button unfavorite-button',
 			innerHTML: '<a class="item_market_action_button btn_green_white_innerfade btn_small"><span>Unfavorite</span></a>',
 			$click: () => this.#unfavoriteListing(listingId),
 		});
+		*/
 
-		return [htmlFavoriteButton, htmlUnFavoriteButton];
+		return htmlFavoriteButton;
 	}
 
 	#createFullScreenButtons(listingId: string): [HTMLElement, HTMLElement, HTMLElement] {

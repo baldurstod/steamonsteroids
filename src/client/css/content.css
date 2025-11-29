@@ -112,8 +112,10 @@ canvas:focus {
 	pointer-events: none;
 }
 
-.unfavorite-button {
-	display: none;
+.favorite-button svg {
+	width: 2rem;
+	height: 2rem;
+	cursor: pointer;
 }
 
 .exit-fullscreen-button {
@@ -134,7 +136,7 @@ canvas:focus {
 
 .favorited-market-listing .favorite-button,
 .as-favorited-inventory-listing .favorite-button {
-	display: none;
+	color: #c3a700;
 }
 
 .favorited-market-listing .unfavorite-button,
