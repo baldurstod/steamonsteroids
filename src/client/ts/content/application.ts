@@ -552,7 +552,14 @@ export class Application {
 		}
 		this.#buttons.add(marketListingRow);
 
-		marketListingRow.addEventListener('mouseenter', () => this.#timeouts.set(marketListingRow, setTimeout(() => this.#renderMarketRow(marketListingRow), MOUSE_ENTER_DELAY)));
+		const mouseEnter = () => {
+			this.#timeouts.set(marketListingRow, setTimeout(() => {
+				this.#renderMarketRow(marketListingRow);
+				marketListingRow.removeEventListener('mouseenter', mouseEnter);
+			}, MOUSE_ENTER_DELAY));
+		};
+
+		marketListingRow.addEventListener('mouseenter', mouseEnter);
 		marketListingRow.addEventListener('mouseleave', () => clearTimeout(this.#timeouts.get(marketListingRow)));
 
 		let marketListingId = marketListingRow.id.replace('listing_', '');
