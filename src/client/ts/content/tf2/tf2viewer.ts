@@ -186,9 +186,11 @@ export class TF2Viewer {
 					if (!warPaint) {
 						return;
 					}
+					/*
 					if (!warPaint?.dirty) {
 						return;
 					}
+					*/
 					warPaint.dirty = false;
 
 					let inspectLink = getInspectLink(listingDatas, listingOrSteamId, assetId);
