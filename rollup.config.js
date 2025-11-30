@@ -1,8 +1,9 @@
+import json from '@rollup/plugin-json';
 import nodeResolve from '@rollup/plugin-node-resolve';
-import copy from 'rollup-plugin-copy';
 import terser from '@rollup/plugin-terser';
-import del from 'rollup-plugin-delete';
 import typescript from '@rollup/plugin-typescript';
+import copy from 'rollup-plugin-copy';
+import del from 'rollup-plugin-delete';
 
 const isProduction = process.env.BUILD === 'production';
 const isFirefox = process.env.BROWSER === 'firefox';
@@ -15,23 +16,26 @@ export default [
 			format: 'esm',
 		},
 		plugins: [
-			isProduction ? del({targets: 'build/client/*'}) : null,
+			isProduction ? del({ targets: 'build/client/*' }) : null,
 			/*styles({
 				mode: [
 					'inject',
 					(varname) => `import { styleInject } from 'harmony-ui';styleInject(${varname});`
 				],
 			}),*/
+			json({
+				compact: true,
+			}),
 			typescript(),
-			nodeResolve({dedupe: ['harmony-ui']}),
+			nodeResolve({ dedupe: ['harmony-ui'] }),
 			isProduction ? terser() : null,
 			copy({
 				targets: [
-					{src: isFirefox ? 'src/client/manifest_firefox.json' : 'src/client/manifest.json', dest: 'build/client', rename: 'manifest.json'},
-					{src: 'src/client/html/popup.html', dest: 'build/client/popups/'},
-					{src: 'src/client/css/popup.css', dest: 'build/client/popups/'},
-					{src: 'src/client/css/content.css', dest: 'build/client/css/'},
-					{src: 'src/client/images/', dest: 'build/client/'},
+					{ src: isFirefox ? 'src/client/manifest_firefox.json' : 'src/client/manifest.json', dest: 'build/client', rename: 'manifest.json' },
+					{ src: 'src/client/html/popup.html', dest: 'build/client/popups/' },
+					{ src: 'src/client/css/popup.css', dest: 'build/client/popups/' },
+					{ src: 'src/client/css/content.css', dest: 'build/client/css/' },
+					{ src: 'src/client/images/', dest: 'build/client/' },
 				]
 			}),
 		],
@@ -71,8 +75,8 @@ export default [
 			isProduction ? terser() : null,
 			copy({
 				targets: [
-					{src: 'src/client/html/options.html', dest: 'build/client/options/'},
-					{src: 'src/client/css/options.css', dest: 'build/client/options/'},
+					{ src: 'src/client/html/options.html', dest: 'build/client/options/' },
+					{ src: 'src/client/css/options.css', dest: 'build/client/options/' },
 				]
 			}),
 		],
