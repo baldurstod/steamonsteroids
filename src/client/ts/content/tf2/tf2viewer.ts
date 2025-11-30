@@ -1,5 +1,5 @@
 import { vec3 } from 'gl-matrix';
-import { AmbientLight, ColorBackground, Group, PointLight, Repositories, RotationControl, Scene, Source1ModelInstance, Source1ParticleControler, Texture, WebRepository } from 'harmony-3d';
+import { AmbientLight, ColorBackground, Group, PointLight, Repositories, RotationControl, Scene, SceneNode, Source1ModelInstance, Source1ParticleControler, Texture, WebRepository } from 'harmony-3d';
 import { TextureCombiner, WeaponManager, WeaponManagerItem } from 'harmony-3d-utils';
 import { blockSVG, pauseSVG, playSVG } from 'harmony-svg';
 import { WarpaintDefinitions } from 'harmony-tf2-utils';
@@ -35,9 +35,13 @@ export class TF2Viewer {
 	#htmlWeaponSelector?: HTMLSelectElement;
 	#htmlClassIcons?: HTMLElement;
 	#scene = new Scene();
-	#lightsGroup = new Group();
-	#pointLight1: PointLight = new PointLight({ range: 500, parent: this.#lightsGroup, intensity: 0.5, position: [100, 100, 100] });
-	#pointLight2: PointLight = new PointLight({ range: 500, parent: this.#lightsGroup, intensity: 0.5, position: [100, -100, 100] });
+	#lightsGroup = new Group({
+		childs: [
+			new AmbientLight(),
+			new PointLight({ range: 500, intensity: 0.5, position: [100, 100, 100] }),
+			new PointLight({ range: 500, intensity: 0.5, position: [100, -100, 100] }),
+		]
+	});
 	//#group = new Group({ parent: this.#scene });
 	#rotationControl = new RotationControl({ parent: this.#scene, speed: 0 });
 	#classModels = new Map<string, Source1ModelInstance>();
@@ -663,10 +667,7 @@ export class TF2Viewer {
 				parent: this.#scene,
 				background: new ColorBackground({ color: MARKET_LISTING_BACKGROUND_COLOR }),
 				childs: [
-					new AmbientLight(),
-					new PointLight({ range: 500, intensity: 0.5, position: [100, 100, 100] }),
-					new PointLight({ range: 500, intensity: 0.5, position: [100, -100, 100] }),
-					//new Manipulator(),
+					new SceneNode({ entity: this.#lightsGroup }),
 				],
 			});
 			this.#scenePerId.set(listingId, scene);
