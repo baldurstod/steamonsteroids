@@ -311,6 +311,10 @@ export class ItemTemplate {
 		return this.#definition.is_taunt_item == '1';
 	}
 
+	getPaintkitProtoDefIndex(): string | null {
+		return (this.#definition.paintkit_proto_def_index as string | undefined) ?? null;
+	}
+
 	addWarpaint(id: string, weapon: string, title: string): void {
 		this.warpaints.set(id, { weapon, title });
 	}

@@ -1,3 +1,4 @@
+import image from '@rollup/plugin-image';
 import json from '@rollup/plugin-json';
 import nodeResolve from '@rollup/plugin-node-resolve';
 import terser from '@rollup/plugin-terser';
@@ -26,6 +27,7 @@ export default [
 			json({
 				compact: true,
 			}),
+			image(),
 			typescript(),
 			nodeResolve({ dedupe: ['harmony-ui'] }),
 			isProduction ? terser() : null,
@@ -35,7 +37,7 @@ export default [
 					{ src: 'src/client/html/popup.html', dest: 'build/client/popups/' },
 					{ src: 'src/client/css/popup.css', dest: 'build/client/popups/' },
 					{ src: 'src/client/css/content.css', dest: 'build/client/css/' },
-					{ src: 'src/client/images/', dest: 'build/client/' },
+					{ src: 'src/client/img/', dest: 'build/client/' },
 				]
 			}),
 		],

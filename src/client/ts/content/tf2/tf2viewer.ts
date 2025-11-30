@@ -2,7 +2,7 @@ import { vec3 } from 'gl-matrix';
 import { AmbientLight, ColorBackground, Group, PointLight, Repositories, RotationControl, Scene, Source1ModelInstance, Source1ParticleControler, Texture, WebRepository } from 'harmony-3d';
 import { TextureCombiner, WeaponManager, WeaponManagerItem } from 'harmony-3d-utils';
 import { blockSVG, pauseSVG, playSVG } from 'harmony-svg';
-import { Tf2Team, WarpaintDefinitions } from 'harmony-tf2-utils';
+import { WarpaintDefinitions } from 'harmony-tf2-utils';
 import { createElement, hide, show } from 'harmony-ui';
 import { Map2, setTimeoutPromise } from 'harmony-utils';
 import { APP_ID_TF2, DECORATED_WEAPONS, MARKET_LISTING_BACKGROUND_COLOR, TF2_REPOSITORY, TF2_WARPAINT_DEFINITIONS_URL } from '../../constants';
@@ -13,6 +13,12 @@ import { sortSelect } from '../utils/sort';
 import { addSource1Model } from '../utils/sourcemodels';
 import { PAINT_KIT_TOOL_INDEX } from './constants';
 import { getSheenTint } from './killstreak';
+import { CharacterManager } from './loadout/characters/charactermanager';
+import { Tf2Class } from './loadout/characters/characters';
+import { Team } from './loadout/enums';
+import { Item } from './loadout/items/item';
+import { ItemManager } from './loadout/items/itemmanager';
+import { ItemTemplate } from './loadout/items/itemtemplate';
 import { getTF2ModelName, selectCharacterAnim, setTF2ModelAttributes } from './tf2';
 import { TF2_CLASSES_REMOVABLE_PARTS, TF2_ITEM_CAMERA_POSITION, TF2_MERCENARIES, TF2_PLAYER_CAMERA_POSITION, TF2_PLAYER_CAMERA_TARGET } from './tf2constants';
 
@@ -35,7 +41,7 @@ export class TF2Viewer {
 	//#group = new Group({ parent: this.#scene });
 	#rotationControl = new RotationControl({ parent: this.#scene, speed: 0 });
 	#classModels = new Map<string, Source1ModelInstance>();
-	#teamColor: Tf2Team = Tf2Team.RED;
+	#teamColor: Team = Team.Red;
 	#currentClassName = '';
 	//#source1Model?: Source1ModelInstance | null;
 	#selectClassPromise?: Promise<boolean>;
@@ -46,6 +52,7 @@ export class TF2Viewer {
 	//#rotationControlPerId = new Map<string, RotationControl>();
 	#itemModelPerId = new Map2<string, string, WarPaint>();
 	#activeListing = '';
+	#renderedListing = new Map<string, ItemTemplate>();
 
 	constructor() {
 		Repositories.addRepository(new WebRepository('tf2', TF2_REPOSITORY));
@@ -173,10 +180,48 @@ export class TF2Viewer {
 		if (defIndex) {
 			defIndex = Number(defIndex);
 
+			let warpaintTemplate: ItemTemplate | null = null;
 			// If it's a paintkit, give it the defindex of the base paintkit tool
 			if (defIndex >= 16000 && defIndex < 18000) {
 				remappedDefIndex = this.#forcedWeaponIndex ?? PAINT_KIT_TOOL_INDEX;
+				warpaintTemplate = ItemManager.getItemTemplate(defIndex);
 			}
+
+
+			await ItemManager.initItems();
+			const scene = this.getListingScene(listingOrSteamId);
+			const character = await CharacterManager.selectCharacter(Tf2Class.Empty, 0, scene);
+
+			const itemTemplate = ItemManager.getItemTemplate(remappedDefIndex ?? defIndex);
+			if (itemTemplate) {
+				if (this.#renderedListing.get(listingOrSteamId) == itemTemplate) {
+					return;
+				}
+
+				this.#renderedListing.set(listingOrSteamId, itemTemplate);
+
+				console.info(itemTemplate);
+				character.removeAll();
+				const item = await character.addItem(itemTemplate);
+
+				item.getModel().then(model => {
+					if (model) {
+						setTimeout(() => {
+							Controller.dispatchEvent<Source1ModelInstance>(ControllerEvents.CenterCameraTarget, { detail: model });
+						}, 100)
+					}
+				});
+
+				let inspectLink = getInspectLink(listingDatas, listingOrSteamId, assetId);
+				if (inspectLink) {
+					// TODO: add warpaints to item list and remove this call
+					chrome.runtime.sendMessage({ action: 'get-tf2-item', defIndex: defIndex ?? remappedDefIndex }, async (tf2Item) => {
+						this.#refreshWarpaintNew(listingOrSteamId, assetId, item, tf2Item.paintkit_proto_def_index, inspectLink, htmlImg);
+					});
+				}
+			}
+			return;
+
 
 			chrome.runtime.sendMessage({ action: 'get-tf2-item', defIndex: remappedDefIndex ?? defIndex }, async (tf2Item) => {
 				const modelPlayer = getTF2ModelName(tf2Item, this.#currentClassName);
@@ -278,9 +323,55 @@ export class TF2Viewer {
 		});
 	}
 
+	#refreshWarpaintNew(listingOrSteamId: string, assetId: number | undefined, item: Item, warpaintId: number, inspectLink: string, htmlImg?: HTMLImageElement): void {
+		let paintKitId = warpaintId;
+
+		Controller.dispatchEvent(ControllerEvents.SetGenerationState, { detail: { state: GenerationState.RetrievingItemDatas, listingId: listingOrSteamId } });
+		chrome.runtime.sendMessage({ action: 'inspect-item', link: inspectLink }, async (itemDatas) => {
+
+			paintKitId = paintKitId ?? itemDatas?.econitem?.paint_index ?? itemDatas?.econitem?.def_index;
+			if (!paintKitId) {
+				return null;
+			}
+			let paintKitWear = itemDatas?.econitem?.paint_wear;
+			paintKitWear = Math.min(Math.max(paintKitWear, 0.2), 1.0);//I found some FN paintkits with a wear = 0
+			let paintKitSeed = BigInt(itemDatas?.econitem?.custom_paintkit_seed ?? itemDatas?.econitem?.original_id ?? itemDatas?.econitem?.id ?? 0);
+			let craftIndex = itemDatas?.econitem?.unique_craft_index;
+
+			this.#populateTF2MarketListing(listingOrSteamId, Number(paintKitId), paintKitSeed, craftIndex);
+			if (paintKitId && paintKitWear && paintKitSeed) {
+				Controller.dispatchEvent(ControllerEvents.SetGenerationState, { detail: { state: GenerationState.WaitingForGeneration, listingId: listingOrSteamId } });
+				paintKitWear = (paintKitWear - 0.2) * 5 >> 0; // transform the wear from decimal point to integer
+				WeaponManager.refreshWarpaint({ model: await item.getModel(), warpaintId: Number(paintKitId), warpaintWear: paintKitWear, id: item.id, warpaintSeed: paintKitSeed, userData: listingOrSteamId, team: 0 }, false);
+				if (htmlImg && assetId) {
+					Controller.dispatchEvent(ControllerEvents.SelectInventoryItem, { detail: { assetId: assetId, htmlImg: htmlImg } });
+				}
+			} else {
+				Controller.dispatchEvent(ControllerEvents.SetGenerationState, { detail: { state: GenerationState.Sucess, listingId: listingOrSteamId } });
+			}
+
+			let itemStyleOverride = itemDatas?.econitem?.item_style_override;
+			if (itemStyleOverride) {
+				chrome.runtime.sendMessage({ action: 'get-tf2-item', defIndex: item.id, styleId: itemStyleOverride }, async (tf2ItemStyle) => {
+					//item.sty
+					//this.#setModelSkin(source1Model, tf2ItemStyle);
+				});
+			} else {
+				item.setTeam(this.#teamColor);
+				//this.#setModelSkin(source1Model, tf2Item);
+			}
+			/*
+			this.#attachModels(source1Model, remappedTf2Item ?? tf2Item, itemDatas?.econitem);
+			this.#attachTF2Effects(source1Model, remappedTf2Item ?? tf2Item, itemDatas?.econitem);
+			setTF2ModelAttributes(source1Model, itemDatas?.econitem);
+			this.#displayClassIcons(listingOrSteamId, path, remappedTf2Item ?? tf2Item);
+			*/
+		});
+	}
+
 	#setModelSkin(model: Source1ModelInstance, tf2Item: any/*TODO:improve type*/) {
 		if (model && tf2Item) {
-			let skin = Number(this.#teamColor == Tf2Team.RED ? tf2Item.skin_red : tf2Item.skin_blu ?? tf2Item.skin_red);
+			let skin = Number(this.#teamColor == Team.Red ? tf2Item.skin_red : tf2Item.skin_blu ?? tf2Item.skin_red);
 			if (skin) {
 				model.skin = String(skin);
 			}
@@ -568,10 +659,18 @@ export class TF2Viewer {
 	getListingScene(listingId: string): Scene {
 		let scene = this.#scenePerId.get(listingId);
 		if (!scene) {
-			scene = new Scene({ parent: this.#scene, background: new ColorBackground({ color: MARKET_LISTING_BACKGROUND_COLOR }) });
+			scene = new Scene({
+				parent: this.#scene,
+				background: new ColorBackground({ color: MARKET_LISTING_BACKGROUND_COLOR }),
+				childs: [
+					new AmbientLight(),
+					new PointLight({ range: 500, intensity: 0.5, position: [100, 100, 100] }),
+					new PointLight({ range: 500, intensity: 0.5, position: [100, -100, 100] }),
+					//new Manipulator(),
+				],
+			});
 			this.#scenePerId.set(listingId, scene);
 		}
-
 		return scene;
 	}
 

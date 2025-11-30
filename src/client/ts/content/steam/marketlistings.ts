@@ -14,7 +14,7 @@ export class MarketListings {
 		return this.#getListing(listing)?.row ?? null;
 	}
 
-	getCanvas(listing: string): HTMLElement | null {
+	getCanvasContainer(listing: string): HTMLElement | null {
 		const htmlListing = this.#getListing(listing);
 		if (htmlListing) {
 			const parent = document.getElementById(`${MARKET_LISTING_ROW_PREFIX}${listing}`);

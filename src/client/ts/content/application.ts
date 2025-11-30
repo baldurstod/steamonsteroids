@@ -11,6 +11,7 @@ import { getInventoryAssetDatas, getInventorySteamId, MarketAssets } from './mar
 import { MARKET_LISTING_ROW_PREFIX, MARKET_LISTINGS_ID, SEARCH_RESULT_ROWS } from './steam/constants';
 import { MarketListings } from './steam/marketlistings';
 import { TF2Viewer } from './tf2/tf2viewer';
+import { ItemManager } from './tf2/loadout/items/itemmanager';
 
 enum PageType {
 	Unknown = 0,
@@ -77,7 +78,7 @@ export class Application {
 	#inventoryFavorites: Record<string, any/*TODO: create type*/> = {};//TODO:turn into map
 	#canvasContainer = createElement('div', { class: 'canvas-container' });
 	//#htmlCanvas = createElement('canvas', { parent: this.#canvasContainer, awidth: 1000, aheight: 1000 }) as HTMLCanvasElement;
-	#camera = new Camera({ nearPlane: 1, farPlane: 1000, verticalFov: 10, autoResize: true });
+	#camera = new Camera({ nearPlane: 1, farPlane: 1000, verticalFov: 10, autoResize: true, position: [CAMERA_DISTANCE, 0, 0] });
 	#scene = new Scene({ camera: this.#camera, background: new ColorBackground({ color: MARKET_LISTING_BACKGROUND_COLOR }), childs: [this.#camera], });
 	#orbitCameraControl = new OrbitControl(this.#camera);
 	//#currentListingId = '';
@@ -105,7 +106,7 @@ export class Application {
 		this.#initInventoryPageControls();
 		this.#initAjaxPagingControls();
 		this.#loadFavorites();
-
+		ItemManager.initItems();
 	}
 
 	#initGraphics() {
@@ -345,14 +346,16 @@ export class Application {
 			let max = vec3.create();
 			let boundingBox = new BoundingBox();
 			sourceModel.getBoundingBox(boundingBox);
+			console.info(boundingBox);
 			const pos = sourceModel.getWorldPosition();
 			const rot = sourceModel.getWorldQuaternion();
 			quat.invert(rot, rot);
-			sourceModel.getBoundingBox(boundingBox);
 			vec3.sub(pos, boundingBox.center, pos);
 			vec3.transformQuat(pos, pos, rot);
 			sourceModel.setPosition(vec3.negate(pos, pos));
+			this.#orbitCameraControl.update();
 
+			return;
 			//this.#orbitCameraControl.target.position = boundingBox.center;//vec3.lerp(vec3.create(), min, max, 0.5);
 			this.#camera._position[0] = this.#orbitCameraControl.target._position[0];
 			this.#camera._position[1] = CAMERA_DISTANCE;//TODO: set y to have the model occupy most of the canvas (inspect_panel_dist)
@@ -570,7 +573,7 @@ export class Application {
 
 	#renderMarketRow(marketListingRow: HTMLElement): void {
 		const listingId = marketListingRow.id.replace(MARKET_LISTING_ROW_PREFIX, '')
-		const htmlMarketRow = this.#marketListings.getCanvas(listingId);
+		const htmlMarketRow = this.#marketListings.getCanvasContainer(listingId);
 		if (htmlMarketRow) {
 			//htmlMarketRow.append(this.#htmlRowContainer);
 			this.#renderMarketListing(listingId);
@@ -646,15 +649,15 @@ export class Application {
 	}
 
 	addListing(listingId: string): boolean {
-		const rowCanvas = this.#marketListings.getCanvas(listingId);
-		if (!rowCanvas) {
+		const rowCanvasContainer = this.#marketListings.getCanvasContainer(listingId);
+		if (!rowCanvasContainer) {
 			return false;
 		}
 
-		const c = this.#canvasPerListing.get(listingId);
-		if (c) {
+		const listingContext = this.#canvasPerListing.get(listingId);
+		if (listingContext) {
 			//c.container.appendChild(this.#tf2Viewer.initHtml());
-			rowCanvas.append(c.container, c.state,);
+			rowCanvasContainer.append(listingContext.container, listingContext.state,);
 			return false;
 		}
 
@@ -690,7 +693,7 @@ export class Application {
 
 
 
-		rowCanvas.append(htmlContainer, htmlState,);
+		rowCanvasContainer.append(htmlContainer, htmlState,);
 		//const htmlCanvas = createElement('canvas', { parent: row }) as HTMLCanvasElement;
 		//const bipmapContext = htmlCanvas.getContext('bitmaprenderer');
 
@@ -894,10 +897,10 @@ function getItemDatas(htmlItem: HTMLElement) {
 	return null;
 }
 
-async function backgroundFetch(input: RequestInfo | URL, init?: RequestInit) {
+async function backgroundFetch(input: string | URL | globalThis.Request, init?: RequestInit): Promise<Response> {
 	const result = await chrome.runtime.sendMessage({
 		action: 'fetch',
-		resource: String(input),
+		resource: ((input as URL).href) ?? ((input as globalThis.Request).url) ?? input,
 		options: init,
 	});
 

@@ -1,7 +1,8 @@
 import { vec3 } from 'gl-matrix';
 import { Source1ModelInstance, Source1TextureManager, TextureManager } from 'harmony-3d';
-import { Tf2Team } from 'harmony-tf2-utils';
+//import { Tf2Team } from 'harmony-tf2-utils';
 import { API_GET_UCG_IMAGE_ENDPOINT } from '../../constants';
+import { Team } from './loadout/enums';
 
 export function getTF2ModelName(item: any/*TODO: improve type*/, className: string): { model: string, attachedModels: string[] | null } | null {
 	if (item) {
@@ -56,9 +57,9 @@ export function getTF2ModelName(item: any/*TODO: improve type*/, className: stri
 	return null;
 }
 
-export function setTF2ModelAttributes(model: Source1ModelInstance, item: any/*TODO: improve type*/, teamColor: Tf2Team = Tf2Team.RED) {
+export function setTF2ModelAttributes(model: Source1ModelInstance, item: any/*TODO: improve type*/, teamColor: Team = Team.Red) {
 	if (model && item) {
-		let itemTintRGB = (teamColor == Tf2Team.RED) ? item.set_item_tint_rgb : (item.set_item_tint_rgb_2 ?? item.set_item_tint_rgb);
+		let itemTintRGB = (teamColor == Team.Red) ? item.set_item_tint_rgb : (item.set_item_tint_rgb_2 ?? item.set_item_tint_rgb);
 		if (itemTintRGB) {
 			model.tint = colorToTint(itemTintRGB);
 		}

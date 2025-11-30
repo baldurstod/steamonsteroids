@@ -1,14 +1,14 @@
-import demoman from '../../../img/class/demoman.png';
-import engineer from '../../../img/class/engineer.png';
-import heavy from '../../../img/class/heavy.png';
-import medic from '../../../img/class/medic.png';
-import pyro from '../../../img/class/pyro.png';
-import scout from '../../../img/class/scout.png';
-import sniper from '../../../img/class/sniper.png';
-import soldier from '../../../img/class/soldier.png';
-import spy from '../../../img/class/spy.png';
-import all from '../../../img/class_icon/filter_all_motd.png';
-import extensionIcon from '../../../img/extension_icon.png';
+import demoman from '../../../../../img/class/demoman.png';
+import engineer from '../../../../../img/class/engineer.png';
+import heavy from '../../../../../img/class/heavy.png';
+import medic from '../../../../../img/class/medic.png';
+import pyro from '../../../../../img/class/pyro.png';
+import scout from '../../../../../img/class/scout.png';
+import sniper from '../../../../../img/class/sniper.png';
+import soldier from '../../../../../img/class/soldier.png';
+import spy from '../../../../../img/class/spy.png';
+import all from '../../../../../img/class_icon/filter_all_motd.png';
+import extensionIcon from '../../../../../img/icon_128.png';
 
 export enum Tf2Class {
 	Scout = 0,
