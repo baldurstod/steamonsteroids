@@ -1,5 +1,5 @@
 import { quat, vec3 } from 'gl-matrix';
-import { AmbientLight, ColorBackground, Group, Manipulator, PointLight, Repositories, RotationControl, Scene, SceneNode, Source1ModelInstance, Source1ParticleControler, Texture, WebRepository } from 'harmony-3d';
+import { AmbientLight, ColorBackground, GraphicsEvent, GraphicsEvents, Group, Manipulator, PointLight, Repositories, RotationControl, Scene, SceneNode, Source1ModelInstance, Source1ParticleControler, Texture, WebRepository } from 'harmony-3d';
 import { TextureCombiner, WeaponManager, WeaponManagerItem } from 'harmony-3d-utils';
 import { blockSVG, pauseSVG, playSVG } from 'harmony-svg';
 import { WarpaintDefinitions } from 'harmony-tf2-utils';
@@ -24,6 +24,8 @@ import { getTF2ModelName, selectCharacterAnim, setTF2ModelAttributes } from './t
 import { TF2_CLASSES_REMOVABLE_PARTS, TF2_ITEM_CAMERA_POSITION, TF2_MERCENARIES, TF2_PLAYER_CAMERA_POSITION, TF2_PLAYER_CAMERA_TARGET } from './tf2constants';
 
 WarpaintDefinitions.setWarpaintDefinitionsURL(TF2_WARPAINT_DEFINITIONS_URL);
+
+const PAINTKIT_TOOL_ID = '9536';
 
 type WarPaint = {
 	model: Source1ModelInstance;
@@ -58,6 +60,7 @@ export class TF2Viewer {
 	#itemModelPerId = new Map2<string, string, WarPaint>();
 	#activeListing = '';
 	#renderedListing = new Map<string, ItemTemplate>();
+	#warpaints = new Map<Scene, Source1ModelInstance>();
 
 	constructor() {
 		Repositories.addRepository(new WebRepository('tf2', TF2_REPOSITORY));
@@ -72,6 +75,8 @@ export class TF2Viewer {
 		WeaponManager.addEventListener('started', (event: Event) => Controller.dispatchEvent(ControllerEvents.SetGenerationState, { detail: { state: GenerationState.Started, listingId: (event as CustomEvent<WeaponManagerItem>).detail.userData } }));
 		WeaponManager.addEventListener('success', (event: Event) => Controller.dispatchEvent(ControllerEvents.SetGenerationState, { detail: { state: GenerationState.Sucess, listingId: (event as CustomEvent<WeaponManagerItem>).detail.userData } }));
 		WeaponManager.addEventListener('failure', (event: Event) => Controller.dispatchEvent(ControllerEvents.SetGenerationState, { detail: { state: GenerationState.Failure, listingId: (event as CustomEvent<WeaponManagerItem>).detail.userData } }));
+
+		GraphicsEvents.addEventListener(GraphicsEvent.Tick, event => this.#flipWarpaints());
 	}
 
 	/*
@@ -225,6 +230,9 @@ export class TF2Viewer {
 					item.getModel().then(model => {
 						if (model) {
 							if (weaponShowcase) {
+								if (addItem == PAINTKIT_TOOL_ID) {
+									this.#warpaints.set(scene, model);
+								}
 								const weapon = weaponsJSON[addItem] as ({ position?: vec3, orientation?: quat } | undefined);
 								if (weapon) {
 									const position = weapon.position;
@@ -705,17 +713,6 @@ export class TF2Viewer {
 		return scene;
 	}
 
-	setupWeaponsShowcase(listingId: string): void {
-		const scene = this.#scenePerId.get(listingId);
-		if (!scene) {
-			return;
-		}
-
-		for (const weaponJSON in weaponsJSON) {
-			console.info(weaponJSON);
-		}
-	}
-
 	/*
 	async #getRotationControl(listingId: string): Promise<RotationControl> {
 		let rotationControl = this.#rotationControlPerId.get(listingId);
@@ -734,5 +731,18 @@ export class TF2Viewer {
 
 	getCameraGroup(): Group {
 		return this.#lightsGroup;
+	}
+
+	#flipWarpaints() :void{
+		const position = vec3.create();
+		for (const [scene, warpaint] of this.#warpaints) {
+			if (scene.activeCamera?.getWorldPosition(position)) {
+				if (position[0]  < 0) {
+					warpaint.setOrientation([0, 0, 1, 0]);
+				} else {
+					warpaint.setOrientation([0, 0, 0, 1]);
+				}
+			}
+		}
 	}
 }

@@ -146,7 +146,7 @@ export class Application {
 		*/
 
 		GraphicsEvents.addEventListener(GraphicsEvent.Tick, render);
-		GraphicsEvents.addEventListener(GraphicsEvent.Tick, (event) => this.#orbitCameraControl.update((event as CustomEvent<GraphicTickEvent>).detail.delta / 1000));
+		//GraphicsEvents.addEventListener(GraphicsEvent.Tick, (event) => this.#orbitCameraControl.update((event as CustomEvent<GraphicTickEvent>).detail.delta / 1000));
 		Graphics.play();
 
 		this.#scene.addChild(this.#tf2Viewer.getScene());
@@ -355,11 +355,13 @@ export class Application {
 			this.#orbitCameraControl.update();
 
 			return;
+			/*
 			//this.#orbitCameraControl.target.position = boundingBox.center;//vec3.lerp(vec3.create(), min, max, 0.5);
 			this.#camera._position[0] = this.#orbitCameraControl.target._position[0];
 			this.#camera._position[1] = CAMERA_DISTANCE;//TODO: set y to have the model occupy most of the canvas (inspect_panel_dist)
 			this.#camera._position[2] = this.#orbitCameraControl.target._position[2];
 			this.#orbitCameraControl.update();
+			*/
 		}
 	}
 
