@@ -245,7 +245,7 @@ export class CharacterManager {
 	};
 
 	static async #setInvulnerable(invulnerable: boolean, scene: Scene = loadoutScene): Promise<void> {
-		let slots = this.#characterSlots.get(scene);
+		const slots = this.#characterSlots.get(scene);
 		if (!slots) {
 			return;
 		}
@@ -262,7 +262,7 @@ export class CharacterManager {
 	}
 
 	static async #setRagdoll(ragdoll: Ragdoll, scene: Scene = loadoutScene): Promise<void> {
-		let slots = this.#characterSlots.get(scene);
+		const slots = this.#characterSlots.get(scene);
 		if (!slots) {
 			return;
 		}
@@ -294,7 +294,7 @@ export class CharacterManager {
 	}
 
 	static useDisposition(name: string | number, scene: Scene = loadoutScene): void {
-		let slots = this.#characterSlots.get(scene);
+		const slots = this.#characterSlots.get(scene);
 		if (!slots) {
 			return;
 		}
@@ -574,7 +574,7 @@ export class CharacterManager {
 	}
 
 	static getCharacters(scene: Scene = loadoutScene): Set<Character> {
-		let slots = this.#characterSlots.get(scene);
+		const slots = this.#characterSlots.get(scene);
 		const characters = new Set<Character>();
 
 		if (slots) {
@@ -643,7 +643,7 @@ export class CharacterManager {
 		}
 	}
 	static async #selectCharacterPerDynamicProp(prop: Entity, scene: Scene = loadoutScene): Promise<void> {
-		let slots = this.#characterSlots.get(scene);
+		const slots = this.#characterSlots.get(scene);
 		if (!slots) {
 			return;
 		}

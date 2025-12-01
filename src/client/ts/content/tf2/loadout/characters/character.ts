@@ -94,7 +94,7 @@ export class Character {
 	}
 
 	async addExtraModel(path: string, repository?: string): Promise<Source1ModelInstance | null> {
-		const extraModel = await addTF2Model(null, path, repository);
+		const extraModel = await addTF2Model(this.scene, path, repository);
 
 		if (extraModel) {
 			extraModel.setVisible(this.#visible);

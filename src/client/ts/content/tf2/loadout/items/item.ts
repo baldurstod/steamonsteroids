@@ -1,10 +1,10 @@
-import { vec3 } from 'gl-matrix';
+import { vec3, vec4 } from 'gl-matrix';
 import { Material, Source1MaterialManager, Source1ModelInstance, Source1ParticleControler, Source1ParticleSystem } from 'harmony-3d';
 import { WeaponManager } from 'harmony-3d-utils';
 import { MATERIAL_GOLD_RAGDOLL, MATERIAL_ICE_RAGDOLL, MATERIAL_INVULN_BLU, MATERIAL_INVULN_RED } from '../../constants';
 import { getKillstreak, Killstreak, KillstreakColor } from '../../paints/killstreaks';
 import { getPaint, Paint, Paints } from '../../paints/paints';
-import { colorToVec3 } from '../../utils/colors';
+import { colorToVec4 } from '../../utils/colors';
 import { randomProperty } from '../../utils/randomproperty';
 import { Character, Ragdoll } from '../characters/character';
 import { weaponEffects } from '../effects/effect';
@@ -395,14 +395,14 @@ export class Item {
 
 		if (this.#model) {
 			if (paint == null) {
-				this.#model.tint = null;
+				this.#model.setTint(null);
 				if (this.#team == Team.Red) {
 					if (this.#itemTemplate.setItemTintRGB) {
-						this.#model.tint = colorToVec3(Number(this.#itemTemplate.setItemTintRGB));
+						this.#model.setTint(colorToVec4(Number(this.#itemTemplate.setItemTintRGB)));
 					}
 				} else {
 					if (this.#itemTemplate.setItemTintRGB2) {
-						this.#model.tint = colorToVec3(Number(this.#itemTemplate.setItemTintRGB2));
+						this.#model.setTint(colorToVec4(Number(this.#itemTemplate.setItemTintRGB2)));
 					}
 				}
 			} else {
@@ -420,7 +420,8 @@ export class Item {
 		if (this.#model) {
 			//this.#sourceModel.tint = null;
 			if (this.#paint != null) {
-				this.#model.tint = this.#paint.getTint(this.#team);
+				const tint = this.#paint.getTint(this.#team);
+				this.#model.setTint(vec4.fromValues(tint[0], tint[1], tint[2], 255));
 				/*
 				if (paint && this.#paintId != DEFAULT_PAINT_ID) {
 				}

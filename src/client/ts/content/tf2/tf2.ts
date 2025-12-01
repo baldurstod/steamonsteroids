@@ -1,4 +1,4 @@
-import { vec3 } from 'gl-matrix';
+import { vec3, vec4 } from 'gl-matrix';
 import { Source1ModelInstance, Source1TextureManager, TextureManager } from 'harmony-3d';
 //import { Tf2Team } from 'harmony-tf2-utils';
 import { API_GET_UCG_IMAGE_ENDPOINT } from '../../constants';
@@ -61,7 +61,7 @@ export function setTF2ModelAttributes(model: Source1ModelInstance, item: any/*TO
 	if (model && item) {
 		let itemTintRGB = (teamColor == Team.Red) ? item.set_item_tint_rgb : (item.set_item_tint_rgb_2 ?? item.set_item_tint_rgb);
 		if (itemTintRGB) {
-			model.tint = colorToTint(itemTintRGB);
+			model.setTint(colorToTint(itemTintRGB));
 		}
 
 		if (item.custom_texture) {
@@ -82,14 +82,15 @@ async function setCustomTexture(model: Source1ModelInstance, imageUrl: string) {
 	image.src = imageUrl;
 }
 
-function colorToTint(color: number): vec3 | null {
+function colorToTint(color: number): vec4 | null {
 	if (isNaN(color)) {
 		return null;
 	}
-	var tint = vec3.create();
+	var tint = vec4.create();
 	tint[0] = ((color & 0xFF0000) >> 16) / 255.0;
 	tint[1] = ((color & 0x00FF00) >> 8) / 255.0;
 	tint[2] = ((color & 0x0000FF) >> 0) / 255.0;
+	tint[3] = 1.0;
 	return tint;
 }
 
