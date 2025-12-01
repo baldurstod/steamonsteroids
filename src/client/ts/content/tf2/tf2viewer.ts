@@ -1,10 +1,11 @@
-import { vec3 } from 'gl-matrix';
-import { AmbientLight, ColorBackground, Group, PointLight, Repositories, RotationControl, Scene, SceneNode, Source1ModelInstance, Source1ParticleControler, Texture, WebRepository } from 'harmony-3d';
+import { quat, vec3 } from 'gl-matrix';
+import { AmbientLight, ColorBackground, Group, Manipulator, PointLight, Repositories, RotationControl, Scene, SceneNode, Source1ModelInstance, Source1ParticleControler, Texture, WebRepository } from 'harmony-3d';
 import { TextureCombiner, WeaponManager, WeaponManagerItem } from 'harmony-3d-utils';
 import { blockSVG, pauseSVG, playSVG } from 'harmony-svg';
 import { WarpaintDefinitions } from 'harmony-tf2-utils';
 import { createElement, hide, show } from 'harmony-ui';
 import { Map2, setTimeoutPromise } from 'harmony-utils';
+import weaponsJSON from '../../../json/weapons.json';
 import { APP_ID_TF2, DECORATED_WEAPONS, MARKET_LISTING_BACKGROUND_COLOR, TF2_REPOSITORY, TF2_WARPAINT_DEFINITIONS_URL } from '../../constants';
 import { GenerationState } from '../../enums';
 import { Controller, ControllerEvents } from '../controller';
@@ -170,7 +171,7 @@ export class TF2Viewer {
 		Controller.dispatchEvent(ControllerEvents.Tf2RefreshVisibleListing);
 	}
 
-	async renderListingTF2(listingOrSteamId: string, listingDatas: any/*TODO: improve type*/, classInfo: any/*TODO: improve type*/, assetId?: number, htmlImg?: HTMLImageElement) {
+	async renderListingTF2(listingOrSteamId: string, listingDatas: any/*TODO: improve type*/, classInfo: any/*TODO: improve type*/, assetId?: number, htmlImg?: HTMLImageElement, weaponShowcase = false) {
 		show(this.#htmlControls);
 		this.#htmlClassIcons?.replaceChildren();
 		if ((listingDatas.appid == APP_ID_TF2) && listingDatas.market_hash_name.includes('War Paint')/* && this.application.canInspectWarpaintWeapons()*/) {
@@ -191,37 +192,65 @@ export class TF2Viewer {
 				warpaintTemplate = ItemManager.getItemTemplate(defIndex);
 			}
 
-
 			await ItemManager.initItems();
 			const scene = this.getListingScene(listingOrSteamId);
 			const character = await CharacterManager.selectCharacter(Tf2Class.Empty, 0, scene);
-
-			const itemTemplate = ItemManager.getItemTemplate(remappedDefIndex ?? defIndex);
-			if (itemTemplate) {
-				if (this.#renderedListing.get(listingOrSteamId) == itemTemplate) {
-					return;
+			const addItems: (keyof typeof weaponsJSON)[] = [];
+			if (weaponShowcase) {
+				for (const defIndex in weaponsJSON) {
+					console.info(defIndex);
+					addItems.push(defIndex as (keyof typeof weaponsJSON));
 				}
-
-				this.#renderedListing.set(listingOrSteamId, itemTemplate);
-
-				console.info(itemTemplate);
 				character.removeAll();
-				const item = await character.addItem(itemTemplate);
+			} else {
+				// single weapon
+				addItems.push(remappedDefIndex ?? defIndex);
+			}
 
-				item.getModel().then(model => {
-					if (model) {
-						setTimeout(() => {
-							Controller.dispatchEvent<Source1ModelInstance>(ControllerEvents.CenterCameraTarget, { detail: model });
-						}, 100)
+			for (const addItem of addItems) {
+				const itemTemplate = ItemManager.getItemTemplate(addItem);
+				if (itemTemplate) {
+					if (this.#renderedListing.get(listingOrSteamId) == itemTemplate && !weaponShowcase) {
+						return;
 					}
-				});
 
-				let inspectLink = getInspectLink(listingDatas, listingOrSteamId, assetId);
-				if (inspectLink) {
-					// TODO: add warpaints to item list and remove this call
-					chrome.runtime.sendMessage({ action: 'get-tf2-item', defIndex: defIndex ?? remappedDefIndex }, async (tf2Item) => {
-						this.#refreshWarpaintNew(listingOrSteamId, assetId, item, tf2Item.paintkit_proto_def_index, inspectLink, htmlImg);
+					this.#renderedListing.set(listingOrSteamId, itemTemplate);
+
+					console.info(itemTemplate);
+					if (!weaponShowcase) {
+						character.removeAll();
+					}
+					const item = await character.addItem(itemTemplate);
+
+					item.getModel().then(model => {
+						if (model) {
+							if (weaponShowcase) {
+								const weapon = weaponsJSON[addItem] as ({ position?: vec3, orientation?: quat } | undefined);
+								if (weapon) {
+									const position = weapon.position;
+									if (position) {
+										model.setPosition(position);
+									}
+									const orientation = weapon.orientation;
+									if (orientation) {
+										model.setOrientation(orientation);
+									}
+								}
+							} else {
+								setTimeout(() => {
+									Controller.dispatchEvent<Source1ModelInstance>(ControllerEvents.CenterCameraTarget, { detail: model });
+								}, 100);
+							}
+						}
 					});
+
+					let inspectLink = getInspectLink(listingDatas, listingOrSteamId, assetId);
+					if (inspectLink) {
+						// TODO: add warpaints to item list and remove this call
+						chrome.runtime.sendMessage({ action: 'get-tf2-item', defIndex: defIndex ?? remappedDefIndex }, async (tf2Item) => {
+							this.#refreshWarpaintNew(listingOrSteamId, assetId, item, tf2Item.paintkit_proto_def_index, inspectLink, htmlImg);
+						});
+					}
 				}
 			}
 			return;
@@ -667,12 +696,24 @@ export class TF2Viewer {
 				parent: this.#scene,
 				background: new ColorBackground({ color: MARKET_LISTING_BACKGROUND_COLOR }),
 				childs: [
+					//new Manipulator(),
 					new SceneNode({ entity: this.#lightsGroup }),
 				],
 			});
 			this.#scenePerId.set(listingId, scene);
 		}
 		return scene;
+	}
+
+	setupWeaponsShowcase(listingId: string): void {
+		const scene = this.#scenePerId.get(listingId);
+		if (!scene) {
+			return;
+		}
+
+		for (const weaponJSON in weaponsJSON) {
+			console.info(weaponJSON);
+		}
 	}
 
 	/*

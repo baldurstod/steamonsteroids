@@ -381,17 +381,6 @@
 		]
 	},
 	"9536": {
-		"position": [
-			0,
-			0,
-			0
-		],
-		"orientation": [
-			0,
-			0,
-			1,
-			0
-		],
 		"rotate_z": false
 	}
 }

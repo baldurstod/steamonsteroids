@@ -78,7 +78,7 @@ export class Application {
 	#inventoryFavorites: Record<string, any/*TODO: create type*/> = {};//TODO:turn into map
 	#canvasContainer = createElement('div', { class: 'canvas-container' });
 	//#htmlCanvas = createElement('canvas', { parent: this.#canvasContainer, awidth: 1000, aheight: 1000 }) as HTMLCanvasElement;
-	#camera = new Camera({ nearPlane: 1, farPlane: 1000, verticalFov: 10, autoResize: true, position: [CAMERA_DISTANCE, 0, 0] });
+	#camera = new Camera({ nearPlane: 10, farPlane: 5000, verticalFov: 10, autoResize: true, position: [CAMERA_DISTANCE, 0, 0] });
 	#scene = new Scene({ camera: this.#camera, background: new ColorBackground({ color: MARKET_LISTING_BACKGROUND_COLOR }), childs: [this.#camera], });
 	#orbitCameraControl = new OrbitControl(this.#camera);
 	//#currentListingId = '';
@@ -346,7 +346,6 @@ export class Application {
 			let max = vec3.create();
 			let boundingBox = new BoundingBox();
 			sourceModel.getBoundingBox(boundingBox);
-			console.info(boundingBox);
 			const pos = sourceModel.getWorldPosition();
 			const rot = sourceModel.getWorldQuaternion();
 			quat.invert(rot, rot);
@@ -684,6 +683,7 @@ export class Application {
 					class: 'fullscreen-toolbar',
 					childs: [
 						...this.#createFullScreenButtons(listingId),
+						this.#createWeaponsShowcaseButton(listingId),
 					],
 				}),
 				this.#createFavoritesButton(listingId),
@@ -763,6 +763,16 @@ export class Application {
 		return [htmlFullScreenButton, htmlExitFullScreenButton, htmlFullScreenButton2];
 	}
 
+	#createWeaponsShowcaseButton(listingId: string): HTMLElement {
+		return createElement('div', {
+			class: 'button',
+			innerHTML: '<a class="item_market_action_button btn_green_white_innerfade btn_small"><span>Weapons showcase</span></a>',
+			$click: () => {
+				this.#renderMarketListing(listingId, undefined, true);
+			}
+		});
+	}
+
 	#enableAllCanvas(enable: boolean): void {
 		for (const [id, canvasPerListing] of this.#canvasPerListing) {
 			Graphics.enableCanvas(id, enable);
@@ -803,7 +813,7 @@ export class Application {
 		}
 	}
 
-	async #renderMarketListing(listingId: string, force = false) {
+	async #renderMarketListing(listingId: string, force = false, weaponShowcase = false) {
 		//this.#tf2Viewer.hide();
 		this.#cs2Viewer.hide();
 		//this.#currentListingId = listingId;
@@ -814,7 +824,7 @@ export class Application {
 			switch (asset.appid) {
 				case APP_ID_TF2:
 					chrome.runtime.sendMessage({ action: 'get-asset-class-info', appId: asset.appid, classId: asset.classid }, (classInfo) => {
-						this.#tf2Viewer.renderListingTF2(listingId, asset, classInfo);
+						this.#tf2Viewer.renderListingTF2(listingId, asset, classInfo, undefined, undefined, weaponShowcase);
 					});
 					break;
 				case APP_ID_CS2:
