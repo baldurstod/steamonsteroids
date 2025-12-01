@@ -1,5 +1,5 @@
 import { quat, vec3 } from 'gl-matrix';
-import { AmbientLight, ColorBackground, GraphicsEvent, GraphicsEvents, Group, Manipulator, PointLight, Repositories, RotationControl, Scene, SceneNode, Source1ModelInstance, Source1ParticleControler, Texture, WebRepository } from 'harmony-3d';
+import { AmbientLight, ColorBackground, GraphicsEvent, GraphicsEvents, Group, PointLight, Repositories, RotationControl, Scene, SceneNode, Source1ModelInstance, Source1ParticleControler, Texture, WebRepository } from 'harmony-3d';
 import { TextureCombiner, WeaponManager, WeaponManagerItem } from 'harmony-3d-utils';
 import { blockSVG, pauseSVG, playSVG } from 'harmony-svg';
 import { WarpaintDefinitions } from 'harmony-tf2-utils';
@@ -38,7 +38,7 @@ export class TF2Viewer {
 	#htmlWeaponSelector?: HTMLSelectElement;
 	#htmlClassIcons?: HTMLElement;
 	#scene = new Scene();
-	#lightsGroup = new Group({
+	readonly lightsGroup = new Group({
 		childs: [
 			new AmbientLight(),
 			new PointLight({ range: 500, intensity: 0.5, position: [100, 100, 100] }),
@@ -61,6 +61,7 @@ export class TF2Viewer {
 	#activeListing = '';
 	#renderedListing = new Map<string, ItemTemplate>();
 	#warpaints = new Map<Scene, Source1ModelInstance>();
+	#isWeaponsShowcase = false;
 
 	constructor() {
 		Repositories.addRepository(new WebRepository('tf2', TF2_REPOSITORY));
@@ -177,6 +178,7 @@ export class TF2Viewer {
 	}
 
 	async renderListingTF2(listingOrSteamId: string, listingDatas: any/*TODO: improve type*/, classInfo: any/*TODO: improve type*/, assetId?: number, htmlImg?: HTMLImageElement, weaponShowcase = false) {
+		this.#isWeaponsShowcase = weaponShowcase;
 		show(this.#htmlControls);
 		this.#htmlClassIcons?.replaceChildren();
 		if ((listingDatas.appid == APP_ID_TF2) && listingDatas.market_hash_name.includes('War Paint')/* && this.application.canInspectWarpaintWeapons()*/) {
@@ -705,7 +707,7 @@ export class TF2Viewer {
 				background: new ColorBackground({ color: MARKET_LISTING_BACKGROUND_COLOR }),
 				childs: [
 					//new Manipulator(),
-					new SceneNode({ entity: this.#lightsGroup }),
+					new SceneNode({ entity: this.lightsGroup }),
 				],
 			});
 			this.#scenePerId.set(listingId, scene);
@@ -729,15 +731,17 @@ export class TF2Viewer {
 	}
 	*/
 
+	/*
 	getCameraGroup(): Group {
 		return this.#lightsGroup;
 	}
+	*/
 
-	#flipWarpaints() :void{
+	#flipWarpaints(): void {
 		const position = vec3.create();
 		for (const [scene, warpaint] of this.#warpaints) {
 			if (scene.activeCamera?.getWorldPosition(position)) {
-				if (position[0]  < 0) {
+				if (position[0] < 0) {
 					warpaint.setOrientation([0, 0, 1, 0]);
 				} else {
 					warpaint.setOrientation([0, 0, 0, 1]);

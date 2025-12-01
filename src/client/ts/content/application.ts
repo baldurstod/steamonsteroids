@@ -124,8 +124,18 @@ export class Application {
 
 		//Graphics.listenCanvas(this.#htmlCanvas);
 
-		const render = (event: Event) => {
+		const handleTick = (event: Event) => {
 			WebGLStats.tick();
+
+			const tempQuat = quat.create();
+			const unitX = vec3.fromValues(1, 0, 0);
+			const tempVec3 = vec3.create();
+			this.#camera.getPosition(tempVec3);
+			vec3.normalize(tempVec3, tempVec3);
+			quat.rotationTo(tempQuat, unitX, tempVec3);
+
+			this.#tf2Viewer.lightsGroup.setOrientation(tempQuat);
+
 			Graphics.renderMultiCanvas((event as CustomEvent<GraphicTickEvent>).detail.delta);
 		}
 
@@ -145,14 +155,14 @@ export class Application {
 		}
 		*/
 
-		GraphicsEvents.addEventListener(GraphicsEvent.Tick, render);
+		GraphicsEvents.addEventListener(GraphicsEvent.Tick, handleTick);
 		//GraphicsEvents.addEventListener(GraphicsEvent.Tick, (event) => this.#orbitCameraControl.update((event as CustomEvent<GraphicTickEvent>).detail.delta / 1000));
 		Graphics.play();
 
 		this.#scene.addChild(this.#tf2Viewer.getScene());
 		//this.#scene.addChild(this.cs2Viewer.getScene());
 
-		this.#camera.addChild(this.#tf2Viewer.getCameraGroup());
+		//this.#camera.addChild(this.#tf2Viewer.getCameraGroup());
 
 		//ContextObserver.observe(GraphicsEvents, this.#camera);
 	}
