@@ -126,15 +126,9 @@ export class Application {
 
 		const handleTick = (event: Event) => {
 			WebGLStats.tick();
-
-			const tempQuat = quat.create();
-			const unitX = vec3.fromValues(1, 0, 0);
 			const tempVec3 = vec3.create();
-			this.#camera.getPosition(tempVec3);
-			vec3.normalize(tempVec3, tempVec3);
-			quat.rotationTo(tempQuat, unitX, tempVec3);
-
-			this.#tf2Viewer.lightsGroup.setOrientation(tempQuat);
+			this.#camera.getWorldPosition(tempVec3);
+			this.#tf2Viewer.lightsGroup.lookAt(tempVec3);
 
 			Graphics.renderMultiCanvas((event as CustomEvent<GraphicTickEvent>).detail.delta);
 		}

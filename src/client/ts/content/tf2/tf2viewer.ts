@@ -1,5 +1,5 @@
 import { quat, vec3 } from 'gl-matrix';
-import { AmbientLight, ColorBackground, GraphicsEvent, GraphicsEvents, Group, PointLight, Repositories, RotationControl, Scene, SceneNode, Source1ModelInstance, Source1ParticleControler, Texture, WebRepository } from 'harmony-3d';
+import { AmbientLight, ColorBackground, GraphicsEvent, GraphicsEvents, Group, Manipulator, PointLight, Repositories, RotationControl, Scene, SceneNode, Source1ModelInstance, Source1ParticleControler, Sphere, Texture, WebRepository } from 'harmony-3d';
 import { TextureCombiner, WeaponManager, WeaponManagerItem } from 'harmony-3d-utils';
 import { blockSVG, pauseSVG, playSVG } from 'harmony-svg';
 import { WarpaintDefinitions } from 'harmony-tf2-utils';
@@ -41,8 +41,12 @@ export class TF2Viewer {
 	readonly lightsGroup = new Group({
 		childs: [
 			new AmbientLight(),
-			new PointLight({ range: 500, intensity: 0.5, position: [100, 100, 100] }),
-			new PointLight({ range: 500, intensity: 0.5, position: [100, -100, 100] }),
+			/*new Manipulator({ position: [10, 0, 10] }),
+			new Manipulator({ position: [-10, 0, 10] }),*/
+			new Sphere({ position: [150, 100, -200] }),
+			new Sphere({ position: [-150, 100, -200] }),
+			new PointLight({ range: 1000, intensity: 0.25, position: [150, 500, -200] }),
+			new PointLight({ range: 1000, intensity: 0.25, position: [-150, 500, -200] }),
 		]
 	});
 	//#group = new Group({ parent: this.#scene });
@@ -223,7 +227,7 @@ export class TF2Viewer {
 
 					this.#renderedListing.set(listingOrSteamId, itemTemplate);
 
-					console.info(itemTemplate);
+					//console.info(itemTemplate);
 					if (!weaponShowcase) {
 						character.removeAll();
 					}
