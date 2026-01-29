@@ -346,7 +346,7 @@ export class TF2Viewer {
 			if (paintKitId && paintKitWear && paintKitSeed) {
 				Controller.dispatchEvent(ControllerEvents.SetGenerationState, { detail: { state: GenerationState.WaitingForGeneration, listingId: listingOrSteamId } });
 				paintKitWear = (paintKitWear - 0.2) * 5 >> 0; // transform the wear from decimal point to integer
-				WeaponManager.refreshWarpaint({ model: source1Model, warpaintId: Number(paintKitId), warpaintWear: paintKitWear, id: String(defIndex), warpaintSeed: paintKitSeed, userData: listingOrSteamId, team: 0 }, false);
+				WeaponManager.refreshWarpaint({ model: source1Model, warpaintId: Number(paintKitId), warpaintWear: paintKitWear, id: String(defIndex), warpaintSeed: paintKitSeed, userData: listingOrSteamId, team: 0, updatePreview: false }, false);
 				if (htmlImg && assetId) {
 					Controller.dispatchEvent(ControllerEvents.SelectInventoryItem, { detail: { assetId: assetId, htmlImg: htmlImg } });
 				}
@@ -389,7 +389,7 @@ export class TF2Viewer {
 			if (paintKitId && paintKitWear && paintKitSeed) {
 				Controller.dispatchEvent(ControllerEvents.SetGenerationState, { detail: { state: GenerationState.WaitingForGeneration, listingId: listingOrSteamId } });
 				paintKitWear = (paintKitWear - 0.2) * 5 >> 0; // transform the wear from decimal point to integer
-				WeaponManager.refreshWarpaint({ model: await item.getModel(), warpaintId: Number(paintKitId), warpaintWear: paintKitWear, id: item.id, warpaintSeed: paintKitSeed, userData: listingOrSteamId, team: 0 }, false);
+				WeaponManager.refreshWarpaint({ model: await item.getModel(), warpaintId: Number(paintKitId), warpaintWear: paintKitWear, id: item.id, warpaintSeed: paintKitSeed, userData: listingOrSteamId, team: 0, updatePreview: false }, false);
 				if (htmlImg && assetId) {
 					Controller.dispatchEvent(ControllerEvents.SelectInventoryItem, { detail: { assetId: assetId, htmlImg: htmlImg } });
 				}

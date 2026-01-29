@@ -643,6 +643,7 @@ export class Item {
 				model: this.#model,
 				team: this.#team,
 				textureSize: this.#textureSize,
+				updatePreview: false,
 			});
 		}
 	}
