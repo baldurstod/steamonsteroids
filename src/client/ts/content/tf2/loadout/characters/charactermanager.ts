@@ -1,5 +1,5 @@
 import { quat, vec3 } from 'gl-matrix';
-import { Entity, getSceneExplorer, GraphicMouseEventData, GraphicsEvent, GraphicsEvents, Scene } from 'harmony-3d';
+import { Entity, getSceneExplorer, GraphicMouseEventData, GraphicPickEvent, GraphicsEvent, GraphicsEvents, Scene } from 'harmony-3d';
 import { OptionsManager, OptionsManagerEvents } from 'harmony-browser-utils';
 import { JSONObject, uint } from 'harmony-types';
 import positionJSON from '../../../../../json/slotsposition.json';
@@ -57,7 +57,7 @@ export class CharacterManager {
 
 	static {
 		GraphicsEvents.addEventListener(GraphicsEvent.Tick, () => this.#updatePaintColor());
-		GraphicsEvents.addEventListener(GraphicsEvent.MouseDown, (event: Event) => this.#pickedModel(event as CustomEvent<GraphicMouseEventData>));
+		GraphicsEvents.addEventListener(GraphicsEvent.MouseDown, (event: Event) => this.#pickedModel(event as CustomEvent<GraphicPickEvent>));
 		Controller.addEventListener(ControllerEvent.SetInvulnerable, (event: Event) => { this.#setInvulnerable((event as CustomEvent<SetInvulnerable>).detail.invulnerable, (event as CustomEvent<SetInvulnerable>).detail.scene); return; },);
 		Controller.addEventListener(ControllerEvent.SetRagdoll, (event: Event) => { this.#setRagdoll((event as CustomEvent<SetRagdoll>).detail.ragdoll, (event as CustomEvent<SetRagdoll>).detail.scene); return; },);
 		Controller.addEventListener(ControllerEvent.SetAnim, (event: Event) => this.#setAnim((event as CustomEvent<string>).detail));
@@ -636,7 +636,7 @@ export class CharacterManager {
 		this.useDisposition('custom', scene);
 	}
 
-	static #pickedModel(pickEvent: CustomEvent<GraphicMouseEventData>): void {
+	static #pickedModel(pickEvent: CustomEvent<GraphicPickEvent>): void {
 		const model = pickEvent.detail.entity;
 		if (model) {
 			this.#selectCharacterPerDynamicProp(model);

@@ -130,7 +130,7 @@ export class Application {
 			this.#camera.getWorldPosition(tempVec3);
 			this.#tf2Viewer.lightsGroup.lookAt(tempVec3);
 
-			Graphics.renderMultiCanvas((event as CustomEvent<GraphicTickEvent>).detail.delta);
+			Graphics.renderMultiCanvas((event as CustomEvent<GraphicTickEvent>).detail.delta, /*TODO: add context*/);
 		}
 
 		/*

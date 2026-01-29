@@ -73,10 +73,10 @@ export function setTF2ModelAttributes(model: Source1ModelInstance, item: any/*TO
 
 async function setCustomTexture(model: Source1ModelInstance, imageUrl: string) {
 	let image = new Image();
-	image.onload = function () {
+	image.onload = async () => {
 		const { name: textureName, texture } = Source1TextureManager.addInternalTexture(model.sourceModel.repository);
 		model.materialsParams.customtexture = textureName;
-		TextureManager.fillTextureWithImage(texture, image);
+		await TextureManager.fillTextureWithImage(texture, image);
 	}
 	image.crossOrigin = 'anonymous';
 	image.src = imageUrl;
