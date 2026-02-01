@@ -7,6 +7,7 @@ class BackGround {
 	static #inspectedWeapons = new Map<string, any/*TODO: improve type*/>();
 	static #tf2Schema?: JSONObject/*TODO: improve type*/;
 	static #cs2Schema?: JSONObject/*TODO: improve type*/;
+	static #cache?: Cache;
 
 	static {
 		this.#setupMessageListener();
@@ -46,9 +47,31 @@ class BackGround {
 				sendResponse(await this.inspectItem(message.link));
 				break;
 			case 'fetch':
-				const response = await fetch(message.resource, message.options);
-				const url = await convertBlobToBase64(await response.blob());
+				/*
+				// TODO: add cache quota management
+				navigator.storage.estimate().then((estimate) => {
+					if (estimate.usage === undefined || estimate.quota === undefined) {
+						return;
+					}
+					console.info((estimate.usage / estimate.quota) * 100);
+					console.info(`${(estimate.quota / 1024 / 1024).toFixed(2)}MB`);
+					console.info(`${(estimate.usage / 1024 / 1024).toFixed(2)}MB`);
+				});
+				*/
+
+				// Open the cache if it doesn't exist
+				this.#cache = this.#cache ?? await caches.open('v1');
+
+				// Try to get the response from the cache
+				let response: Response | undefined = await this.#cache.match(message.resource);
+				if (!response) {
+					// If cache miss, fetch the request
+					response = await fetch(message.resource, message.options);
+				}
+				const url = await convertBlobToBase64(await response.clone().blob());
 				const b64 = url.indexOf(';base64,') + 8;
+
+				this.#cache.put(message.resource, response);
 
 				sendResponse({
 					base64: url.substring(b64),

@@ -10,8 +10,8 @@ import { CS2Viewer } from './cs2/cs2viewer';
 import { getInventoryAssetDatas, getInventorySteamId, MarketAssets } from './marketassets';
 import { MARKET_LISTING_ROW_PREFIX, MARKET_LISTINGS_ID, SEARCH_RESULT_ROWS } from './steam/constants';
 import { MarketListings } from './steam/marketlistings';
-import { TF2Viewer } from './tf2/tf2viewer';
 import { ItemManager } from './tf2/loadout/items/itemmanager';
+import { TF2Viewer } from './tf2/tf2viewer';
 
 enum PageType {
 	Unknown = 0,
@@ -446,7 +446,7 @@ export class Application {
 		const htmlAjaxPagingControlGoto = createElement('input', {
 			type: 'number',
 			min: 1,
-			value: 1,
+			value: '1',
 			style: 'float: left;width:50px;text-align:center;',
 			$change: (event: InputEvent) => window.postMessage({ action: 'AjaxPagingControlsGoToPage', name: name, page: Number((event.target as HTMLInputElement).value) }, '*'),
 		});
@@ -460,7 +460,7 @@ export class Application {
 		for (let i of pageLen) {
 			createElement('option', {
 				parent: htmlAjaxPagingControlPageSize,
-				value: i,
+				value: String(i),
 				innerText: String(i),
 			});
 		}
