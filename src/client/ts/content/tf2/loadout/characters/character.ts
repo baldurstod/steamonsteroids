@@ -214,9 +214,9 @@ export class Character {
 			const choreoName = item.getCustomTauntOutroScenePerClass(npc);
 			if (choreoName && this.#model) {
 				await this.#ready;
-				new ChoreographiesManager().stopAll();
-				await new ChoreographiesManager().init('tf2', './scenes/scenes.image');
-				const choreo = await new ChoreographiesManager().playChoreography(choreoName, [this.#model]);
+				ChoreographiesManager.stopAll();
+				await ChoreographiesManager.init('tf2', './scenes/scenes.image');
+				const choreo = await ChoreographiesManager.playChoreography('tf2', choreoName, [this.#model]);
 				if (choreo) {
 					choreo.addEventListener(ChoreographyEventType.Stop, () => {
 						item.remove();
@@ -229,8 +229,8 @@ export class Character {
 				const choreoName2 = item.getCustomTauntPropOutroScenePerClass(npc);
 				const itemModel = await item.getModel();
 				if (choreoName2 && itemModel) {
-					await new ChoreographiesManager().init('tf2', './scenes/scenes.image');
-					new ChoreographiesManager().playChoreography(choreoName2, [itemModel]);
+					await ChoreographiesManager.init('tf2', './scenes/scenes.image');
+					ChoreographiesManager.playChoreography('tf2', choreoName2, [itemModel]);
 				}
 			} else {
 				item.remove();
@@ -264,17 +264,17 @@ export class Character {
 			// Play choreo
 			const choreoName = item.getCustomTauntScenePerClass(npc);
 			if (this.#model && choreoName && template.getItemSlot() == 'taunt') {
-				new ChoreographiesManager().stopAll();
-				await new ChoreographiesManager().init('tf2', './scenes/scenes.image');
-				new ChoreographiesManager().playChoreography(choreoName, [this.#model]);
+				ChoreographiesManager.stopAll();
+				await ChoreographiesManager.init('tf2', './scenes/scenes.image');
+				ChoreographiesManager.playChoreography('tf2', choreoName, [this.#model]);
 			}
 
 			const choreoName2 = item.getCustomTauntPropScenePerClass(npc);
 			const itemModel = await item.getModel();
 			if (choreoName2 && itemModel) {
 				void itemModel.skeleton?.setParentSkeleton(null);
-				await new ChoreographiesManager().init('tf2', './scenes/scenes.image');
-				new ChoreographiesManager().playChoreography(choreoName2, [itemModel]);
+				await ChoreographiesManager.init('tf2', './scenes/scenes.image');
+				ChoreographiesManager.playChoreography('tf2', choreoName2, [itemModel]);
 			}
 		}
 
