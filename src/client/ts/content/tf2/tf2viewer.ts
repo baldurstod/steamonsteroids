@@ -43,8 +43,8 @@ export class TF2Viewer {
 			new AmbientLight(),
 			/*new Manipulator({ position: [10, 0, 10] }),
 			new Manipulator({ position: [-10, 0, 10] }),*/
-			new Sphere({ position: [150, 100, -200] }),
-			new Sphere({ position: [-150, 100, -200] }),
+			//new Sphere({ position: [150, 100, -200] }),
+			//new Sphere({ position: [-150, 100, -200] }),
 			new PointLight({ range: 1000, intensity: 0.25, position: [150, 500, -200] }),
 			new PointLight({ range: 1000, intensity: 0.25, position: [-150, 500, -200] }),
 		]

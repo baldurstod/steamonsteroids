@@ -11,6 +11,7 @@ import { getInventoryAssetDatas, getInventorySteamId, MarketAssets } from './mar
 import { MARKET_LISTING_ROW_PREFIX, MARKET_LISTINGS_ID, SEARCH_RESULT_ROWS } from './steam/constants';
 import { MarketListings } from './steam/marketlistings';
 import { ItemManager } from './tf2/loadout/items/itemmanager';
+import { TF2_SHOWCASE_CAMERA_POSITION, TF2_SHOWCASE_CAMERA_TARGET } from './tf2/tf2constants';
 import { TF2Viewer } from './tf2/tf2viewer';
 
 enum PageType {
@@ -776,6 +777,9 @@ export class Application {
 			class: 'button',
 			innerHTML: '<a class="item_market_action_button btn_green_white_innerfade btn_small"><span>Weapons showcase</span></a>',
 			$click: () => {
+				if (!this.#weaponShowcase) {
+					this.#setCameraTarget(TF2_SHOWCASE_CAMERA_TARGET, TF2_SHOWCASE_CAMERA_POSITION);
+				}
 				this.#weaponShowcase = true;
 				this.#renderMarketListing(listingId, undefined);
 			}
