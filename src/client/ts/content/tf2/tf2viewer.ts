@@ -1,5 +1,5 @@
 import { quat, vec3 } from 'gl-matrix';
-import { AmbientLight, ColorBackground, GraphicsEvent, GraphicsEvents, Group, Manipulator, PointLight, Repositories, RotationControl, Scene, SceneNode, Source1ModelInstance, Source1ParticleControler, Sphere, Texture, WebRepository } from 'harmony-3d';
+import { AmbientLight, ColorBackground, GraphicsEvent, GraphicsEvents, Group, PointLight, Repositories, RotationControl, Scene, SceneNode, Source1ModelInstance, Source1ParticleControler, Sphere, Texture, WebRepository } from 'harmony-3d';
 import { TextureCombiner, WeaponManager, WeaponManagerItem } from 'harmony-3d-utils';
 import { blockSVG, pauseSVG, playSVG } from 'harmony-svg';
 import { WarpaintDefinitions } from 'harmony-tf2-utils';
@@ -209,7 +209,7 @@ export class TF2Viewer {
 			const addItems: (keyof typeof weaponsJSON)[] = [];
 			if (weaponShowcase) {
 				for (const defIndex in weaponsJSON) {
-					console.info(defIndex);
+					//console.info(defIndex);
 					addItems.push(defIndex as (keyof typeof weaponsJSON));
 				}
 				character.removeAll();

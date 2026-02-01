@@ -95,6 +95,7 @@ export class Application {
 	#active = true;
 	#isFullScreen = false;
 	#fullScreenMode = FullScreenMode.None;
+	#weaponShowcase = false;
 
 	constructor() {
 		this.#initHtml();
@@ -638,6 +639,7 @@ export class Application {
 	}
 
 	async #refreshTf2VisibleListings() {
+		this.#weaponShowcase = false;
 		switch (this.#pageType) {
 			case PageType.Market:
 				//await this.#renderMarketListing(this.#currentListingId, true);
@@ -774,7 +776,8 @@ export class Application {
 			class: 'button',
 			innerHTML: '<a class="item_market_action_button btn_green_white_innerfade btn_small"><span>Weapons showcase</span></a>',
 			$click: () => {
-				this.#renderMarketListing(listingId, undefined, true);
+				this.#weaponShowcase = true;
+				this.#renderMarketListing(listingId, undefined);
 			}
 		});
 	}
@@ -819,7 +822,7 @@ export class Application {
 		}
 	}
 
-	async #renderMarketListing(listingId: string, force = false, weaponShowcase = false) {
+	async #renderMarketListing(listingId: string, force = false) {
 		//this.#tf2Viewer.hide();
 		this.#cs2Viewer.hide();
 		//this.#currentListingId = listingId;
@@ -830,7 +833,7 @@ export class Application {
 			switch (asset.appid) {
 				case APP_ID_TF2:
 					chrome.runtime.sendMessage({ action: 'get-asset-class-info', appId: asset.appid, classId: asset.classid }, (classInfo) => {
-						this.#tf2Viewer.renderListingTF2(listingId, asset, classInfo, undefined, undefined, weaponShowcase);
+						this.#tf2Viewer.renderListingTF2(listingId, asset, classInfo, undefined, undefined, this.#weaponShowcase);
 					});
 					break;
 				case APP_ID_CS2:
