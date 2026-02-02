@@ -47,28 +47,7 @@ class BackGround {
 				sendResponse(await this.inspectItem(message.link));
 				break;
 			case 'fetch':
-				/*
-				// TODO: add cache quota management
-				navigator.storage.estimate().then((estimate) => {
-					if (estimate.usage === undefined || estimate.quota === undefined) {
-						return;
-					}
-					console.info((estimate.usage / estimate.quota) * 100);
-					console.info(`${(estimate.quota / 1024 / 1024).toFixed(2)}MB`);
-					console.info(`${(estimate.usage / 1024 / 1024).toFixed(2)}MB`);
-				});
-				*/
-
-				// Open the cache if it doesn't exist
-				this.#cache = this.#cache ?? await caches.open('v1');
-
-				// Try to get the response from the cache
-				let response: Response | undefined = await this.#cache.match(message.resource);
-				if (!response) {
-					// If cache miss, fetch the request
-					response = await fetch(message.resource, message.options);
-					this.#cache.put(message.resource, response.clone());
-				}
+				const response = await this.#fetch(message.resource, message.options);
 
 				const url = await convertBlobToBase64(await response.blob());
 				const b64 = url.indexOf(';base64,') + 8;
@@ -100,7 +79,7 @@ class BackGround {
 		}
 
 		let apiUrl = `${API_GET_ASSET_CLASS_INFO_ENDPOINT}/${appId}/${classId}`;
-		let apiResponse = await fetch(apiUrl);
+		let apiResponse = await this.#fetch(apiUrl);
 		let apiResponseJSON = await apiResponse.json();
 		//console.log(apiResponseJSON);
 		if (apiResponseJSON && apiResponseJSON.success === true) {
@@ -225,7 +204,7 @@ class BackGround {
 		}
 
 		//console.error(url);
-		let response = await fetch(url);
+		let response = await this.#fetch(url);
 		let responseJson = await response.json();
 		if (responseJson.success) {
 			//console.error(responseJson.item);
@@ -233,5 +212,31 @@ class BackGround {
 			return responseJson.item;
 		}
 		return null;
+	}
+
+	static async #fetch(url: string, init?: RequestInit): Promise<Response> {
+		/*
+		// TODO: add cache quota management
+		navigator.storage.estimate().then((estimate) => {
+			if (estimate.usage === undefined || estimate.quota === undefined) {
+				return;
+			}
+			console.info((estimate.usage / estimate.quota) * 100);
+			console.info(`${(estimate.quota / 1024 / 1024).toFixed(2)}MB`);
+			console.info(`${(estimate.usage / 1024 / 1024).toFixed(2)}MB`);
+		});
+		*/
+
+		// Open the cache if it doesn't exist
+		this.#cache = this.#cache ?? await caches.open('v1');
+
+		let response: Response | undefined = await this.#cache.match(url);
+		if (!response) {
+			// If cache miss, fetch the request
+			response = await fetch(url, init);
+			this.#cache.put(url, response.clone());
+		}
+
+		return response;
 	}
 }
