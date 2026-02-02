@@ -67,11 +67,11 @@ class BackGround {
 				if (!response) {
 					// If cache miss, fetch the request
 					response = await fetch(message.resource, message.options);
+					this.#cache.put(message.resource, response.clone());
 				}
-				const url = await convertBlobToBase64(await response.clone().blob());
-				const b64 = url.indexOf(';base64,') + 8;
 
-				this.#cache.put(message.resource, response);
+				const url = await convertBlobToBase64(await response.blob());
+				const b64 = url.indexOf(';base64,') + 8;
 
 				sendResponse({
 					base64: url.substring(b64),
