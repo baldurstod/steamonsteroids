@@ -58,6 +58,7 @@ export class Character {
 	#taunt: Item | null = null;
 	#flexControllers = new Map<string, number>;
 	#decapitationLevel = 0;
+	static autoSelectAnim = true;
 
 	constructor(characterClass: Tf2Class, scene: Scene) {
 		this.characterClass = characterClass;
@@ -419,7 +420,7 @@ export class Character {
 			return;
 		}
 		const pose = this.#voicePose ?? 'stand';
-		if (OptionsManager.getItem('app.character.autoselectanim')) {
+		if (Character.autoSelectAnim) {
 			this.#playAnim(pose + '_secondary');
 		}
 		for (const [, item] of this.items) {
