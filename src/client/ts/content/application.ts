@@ -323,7 +323,7 @@ export class Application {
 				*/
 		//this.#htmlCanvasItemInfo = createElement('div', { class: 'canvas-container-item-info' });
 
-		this.#canvasContainer.append(/*htmlFavoriteButton, htmlUnFavoriteButton, *//*this.#htmlCanvasItemInfo, */this.#tf2Viewer.initHtml()/*, this.cs2Viewer.initHtml()*/);
+		//this.#canvasContainer.append(/*htmlFavoriteButton, htmlUnFavoriteButton, *//*this.#htmlCanvasItemInfo, */this.#tf2Viewer.initHtml()/*, this.cs2Viewer.initHtml()*/);
 	}
 
 	#tradeActivate(activate: boolean) {
@@ -692,7 +692,7 @@ export class Application {
 			childs: [
 				canvasAttributes.canvas,
 				htmlInfo,
-				this.#tf2Viewer.initHtml(),
+				this.#tf2Viewer.initHtml(listingId),
 				createElement('div', {
 					class: 'fullscreen-toolbar',
 					childs: [

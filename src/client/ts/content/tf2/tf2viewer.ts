@@ -43,9 +43,9 @@ enum CameraTarget {
 }
 
 export class TF2Viewer {
-	#htmlControls?: HTMLElement;
-	#htmlWeaponSelector?: HTMLSelectElement;
-	#htmlClassIcons?: HTMLElement;
+	#htmlControlsPerListing = new Map<string, HTMLElement>();
+	#htmlWeaponSelectorPerListing = new Map<string, HTMLSelectElement>();
+	#htmlClassIconsPerListing = new Map<string, HTMLElement>();
 	#scene = new Scene();
 	readonly lightsGroup = new Group({
 		childs: [
@@ -103,39 +103,51 @@ export class TF2Viewer {
 	}
 	*/
 
-	initHtml() {
-		this.#htmlControls = createElement('div', { class: 'canvas-container-controls' });
+	initHtml(listingId: string): HTMLElement {
+		let htmlControls = this.#htmlControlsPerListing.get(listingId);
+		if (!htmlControls) {
+			htmlControls = createElement('div', { class: 'canvas-container-controls' });
+			this.#htmlControlsPerListing.set(listingId, htmlControls);
+		}
 
-		this.#htmlWeaponSelector = createElement('select', {
-			parent: this.#htmlControls,
-			class: 'weapon-selector steam-select',
-			$change: (event: Event) => {
-				this.#forcedWeaponIndex = Number((event.target as HTMLSelectElement).value);
-				chrome.storage.sync.set({ warpaintWeaponIndex: (event.target as HTMLSelectElement).value });
-				this.#refreshVisibleListings();
-			},
-		}) as HTMLSelectElement;
+		let htmlWeaponSelector = this.#htmlWeaponSelectorPerListing.get(listingId);
+		if (!htmlWeaponSelector) {
+			htmlWeaponSelector = createElement('select', {
+				parent: htmlControls,
+				class: 'weapon-selector steam-select',
+				$change: (event: Event) => {
+					this.#forcedWeaponIndex = Number((event.target as HTMLSelectElement).value);
+					chrome.storage.sync.set({ warpaintWeaponIndex: (event.target as HTMLSelectElement).value });
+					this.#refreshVisibleListings();
+				},
+			}) as HTMLSelectElement;
+			this.#htmlWeaponSelectorPerListing.set(listingId, htmlWeaponSelector);
+		}
 
 		for (let weaponName in DECORATED_WEAPONS) {
 			let weaponDefIndex = DECORATED_WEAPONS[weaponName];
 			createElement('option', {
-				parent: this.#htmlWeaponSelector,
+				parent: htmlWeaponSelector,
 				innerText: weaponName,
 				value: String(weaponDefIndex),
 			});
 		}
-		sortSelect(this.#htmlWeaponSelector);
+		sortSelect(htmlWeaponSelector);
 
-		this.#htmlClassIcons = createElement('div', {
-			parent: this.#htmlControls,
-			class: 'canvas-container-controls-class-icons',
-		});
+		let htmlClassIcons = this.#htmlClassIconsPerListing.get(listingId);
+		if (!htmlClassIcons) {
+			htmlClassIcons = createElement('div', {
+				parent: htmlControls,
+				class: 'canvas-container-controls-class-icons',
+			});
+			this.#htmlClassIconsPerListing.set(listingId, htmlClassIcons);
+		}
 
 		let buttonState = false;
 		const htmlPlayPauseButton = createElement('button', {
 			class: 'canvas-container-controls-playpause play',
 			innerHTML: playSVG,
-			parent: this.#htmlControls,
+			parent: htmlControls,
 			events: {
 				click: () => {
 					buttonState = !buttonState;
@@ -176,8 +188,8 @@ export class TF2Viewer {
 		})();
 
 
-		this.#loadWarpaintWeapon();
-		return this.#htmlControls;
+		this.#loadWarpaintWeapon(listingId);
+		return htmlControls;
 	}
 
 	setActiveListing(listingId: string): void {
@@ -198,12 +210,12 @@ export class TF2Viewer {
 
 	async renderListingTF2(listingOrSteamId: string, listingDatas: any/*TODO: improve type*/, classInfo: any/*TODO: improve type*/, assetId?: number, htmlImg?: HTMLImageElement, weaponShowcase = false) {
 		this.#isWeaponsShowcase = weaponShowcase;
-		show(this.#htmlControls);
-		this.#htmlClassIcons?.replaceChildren();
+		show(this.#htmlControlsPerListing.get(listingOrSteamId));
+		this.#htmlClassIconsPerListing.get(listingOrSteamId)?.replaceChildren();
 		if ((listingDatas.appid == APP_ID_TF2) && listingDatas.market_hash_name.includes('War Paint')/* && this.application.canInspectWarpaintWeapons()*/) {
-			show(this.#htmlWeaponSelector);
+			show(this.#htmlWeaponSelectorPerListing.get(listingOrSteamId));
 		} else {
-			hide(this.#htmlWeaponSelector);
+			hide(this.#htmlWeaponSelectorPerListing.get(listingOrSteamId));
 		}
 		Controller.dispatchEvent(ControllerEvents.ClearMarketListing, { detail: { listingId: listingOrSteamId } });
 		let defIndex = classInfo?.app_data?.def_index;
@@ -557,7 +569,7 @@ export class TF2Viewer {
 			htmlClassIcon.innerHTML = await (await fetch(imageUrl)).text();
 		}
 
-		this.#htmlClassIcons?.append(htmlClassIcon);
+		this.#htmlClassIconsPerListing.get(listingId)?.append(htmlClassIcon);
 
 		htmlClassIcon.addEventListener('click', async () => {
 			await this.#selectClass(listingId, className);
@@ -630,12 +642,13 @@ export class TF2Viewer {
 		});
 	}
 
-	async #loadWarpaintWeapon() {
+	async #loadWarpaintWeapon(listingId: string) {
 		let storage = await chrome.storage.sync.get('warpaintWeaponIndex');
 		if (storage && storage.warpaintWeaponIndex) {
 			let warpaintWeaponIndex = Number(storage.warpaintWeaponIndex);
-			if (this.#htmlWeaponSelector) {
-				this.#htmlWeaponSelector.value = String(warpaintWeaponIndex);
+			const htmlWeaponSelector = this.#htmlWeaponSelectorPerListing.get(listingId);
+			if (htmlWeaponSelector) {
+				htmlWeaponSelector.value = String(warpaintWeaponIndex);
 			}
 			this.#forcedWeaponIndex = warpaintWeaponIndex;
 		}

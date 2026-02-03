@@ -71,7 +71,7 @@ export class CharacterManager {
 	}
 
 	static async selectCharacter(characterClass: Tf2Class, slotId?: uint, scene: Scene = loadoutScene): Promise<Character> {
-		const slot = this.getSlot(slotId, scene);
+		const slot = this.#getSlot(slotId, scene);
 
 		if (slot.character?.characterClass == characterClass) {
 			slot.character.setVisible(true);
@@ -80,7 +80,7 @@ export class CharacterManager {
 		}
 
 		this.#removeCharacter(slot);
-		const character = this.#getUnusedCharacter(characterClass) ?? new Character(characterClass, scene);
+		const character = this.#getUnusedCharacter(characterClass, scene) ?? new Character(characterClass, scene);
 		slot.character = character;
 		// set the character visible
 		character.setVisible(true);
@@ -110,14 +110,14 @@ export class CharacterManager {
 	}
 
 	static removeCharacter(slotId?: uint, scene: Scene = loadoutScene): void {
-		const slot = this.getSlot(slotId, scene);
+		const slot = this.#getSlot(slotId, scene);
 		this.#removeCharacter(slot);
 	}
 
-	static #getUnusedCharacter(characterClass: Tf2Class): Character | null {
+	static #getUnusedCharacter(characterClass: Tf2Class, scene: Scene): Character | null {
 		for (let i = 0; i < this.#unusedCharacters.length; i++) {
 			const character = this.#unusedCharacters[i]!;
-			if (character.characterClass == characterClass) {
+			if (character.characterClass === characterClass && character.scene === scene) {
 				this.#unusedCharacters.splice(i, 1);
 				return character;
 			}
@@ -155,7 +155,7 @@ export class CharacterManager {
 		}
 	}
 
-	static getSlot(slotId?: uint, scene: Scene = loadoutScene): CharacterSlot {
+	static #getSlot(slotId?: uint, scene: Scene = loadoutScene): CharacterSlot {
 		let slots = this.#characterSlots.get(scene);
 		if (!slots) {
 			slots = [new CharacterSlot()];
