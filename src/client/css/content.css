@@ -128,7 +128,11 @@ canvas:focus {
 	display: none;
 }
 
-:fullscreen .fullscreen-button {
+.steamonsteroids-market-fullscreen-per-listing :fullscreen .fullscreen-button-single {
+	display: none;
+}
+
+.steamonsteroids-market-fullscreen-per-page :fullscreen .fullscreen-button-all {
 	display: none;
 }
 

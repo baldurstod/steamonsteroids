@@ -730,7 +730,7 @@ export class Application {
 
 	#createFullScreenButtons(listingId: string): [HTMLElement, HTMLElement, HTMLElement] {
 		const htmlFullScreenButton = createElement('div', {
-			class: 'button fullscreen-button',
+			class: 'button fullscreen-button-single',
 			//innerHTML: fullscreenSVG,
 			innerHTML: '<a class="item_market_action_button btn_green_white_innerfade btn_small"><span>Fullscreen this item</span></a>',
 			$click: () => {
@@ -754,7 +754,7 @@ export class Application {
 		});
 
 		const htmlFullScreenButton2 = createElement('div', {
-			class: 'button fullscreen-button',
+			class: 'button fullscreen-button-all',
 			innerHTML: '<a class="item_market_action_button btn_green_white_innerfade btn_small"><span>Fullscreen all items</span></a>',
 			$click: () => {
 				this.#setFullScreenMode(FullScreenMode.MarketPerPage);
