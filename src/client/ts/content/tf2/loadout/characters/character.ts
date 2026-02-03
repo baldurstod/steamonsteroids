@@ -1,6 +1,7 @@
 import { vec3 } from 'gl-matrix';
-import { ChoreographiesManager, ChoreographyEventType, Material, RandomFloat, Scene, Source1MaterialManager, Source1ModelInstance, Source1ParticleControler, Source1ParticleSystem, Source1SoundManager } from 'harmony-3d';
+import { ChoreographiesManager, ChoreographyEventType, Material, RandomFloat, Repositories, Scene, Source1MaterialManager, Source1ModelInstance, Source1ParticleControler, Source1ParticleSystem, Source1SoundManager } from 'harmony-3d';
 import { OptionsManager } from 'harmony-browser-utils';
+import { unserializeDmxSync } from 'harmony-dmx';
 import { EFFECTS_BLU, EFFECTS_RED, ENTITY_FLYING_BIRD_SPEED_MAX, ENTITY_FLYING_BIRD_SPEED_MIN, MATERIAL_GOLD_RAGDOLL, MATERIAL_ICE_RAGDOLL, MATERIAL_INVULN_BLU, MATERIAL_INVULN_RED, MEDIC_RELEASE_DOVE_COUNT } from '../../constants';
 import { Controller, ControllerEvent } from '../../controller';
 import { getKillstreak, KillstreakColor, killstreakList } from '../../paints/killstreaks';
@@ -257,13 +258,32 @@ export class Character {
 			if (this.#taunt) {
 				this.#taunt.remove();
 				this.items.delete(this.#taunt.id);
+				if (this.#model) {
+					this.#model.useNewAnimSystem = false;
+					this.#userAnim = '';
+				}
 			}
 
 			this.#taunt = item;
 
+			const animationPath = item.getWorkshopAnimationPerClass(npc);
+
+			if (animationPath) {
+				console.info(animationPath);
+				const result = await Repositories.getFileAsArrayBuffer(template.getWorkshopRepository(), animationPath);
+				if (!result.error) {
+					const dmx = unserializeDmxSync(result.buffer!);
+					if (dmx && this.#model) {
+						this.#model.importAnimationFromDmx(dmx);
+						this.#model.useNewAnimSystem = true;
+						this.#userAnim = 'animationPath';
+					}
+				}
+			}
+
 			// Play choreo
 			const choreoName = item.getCustomTauntScenePerClass(npc);
-			if (this.#model && choreoName && template.getItemSlot() == 'taunt') {
+			if (this.#model && choreoName) {
 				ChoreographiesManager.stopAll();
 				await ChoreographiesManager.init('tf2', './scenes/scenes.image');
 				ChoreographiesManager.playChoreography('tf2', choreoName, [this.#model]);
@@ -696,6 +716,7 @@ export class Character {
 		}
 
 		if (!template) {
+			this.#tauntEffect = null;
 			return null;
 		}
 

@@ -57,7 +57,7 @@ export class CharacterManager {
 
 	static {
 		GraphicsEvents.addEventListener(GraphicsEvent.Tick, () => this.#updatePaintColor());
-		GraphicsEvents.addEventListener(GraphicsEvent.MouseDown, (event: Event) => this.#pickedModel(event as CustomEvent<GraphicPickEvent>));
+		GraphicsEvents.addEventListener(GraphicsEvent.Pick, (event: Event) => this.#pickedModel(event as CustomEvent<GraphicPickEvent>));
 		Controller.addEventListener(ControllerEvent.SetInvulnerable, (event: Event) => { this.#setInvulnerable((event as CustomEvent<SetInvulnerable>).detail.invulnerable, (event as CustomEvent<SetInvulnerable>).detail.scene); return; },);
 		Controller.addEventListener(ControllerEvent.SetRagdoll, (event: Event) => { this.#setRagdoll((event as CustomEvent<SetRagdoll>).detail.ragdoll, (event as CustomEvent<SetRagdoll>).detail.scene); return; },);
 		Controller.addEventListener(ControllerEvent.SetAnim, (event: Event) => this.#setAnim((event as CustomEvent<string>).detail));
@@ -285,8 +285,8 @@ export class CharacterManager {
 			const positions: CharacterPosition[] = [];
 			for (const position of slotPosition) {
 				positions.push({
-					position: position.p as vec3,
-					orientation: position.o as quat,
+					position: position.p,
+					orientation: position.o,
 				});
 			}
 			this.#slotsPositions.set(key, positions);
@@ -642,6 +642,7 @@ export class CharacterManager {
 			this.#selectCharacterPerDynamicProp(model);
 		}
 	}
+
 	static async #selectCharacterPerDynamicProp(prop: Entity, scene: Scene = loadoutScene): Promise<void> {
 		const slots = this.#characterSlots.get(scene);
 		if (!slots) {

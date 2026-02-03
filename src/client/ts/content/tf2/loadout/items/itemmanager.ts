@@ -195,7 +195,7 @@ export class ItemManager {
 	static initItems(): Promise<void> {
 		if (!this.#loadItemsPromise) {
 			this.#loadItemsPromise = new Promise((resolve) => {
-				const url = `${TF2_REPOSITORY}generated/items/items_${this.#lang}.json`;
+				const url = `${TF2_REPOSITORY}generated/items/items_${this.#lang}.json?t=${new Date().getTime()}`;
 				fetch(new Request(url)).then((response) => {
 					response.json().then((json) => {
 						if (json) {
@@ -404,6 +404,13 @@ export class ItemManager {
 		this.#itemTemplates[Symbol.iterator] = function* (): MapIterator<[string, ItemTemplate]> {
 			yield* [...this.entries()].sort(
 				(a, b) => {
+					if (a[1].name.toLowerCase().includes('romevision')) {
+						return 1;
+					}
+					if (b[1].name.toLowerCase().includes('romevision')) {
+						return -1;
+					}
+
 					const aname = a[1].id;
 					const bname = b[1].id;
 					const aId = parseInt(aname, 10);

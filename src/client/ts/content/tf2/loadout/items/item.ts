@@ -8,10 +8,13 @@ import { colorToVec4 } from '../../utils/colors';
 import { randomProperty } from '../../utils/randomproperty';
 import { Character, Ragdoll } from '../characters/character';
 import { weaponEffects } from '../effects/effect';
+import { EffectType } from '../effects/effecttemplate';
 import { Team } from '../enums';
 import { addTF2Model } from '../scene';
 import { hasConflict } from './hasconflict';
+import { ItemManager } from './itemmanager';
 import { ItemTemplate } from './itemtemplate';
+import { updatePreview } from './updatepreview';
 
 export class Item {
 	readonly id: string;
@@ -186,6 +189,8 @@ export class Item {
 				systemName = 'critgun_weaponmodel_blu';
 			}
 
+			//for soda popper hype
+			//glowColor = [50, 2, 48];
 			if (systemName && glowColor) {
 				if (!sys) {
 					sys = await Source1ParticleControler.createSystem('tf2', systemName);
@@ -193,12 +198,17 @@ export class Item {
 				sys.start();
 				this.#model.addChild(sys);
 				this.#model.attachSystem(sys, '');
+				for await (const child of this.getAllModels()) {
+					child.materialsParams['ModelGlowColor'] = glowColor;
+				}
+				/*
 				this.#model.materialsParams['ModelGlowColor'] = glowColor;
 
 				const module = await this.#stattrakModule;
 				if (module) {
 					module.materialsParams['ModelGlowColor'] = glowColor;
 				}
+				*/
 			}
 			if (this.#team == Team.Red) {
 				this.#critBoostSysRed = sys;
@@ -207,12 +217,17 @@ export class Item {
 			}
 
 		} else {
+			/*
 			if (this.#model) {
 				this.#model.materialsParams['ModelGlowColor'] = null;
 			}
 			const module = await this.#stattrakModule;
 			if (module) {
 				module.materialsParams['ModelGlowColor'] = null;
+			}
+				*/
+			for await (const child of this.getAllModels()) {
+				child.materialsParams['ModelGlowColor'] = null;
 			}
 		}
 
@@ -334,6 +349,27 @@ export class Item {
 		}
 
 		if (this.#model) {
+
+			let s = ItemManager.getEffectTemplate(EffectType.Cosmetic, Number(this.#itemTemplate.setAttachedParticleStatic));
+			if (s) {
+				let sys = await Source1ParticleControler.createSystem('tf2', s.getSystem());
+				sys.start();
+				this.#model.attachSystem(sys, s.getAttachment());
+			}
+
+			let attachedParticlesystems = this.#itemTemplate.attachedParticlesystems;
+			if (attachedParticlesystems) {
+				for (let attachedSystem of attachedParticlesystems) {
+					let sys = await Source1ParticleControler.createSystem('tf2', attachedSystem.system);
+					sys.start();
+					this.#model.attachSystem(sys, attachedSystem.attachment);
+				}
+			}
+
+			if (this.#itemTemplate.usePerClassBodygroups) {
+				this.#model.setBodyPartModel('class', this.#character.characterClass);
+			}
+
 			this.#readyPromiseResolve(true);
 			//this.#model.setFlexes();
 			this.#model.setPoseParameter('move_x', 1);
@@ -387,6 +423,9 @@ export class Item {
 	}
 
 	setPaint(paint: Paints | null): void {
+		if (paint == Paints.None) {
+			paint = null;
+		}
 		if (paint !== null) {
 			this.#paint = getPaint(paint);
 		} else {
@@ -523,6 +562,15 @@ export class Item {
 		return customTauntPropOutroScenePerClass?.[npc] ?? null;
 	}
 
+	getWorkshopAnimationPerClass(npc: string): string | null {
+		const importSessionClasses = this.#itemTemplate.getImportSessionClasses();
+		if (!importSessionClasses) {
+			return null;
+		}
+		const c = importSessionClasses[npc];
+		return c?.['animation']?.['source_file'] ?? null;
+	}
+
 	getTauntAttackName(): string | null {
 		return this.#itemTemplate.tauntAttackName;
 	}
@@ -643,12 +691,35 @@ export class Item {
 				model: this.#model,
 				team: this.#team,
 				textureSize: this.#textureSize,
-				updatePreview: false,
+				updatePreview,
 			});
 		}
 	}
 
 	getCharacter(): Character {
 		return this.#character;
+	}
+
+	async *getAllModels(): AsyncGenerator<Source1ModelInstance, void, unknown> {
+		if (this.#model) {
+			yield this.#model;
+		}
+
+		for (const attachedModel of this.#attachedModels) {
+			yield attachedModel;
+		}
+
+		if (this.#festivizerModel) {
+			yield this.#festivizerModel;
+		}
+
+		if (this.#modelExtraWearable) {
+			yield this.#modelExtraWearable;
+		}
+
+		const stattrakModule = await this.#stattrakModule;
+		if (stattrakModule) {
+			yield stattrakModule;
+		}
 	}
 }

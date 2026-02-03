@@ -41,6 +41,9 @@ export class EffectTemplate {
 
 	getImage(): string {
 		return `${UNUSUALS_IMAGES_DIR}${this.getSystem()}.webp`;
+	}
 
+	getAttachment(): string {
+		return (this.#definition.attachment as string) ?? '';
 	}
 }

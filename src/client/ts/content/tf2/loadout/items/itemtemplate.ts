@@ -1,4 +1,4 @@
-import { Repositories, WebRepository } from 'harmony-3d';
+import { ChoreographiesManager, Repositories, VcdParser, WebRepository } from 'harmony-3d';
 import { JSONObject } from 'harmony-types';
 import { WORKSHOP_UGC_URL } from '../../constants';
 import { CharactersList, Tf2Class } from '../characters/characters';
@@ -6,6 +6,11 @@ import { CharactersList, Tf2Class } from '../characters/characters';
 type Warpaint = {
 	weapon: string,
 	title: string,
+}
+
+export type AttachedParticlesystem = {
+	'attachment': string,
+	'system': string,
 }
 
 export class ItemTemplate {
@@ -23,6 +28,10 @@ export class ItemTemplate {
 
 	get name(): string {
 		return this.#definition.name as string ?? '';
+	}
+
+	get realName(): string {
+		return this.#definition.realname as string ?? '';
 	}
 
 	isUsedByClass(characterClass: Tf2Class): boolean {
@@ -45,6 +54,7 @@ export class ItemTemplate {
 					used.add(usedByClass);
 				}
 			}
+			return used;
 		}
 		return new Set();
 	}
@@ -146,8 +156,8 @@ export class ItemTemplate {
 		return this.#definition.wm_bodygroup_override as Record<string, string>;
 	}
 
-	get usePerClassBodygroups(): string {
-		return this.#definition.use_per_class_bodygroups as string;
+	get usePerClassBodygroups(): boolean {
+		return this.#definition.use_per_class_bodygroups == '1';
 	}
 
 	getExtraWearable(): string {
@@ -218,8 +228,8 @@ export class ItemTemplate {
 		return this.#definition.set_attached_particle_static as string;
 	}
 
-	get attachedParticlesystems(): Record<string, string> {
-		return this.#definition.attached_particlesystems as Record<string, string>;
+	get attachedParticlesystems(): AttachedParticlesystem[] {
+		return this.#definition.attached_particlesystems as AttachedParticlesystem[];
 	}
 
 	get customTauntScenePerClass(): Record<string, string> | undefined {
@@ -236,6 +246,10 @@ export class ItemTemplate {
 
 	get customTauntPropOutroScenePerClass(): Record<string, string> | undefined {
 		return this.#definition.custom_taunt_prop_outro_scene_per_class as Record<string, string>;
+	}
+
+	getImportSessionClasses(): Record<string, any> | undefined {
+		return (this.#definition.import_session as JSONObject | undefined)?.classes as Record<string, any>;
 	}
 
 	get tauntAttackName(): string | null {
@@ -326,21 +340,44 @@ export class ItemTemplate {
 
 					const itemId = this.#definition.id as string;
 					const url = WORKSHOP_UGC_URL + (this.#definition.creatorid64 as string) + '/' + itemId + '/' + itemId + '.json';
-					const itemRepository = WORKSHOP_UGC_URL + (this.#definition.creatorid64 as string) + '/' + itemId + '/game/';
+					const itemRepository = WORKSHOP_UGC_URL + (this.#definition.creatorid64 as string) + '/' + itemId + '/';
 
-					const repositoryName = `tf2_workshop_${itemId}`;
-					Repositories.addRepository(new WebRepository(repositoryName, itemRepository));
+					const repositoryName = this.getWorkshopGameRepository();
+					Repositories.addRepository(new WebRepository(this.getWorkshopRepository(), itemRepository, true));
+					Repositories.addRepository(new WebRepository(repositoryName, itemRepository + 'game/', true));
 
 					this.#definition.repository = repositoryName;
 
 					const response = await fetch(new Request(url));
 					const json = await response.json();
 					const jsonItem = json?.item;
-					const keys = ['model_player', 'model_player_per_class', 'player_bodygroups']
+					const keys = [
+						'model_player',
+						'model_player_per_class',
+						'player_bodygroups',
+						'is_taunt_item',
+						'custom_taunt_scene_per_class',
+						'custom_taunt_outro_scene_per_class',
+						'custom_taunt_prop_scene_per_class',
+						'custom_taunt_prop_outro_scene_per_class',
+						'import_session',
+					];
+
 					if (json.result && jsonItem) {
 						for (const key of keys) {
-							if (jsonItem[key]) {
-								this.#definition[key] = jsonItem[key];
+							const jsonValue = jsonItem[key];
+							if (jsonValue) {
+								this.#definition[key] = jsonValue;
+							}
+
+							if (key.startsWith('custom_taunt')) {
+								if (typeof jsonValue == 'string') {
+									await addVcd(repositoryName, jsonValue);
+								} else {
+									for (const key2 in jsonValue) {
+										await addVcd(repositoryName, jsonValue[key2]);
+									}
+								}
 							}
 						}
 					}
@@ -350,5 +387,26 @@ export class ItemTemplate {
 			});
 		}
 		await this.#initWorkshopPromise;
+	}
+
+	getWorkshopGameRepository(): string {
+		return `tf2_workshop_${this.#definition.id}_game`;
+	}
+
+	getWorkshopRepository(): string {
+		return `tf2_workshop_${this.#definition.id}`;
+	}
+}
+
+async function addVcd(itemRepository: string, path: string): Promise<void> {
+	const result = await Repositories.getFileAsText(itemRepository, path);
+	if (result.error) {
+		return;
+	}
+
+	const choreography = VcdParser.parse('tf2', result.text!);
+	if (choreography) {
+		// TODO: we should probably use the workshop item repository for that, but the choreography manager doesn't have a great repository support
+		ChoreographiesManager.addChoreography('tf2', path, choreography);
 	}
 }
