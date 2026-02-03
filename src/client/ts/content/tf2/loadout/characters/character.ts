@@ -249,6 +249,7 @@ export class Character {
 		this.items.set(template.id, item);
 		const npc = CharactersList.get(this.characterClass)!.name
 		await item.loadModel(npc);
+		await this.#ready;
 		(await this.getModel())?.addChild(await item.getModel());
 		(await this.getModel())?.addChild(await item.getModelBlu());
 		(await this.getModel())?.addChild(await item.getModelExtraWearable());
@@ -597,7 +598,7 @@ export class Character {
 				}
 			}
 		} else {
-		this.#model?.attachSystem(effect.system, attachment, 0);// TODO: offset
+			this.#model?.attachSystem(effect.system, attachment, 0);// TODO: offset
 		}
 
 		effect.system.start();

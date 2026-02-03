@@ -8,7 +8,7 @@ import { Map2, setTimeoutPromise } from 'harmony-utils';
 import weaponsJSON from '../../../json/weapons.json';
 import { APP_ID_TF2, DECORATED_WEAPONS, MARKET_LISTING_BACKGROUND_COLOR, TF2_REPOSITORY, TF2_WARPAINT_DEFINITIONS_URL } from '../../constants';
 import { GenerationState } from '../../enums';
-import { Controller, ControllerEvents } from '../controller';
+import { Controller, ControllerEvents, Tf2RefreshListing } from '../controller';
 import { getInspectLink } from '../utils/inspectlink';
 import { sortSelect } from '../utils/sort';
 import { addSource1Model } from '../utils/sourcemodels';
@@ -16,15 +16,15 @@ import { PAINT_KIT_TOOL_INDEX } from './constants';
 import { getSheenTint } from './killstreak';
 import { Character } from './loadout/characters/character';
 import { CharacterManager } from './loadout/characters/charactermanager';
-import { Tf2Class } from './loadout/characters/characters';
+import { npcToClass, Tf2Class } from './loadout/characters/characters';
 import { EffectType } from './loadout/effects/effecttemplate';
 import { Team } from './loadout/enums';
 import { Item } from './loadout/items/item';
 import { ItemManager } from './loadout/items/itemmanager';
 import { ItemTemplate } from './loadout/items/itemtemplate';
-import { getTF2ModelName, selectCharacterAnim, setTF2ModelAttributes } from './tf2';
-import { TF2_CLASSES_REMOVABLE_PARTS, TF2_ITEM_CAMERA_POSITION, TF2_MERCENARIES, TF2_PLAYER_CAMERA_POSITION, TF2_PLAYER_CAMERA_TARGET } from './tf2constants';
 import { getPaintByTint } from './paints/paints';
+import { getTF2ModelName, setTF2ModelAttributes } from './tf2';
+import { TF2_CLASSES_REMOVABLE_PARTS, TF2_ITEM_CAMERA_POSITION, TF2_MERCENARIES, TF2_PLAYER_CAMERA_POSITION, TF2_PLAYER_CAMERA_TARGET } from './tf2constants';
 
 WarpaintDefinitions.setWarpaintDefinitionsURL(TF2_WARPAINT_DEFINITIONS_URL);
 
@@ -58,7 +58,7 @@ export class TF2Viewer {
 	#teamColor: Team = Team.Red;
 	#currentClassName = '';
 	//#source1Model?: Source1ModelInstance | null;
-	#selectClassPromise?: Promise<boolean>;
+	//#selectClassPromise?: Promise<boolean>;
 	#forcedWeaponIndex: number | null = null;
 	#createModelPromise?: Promise<boolean>;
 	#modelPath = '';
@@ -69,6 +69,7 @@ export class TF2Viewer {
 	#renderedListing = new Map<string, ItemTemplate>();
 	#warpaints = new Map<Scene, Source1ModelInstance>();
 	#isWeaponsShowcase = false;
+	#characterPerListing = new Map<string, Character>();
 
 	constructor() {
 		Repositories.addRepository(new WebRepository('tf2', TF2_REPOSITORY));
@@ -184,6 +185,10 @@ export class TF2Viewer {
 		Controller.dispatchEvent(ControllerEvents.Tf2RefreshVisibleListing);
 	}
 
+	#refreshListing(listingId: string) {
+		Controller.dispatchEvent<Tf2RefreshListing>(ControllerEvents.Tf2RefreshListing, { detail: { listingId } });
+	}
+
 	async renderListingTF2(listingOrSteamId: string, listingDatas: any/*TODO: improve type*/, classInfo: any/*TODO: improve type*/, assetId?: number, htmlImg?: HTMLImageElement, weaponShowcase = false) {
 		this.#isWeaponsShowcase = weaponShowcase;
 		show(this.#htmlControls);
@@ -208,7 +213,7 @@ export class TF2Viewer {
 
 			await ItemManager.initItems();
 			const scene = this.getListingScene(listingOrSteamId);
-			const character = await CharacterManager.selectCharacter(Tf2Class.Empty, 0, scene);
+			const character = this.#characterPerListing.get(listingOrSteamId) ?? await CharacterManager.selectCharacter(Tf2Class.Empty, 0, scene);
 			const addItems: (keyof typeof weaponsJSON)[] = [];
 			if (weaponShowcase) {
 				for (const defIndex in weaponsJSON) {
@@ -224,11 +229,13 @@ export class TF2Viewer {
 			for (const addItem of addItems) {
 				const itemTemplate = ItemManager.getItemTemplate(addItem);
 				if (itemTemplate) {
+					/*
 					if (this.#renderedListing.get(listingOrSteamId) == itemTemplate && !weaponShowcase) {
 						return;
 					}
 
 					this.#renderedListing.set(listingOrSteamId, itemTemplate);
+					*/
 
 					//console.info(itemTemplate);
 					if (!weaponShowcase) {
@@ -369,7 +376,7 @@ export class TF2Viewer {
 			this.#attachModels(source1Model, remappedTf2Item ?? tf2Item, item?.econitem);
 			this.#attachTF2Effects(source1Model, remappedTf2Item ?? tf2Item, item?.econitem);
 			setTF2ModelAttributes(source1Model, item?.econitem);
-			this.#displayClassIcons(listingOrSteamId, path, remappedTf2Item ?? tf2Item);
+			await this.#displayClassIcons(listingOrSteamId, remappedTf2Item ?? tf2Item);
 		});
 	}
 
@@ -427,13 +434,9 @@ export class TF2Viewer {
 					const paint = getPaintByTint(itemTintRGB);
 					item.setPaint(paint);
 				}
-
-				/*
-				if (tf2Item.set_attached_particle_static) {
-					this.#attachTF2Effect(source1Model, tf2Item.set_attached_particle_static, tf2Item.particle_suffix);
-				}
-				*/
 			}
+
+			this.#displayClassIcons(listingOrSteamId, item);
 
 			/*
 			this.#attachModels(source1Model, remappedTf2Item ?? tf2Item, itemDatas?.econitem);
@@ -508,24 +511,20 @@ export class TF2Viewer {
 		});
 	}
 
-	#displayClassIcons(listingId: string, path: string, tf2Item: any/*TODO:improve type*/) {
-		let usedByClasses = tf2Item?.used_by_classes;
+	async #displayClassIcons(listingId: string, item: Item) {
+		let usedByClasses = item.getTemplate().getUsedByClasses();
 		let removeCurrentClassModel = true;
-		if (usedByClasses && this.#forcedWeaponIndex != PAINT_KIT_TOOL_INDEX) {
-			for (let className in usedByClasses) {
-				if (usedByClasses[className] != "0") {
-					this.#addClassIcon(listingId, path, className, tf2Item);
+		if (this.#forcedWeaponIndex != PAINT_KIT_TOOL_INDEX) {
+			for (const className of usedByClasses) {
+				await this.#addClassIcon(listingId, className);
 
-					if (className == this.#currentClassName) {
-						this.#selectClass(listingId, path, className, tf2Item);
-						removeCurrentClassModel = false;
-					}
+				if (className == this.#currentClassName) {
+					this.#selectClass(listingId, className);
+					removeCurrentClassModel = false;
 				}
+
 			}
-			this.#addClassIcon(listingId, path, '', tf2Item);
-		}
-		if (removeCurrentClassModel) {
-			this.#setActiveClass(null);
+			await this.#addClassIcon(listingId, '');
 		}
 		//this.#centerCameraOnItem();
 	}
@@ -540,25 +539,36 @@ export class TF2Viewer {
 		}
 	}
 
-	#addClassIcon(listingId: string, path: string, className: string, tf2Item: any/*TODO:improve type*/) {
+	async #addClassIcon(listingId: string, className: string) {
 		let htmlClassIcon = document.createElement('div');
 		htmlClassIcon.className = 'canvas-container-controls-class-icon';
 		let imageUrl = chrome.runtime.getURL(`images/class_icon/${className}.svg`);
 		if (className == '') {
 			htmlClassIcon.innerHTML = blockSVG;
 		} else {
-			htmlClassIcon.style.backgroundImage = `url(${imageUrl})`;
+			//htmlClassIcon.style.backgroundImage = `url(${imageUrl})`;
+			htmlClassIcon.innerHTML = await (await fetch(imageUrl)).text();
 		}
 
 		this.#htmlClassIcons?.append(htmlClassIcon);
 
 		htmlClassIcon.addEventListener('click', async () => {
-			await this.#refreshVisibleListings();
-			this.#selectClass(listingId, path, className, tf2Item);
+			await this.#selectClass(listingId, className);
 		});
 	}
 
-	async #selectClass(listingId: string, path: string, className: string, tf2Item: any/*TODO:improve type*/) {
+	async #selectClass(listingId: string, className: string) {
+		let tf2Class = npcToClass(className);
+
+		const scene = this.getListingScene(listingId);
+		const character = await CharacterManager.selectCharacter(tf2Class ?? Tf2Class.Empty, 0, scene);
+
+		this.#characterPerListing.set(listingId, character);
+
+		this.#refreshListing(listingId);
+
+
+		/*
 		await this.#selectClassPromise;
 		this.#selectClassPromise = new Promise(async (resolve, reject) => {
 			this.#currentClassName = className;
@@ -566,7 +576,7 @@ export class TF2Viewer {
 
 			let classModel = await this.#getClassModel(className);
 			this.#setActiveClass(className);
-			this.#checkBodyGroups(className, tf2Item);
+			//this.#checkBodyGroups(className, tf2Item);
 			if (classModel) {
 				selectCharacterAnim(className, classModel, tf2Item);
 				classModel.addChild((await this.#getWarPaint(listingId, path))?.model);
@@ -576,6 +586,7 @@ export class TF2Viewer {
 			}
 			resolve(true);
 		});
+		*/
 	}
 
 	#setCharacterCamera() {
@@ -672,6 +683,7 @@ export class TF2Viewer {
 		return classModel;
 	}
 
+	/*
 	#setActiveClass(activeClassName: string | null) {
 		if (activeClassName == null) {
 			this.#setItemCamera();
@@ -680,6 +692,7 @@ export class TF2Viewer {
 			classModel.setVisible(className == activeClassName);
 		}
 	}
+	*/
 
 	#hasActiveClass() {
 		for (let [className, classModel] of this.#classModels) {

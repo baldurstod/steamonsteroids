@@ -2,6 +2,7 @@ import { GenerationState } from '../enums';
 
 export enum ControllerEvents {
 	Tf2RefreshVisibleListing = 'refreshvisiblelisting',
+	Tf2RefreshListing = 'refreshlisting',
 	ClearMarketListing = 'clearmarketlisting',
 	SetGenerationState = 'setgenerationstate',
 	ShowRowContainer = 'showrowcontainer',
@@ -24,6 +25,10 @@ export type SetGenerationStateEvent = {
 export type SetItemInfoEvent = {
 	listingId: string;
 	info: string;
+}
+
+export type Tf2RefreshListing = {
+	listingId: string;
 }
 
 export class Controller {

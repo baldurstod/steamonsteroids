@@ -5,7 +5,7 @@ import { starSVG } from 'harmony-svg';
 import { createElement, hide, show } from 'harmony-ui';
 import { ACTIVE_INVENTORY_PAGE, APP_ID_CS2, APP_ID_TF2, INVENTORY_BACKGROUND_COLOR, INVENTORY_ITEM_CLASSNAME, MARKET_LISTING_BACKGROUND_COLOR, MARKET_LISTING_ROW_CLASSNAME, MOUSE_ENTER_DELAY } from '../constants';
 import { GenerationState } from '../enums';
-import { ClearMarketListingEvent, Controller, ControllerEvents, SetGenerationStateEvent, SetItemInfoEvent } from './controller';
+import { ClearMarketListingEvent, Controller, ControllerEvents, SetGenerationStateEvent, SetItemInfoEvent, Tf2RefreshListing } from './controller';
 import { CS2Viewer } from './cs2/cs2viewer';
 import { getInventoryAssetDatas, getInventorySteamId, MarketAssets } from './marketassets';
 import { MARKET_LISTING_ROW_PREFIX, MARKET_LISTINGS_ID, SEARCH_RESULT_ROWS } from './steam/constants';
@@ -185,6 +185,7 @@ export class Application {
 
 	#initEvents() {
 		Controller.addEventListener(ControllerEvents.Tf2RefreshVisibleListing, () => this.#refreshTf2VisibleListings());
+		Controller.addEventListener(ControllerEvents.Tf2RefreshListing, (event: Event) => this.#refreshTf2Listing((event as CustomEvent<Tf2RefreshListing>).detail.listingId));
 		Controller.addEventListener(ControllerEvents.ClearMarketListing, (event: Event) => this.#clearMarketListing((event as CustomEvent<ClearMarketListingEvent>).detail.listingId));
 		Controller.addEventListener(ControllerEvents.SetGenerationState, (event: Event) => this.setGenerationState((event as CustomEvent<SetGenerationStateEvent>).detail.state, (event as CustomEvent<SetGenerationStateEvent>).detail.listingId));
 		Controller.addEventListener(ControllerEvents.ShowRowContainer, () => show(this.#htmlRowContainer));
@@ -650,6 +651,10 @@ export class Application {
 				await this.#renderInventoryListing(this.#currentAppId, this.#currentContextId, this.#currentAssetId, undefined, true);
 				break;
 		}
+	}
+
+	async #refreshTf2Listing(listingId: string): Promise<void> {
+		await this.#renderMarketListing(listingId, true);
 	}
 
 	#clearMarketListing(listingId: string) {
