@@ -232,7 +232,7 @@ export class TF2Viewer {
 
 			await ItemManager.initItems();
 			const scene = this.getListingScene(listingOrSteamId);
-			const character = this.#characterPerListing.get(listingOrSteamId) ?? await CharacterManager.selectCharacter(Tf2Class.Empty, 0, scene);
+			const character = weaponShowcase ? await CharacterManager.selectCharacter(Tf2Class.Empty, 0, scene) : this.#characterPerListing.get(listingOrSteamId) ?? await CharacterManager.selectCharacter(Tf2Class.Empty, 0, scene);
 			const addItems: (keyof typeof weaponsJSON)[] = [];
 			if (weaponShowcase) {
 				for (const defIndex in weaponsJSON) {
@@ -291,7 +291,7 @@ export class TF2Viewer {
 					if (inspectLink) {
 						// TODO: add warpaints to item list and remove this call
 						chrome.runtime.sendMessage({ action: 'get-tf2-item', defIndex: defIndex ?? remappedDefIndex }, async (tf2Item) => {
-							this.#refreshWarpaintNew(character, listingOrSteamId, assetId, item, tf2Item.paintkit_proto_def_index, inspectLink, htmlImg);
+							this.#refreshWarpaintNew(character, listingOrSteamId, assetId, item, tf2Item.paintkit_proto_def_index, inspectLink, weaponShowcase, htmlImg);
 						});
 					}
 				}
@@ -299,7 +299,7 @@ export class TF2Viewer {
 		}
 	}
 
-	#refreshWarpaintNew(character: Character, listingOrSteamId: string, assetId: number | undefined, item: Item, warpaintId: number, inspectLink: string, htmlImg?: HTMLImageElement): void {
+	#refreshWarpaintNew(character: Character, listingOrSteamId: string, assetId: number | undefined, item: Item, warpaintId: number, inspectLink: string, weaponShowcase: boolean, htmlImg?: HTMLImageElement): void {
 		let paintKitId = warpaintId;
 
 		Controller.dispatchEvent(ControllerEvents.SetGenerationState, { detail: { state: GenerationState.RetrievingItemDatas, listingId: listingOrSteamId } });
@@ -355,7 +355,9 @@ export class TF2Viewer {
 				}
 			}
 
-			this.#displayClassIcons(listingOrSteamId, item);
+			if (!weaponShowcase) {
+				this.#displayClassIcons(listingOrSteamId, item);
+			}
 
 			/*
 			this.#attachModels(source1Model, remappedTf2Item ?? tf2Item, itemDatas?.econitem);
