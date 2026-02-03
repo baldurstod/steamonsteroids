@@ -36,6 +36,12 @@ type WarPaint = {
 	dirty: boolean;
 }
 
+enum CameraTarget {
+	Unknown,
+	Item,
+	Character,
+}
+
 export class TF2Viewer {
 	#htmlControls?: HTMLElement;
 	#htmlWeaponSelector?: HTMLSelectElement;
@@ -70,6 +76,7 @@ export class TF2Viewer {
 	#warpaints = new Map<Scene, Source1ModelInstance>();
 	#isWeaponsShowcase = false;
 	#characterPerListing = new Map<string, Character>();
+	#cameraTarget = CameraTarget.Unknown;
 
 	constructor() {
 		Repositories.addRepository(new WebRepository('tf2', TF2_REPOSITORY));
@@ -567,6 +574,12 @@ export class TF2Viewer {
 
 		this.#refreshListing(listingId);
 
+		if (tf2Class === null || tf2Class == Tf2Class.Empty) {
+			this.#setItemCamera();
+		} else {
+			this.#setCharacterCamera();
+		}
+
 
 		/*
 		await this.#selectClassPromise;
@@ -590,6 +603,11 @@ export class TF2Viewer {
 	}
 
 	#setCharacterCamera() {
+		if (this.#cameraTarget == CameraTarget.Character) {
+			return;
+		}
+
+		this.#cameraTarget = CameraTarget.Character;
 		Controller.dispatchEvent(ControllerEvents.SetCameraTarget, {
 			detail: {
 				target: TF2_PLAYER_CAMERA_TARGET,
@@ -599,6 +617,11 @@ export class TF2Viewer {
 	}
 
 	#setItemCamera() {
+		if (this.#cameraTarget == CameraTarget.Item) {
+			return;
+		}
+
+		this.#cameraTarget = CameraTarget.Item;
 		Controller.dispatchEvent(ControllerEvents.SetCameraTarget, {
 			detail: {
 				target: vec3.create(),
