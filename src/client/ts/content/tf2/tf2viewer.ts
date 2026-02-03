@@ -1,5 +1,5 @@
 import { quat, vec3 } from 'gl-matrix';
-import { AmbientLight, ColorBackground, GraphicsEvent, GraphicsEvents, Group, PointLight, Repositories, RotationControl, Scene, SceneNode, Source1ModelInstance, Source1ParticleControler, Sphere, Texture, WebRepository } from 'harmony-3d';
+import { AmbientLight, ColorBackground, GraphicsEvent, GraphicsEvents, Group, PointLight, Repositories, RotationControl, Scene, SceneNode, Source1ModelInstance, Source1ParticleControler, Texture, WebRepository } from 'harmony-3d';
 import { TextureCombiner, WeaponManager, WeaponManagerItem } from 'harmony-3d-utils';
 import { blockSVG, pauseSVG, playSVG } from 'harmony-svg';
 import { WarpaintDefinitions } from 'harmony-tf2-utils';
@@ -14,14 +14,17 @@ import { sortSelect } from '../utils/sort';
 import { addSource1Model } from '../utils/sourcemodels';
 import { PAINT_KIT_TOOL_INDEX } from './constants';
 import { getSheenTint } from './killstreak';
+import { Character } from './loadout/characters/character';
 import { CharacterManager } from './loadout/characters/charactermanager';
 import { Tf2Class } from './loadout/characters/characters';
+import { EffectType } from './loadout/effects/effecttemplate';
 import { Team } from './loadout/enums';
 import { Item } from './loadout/items/item';
 import { ItemManager } from './loadout/items/itemmanager';
 import { ItemTemplate } from './loadout/items/itemtemplate';
 import { getTF2ModelName, selectCharacterAnim, setTF2ModelAttributes } from './tf2';
 import { TF2_CLASSES_REMOVABLE_PARTS, TF2_ITEM_CAMERA_POSITION, TF2_MERCENARIES, TF2_PLAYER_CAMERA_POSITION, TF2_PLAYER_CAMERA_TARGET } from './tf2constants';
+import { getPaintByTint } from './paints/paints';
 
 WarpaintDefinitions.setWarpaintDefinitionsURL(TF2_WARPAINT_DEFINITIONS_URL);
 
@@ -262,7 +265,7 @@ export class TF2Viewer {
 					if (inspectLink) {
 						// TODO: add warpaints to item list and remove this call
 						chrome.runtime.sendMessage({ action: 'get-tf2-item', defIndex: defIndex ?? remappedDefIndex }, async (tf2Item) => {
-							this.#refreshWarpaintNew(listingOrSteamId, assetId, item, tf2Item.paintkit_proto_def_index, inspectLink, htmlImg);
+							this.#refreshWarpaintNew(character, listingOrSteamId, assetId, item, tf2Item.paintkit_proto_def_index, inspectLink, htmlImg);
 						});
 					}
 				}
@@ -370,20 +373,24 @@ export class TF2Viewer {
 		});
 	}
 
-	#refreshWarpaintNew(listingOrSteamId: string, assetId: number | undefined, item: Item, warpaintId: number, inspectLink: string, htmlImg?: HTMLImageElement): void {
+	#refreshWarpaintNew(character: Character, listingOrSteamId: string, assetId: number | undefined, item: Item, warpaintId: number, inspectLink: string, htmlImg?: HTMLImageElement): void {
 		let paintKitId = warpaintId;
 
 		Controller.dispatchEvent(ControllerEvents.SetGenerationState, { detail: { state: GenerationState.RetrievingItemDatas, listingId: listingOrSteamId } });
 		chrome.runtime.sendMessage({ action: 'inspect-item', link: inspectLink }, async (itemDatas) => {
+			const econitem = itemDatas.econitem;
+			if (!econitem) {
+				return null;
+			}
 
-			paintKitId = paintKitId ?? itemDatas?.econitem?.paint_index ?? itemDatas?.econitem?.def_index;
+			paintKitId = paintKitId ?? econitem?.paint_index ?? econitem?.def_index;
 			if (!paintKitId) {
 				return null;
 			}
-			let paintKitWear = itemDatas?.econitem?.paint_wear;
+			let paintKitWear = econitem?.paint_wear;
 			paintKitWear = Math.min(Math.max(paintKitWear, 0.2), 1.0);//I found some FN paintkits with a wear = 0
-			let paintKitSeed = BigInt(itemDatas?.econitem?.custom_paintkit_seed ?? itemDatas?.econitem?.original_id ?? itemDatas?.econitem?.id ?? 0);
-			let craftIndex = itemDatas?.econitem?.unique_craft_index;
+			let paintKitSeed = BigInt(econitem?.custom_paintkit_seed ?? econitem?.original_id ?? econitem?.id ?? 0);
+			let craftIndex = econitem?.unique_craft_index;
 
 			this.#populateTF2MarketListing(listingOrSteamId, Number(paintKitId), paintKitSeed, craftIndex);
 			if (paintKitId && paintKitWear && paintKitSeed) {
@@ -397,7 +404,7 @@ export class TF2Viewer {
 				Controller.dispatchEvent(ControllerEvents.SetGenerationState, { detail: { state: GenerationState.Sucess, listingId: listingOrSteamId } });
 			}
 
-			let itemStyleOverride = itemDatas?.econitem?.item_style_override;
+			let itemStyleOverride = econitem?.item_style_override;
 			if (itemStyleOverride) {
 				chrome.runtime.sendMessage({ action: 'get-tf2-item', defIndex: item.id, styleId: itemStyleOverride }, async (tf2ItemStyle) => {
 					//item.sty
@@ -407,6 +414,27 @@ export class TF2Viewer {
 				item.setTeam(this.#teamColor);
 				//this.#setModelSkin(source1Model, tf2Item);
 			}
+
+			// Add unusual effects
+			if (econitem) {
+				const attachedParticle = ItemManager.getEffectTemplate(EffectType.Cosmetic, econitem.set_attached_particle);
+				if (attachedParticle) {
+					character.addEffect(attachedParticle);
+				}
+
+				const itemTintRGB = econitem.set_item_tint_rgb;
+				if (itemTintRGB !== undefined) {
+					const paint = getPaintByTint(itemTintRGB);
+					item.setPaint(paint);
+				}
+
+				/*
+				if (tf2Item.set_attached_particle_static) {
+					this.#attachTF2Effect(source1Model, tf2Item.set_attached_particle_static, tf2Item.particle_suffix);
+				}
+				*/
+			}
+
 			/*
 			this.#attachModels(source1Model, remappedTf2Item ?? tf2Item, itemDatas?.econitem);
 			this.#attachTF2Effects(source1Model, remappedTf2Item ?? tf2Item, itemDatas?.econitem);

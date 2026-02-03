@@ -80,6 +80,15 @@ export function getPaint(paint: Paints): Paint | null {
 	return null;
 }
 
+export function getPaintByTint(tint:number):Paints | null {
+	for (const [paints, definition] of paintList) {
+		if (definition.tintRed == tint) {
+			return paints;
+		}
+	}
+	return null;
+}
+
 function colorToTint(color: number, tint: vec3): void {
 	tint[0] = ((color & 0xFF0000) >> 16) / 255.0;
 	tint[1] = ((color & 0x00FF00) >> 8) / 255.0;

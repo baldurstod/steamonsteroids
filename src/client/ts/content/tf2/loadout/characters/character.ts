@@ -588,7 +588,18 @@ export class Character {
 				break;
 		}
 
+		if (this.characterClass == Tf2Class.Empty) {
+			for (const [, item] of this.items) {
+				const model = await item.getModel();
+				if (model) {
+					model.attachSystem(effect.system, attachment, 0);// TODO: offset
+					break;
+				}
+			}
+		} else {
 		this.#model?.attachSystem(effect.system, attachment, 0);// TODO: offset
+		}
+
 		effect.system.start();
 	}
 
