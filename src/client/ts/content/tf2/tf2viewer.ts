@@ -242,6 +242,13 @@ export class TF2Viewer {
 
 	async renderListingTF2(listingOrSteamId: string, listingDatas: any/*TODO: improve type*/, classInfo: any/*TODO: improve type*/, assetId?: number, htmlImg?: HTMLImageElement, weaponShowcase = false) {
 		this.#isWeaponsShowcase = weaponShowcase;
+
+		if (weaponShowcase) {
+			this.#rotationControl.setSpeed(0);
+			this.#rotationControl._parent?.setQuaternion(quat.create());
+			weaponShowcase
+		}
+
 		show(this.#htmlControlsPerListing.get(listingOrSteamId));
 		this.#htmlClassIconsPerListing.get(listingOrSteamId)?.replaceChildren();
 		if ((listingDatas.appid == APP_ID_TF2) && listingDatas.market_hash_name.includes('War Paint')/* && this.application.canInspectWarpaintWeapons()*/) {
