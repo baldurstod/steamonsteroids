@@ -234,7 +234,9 @@ class BackGround {
 		if (!response) {
 			// If cache miss, fetch the request
 			response = await fetch(url, init);
-			this.#cache.put(url, response.clone());
+			if (!url.startsWith('chrome-extension://')) {
+				this.#cache.put(url, response.clone());
+			}
 		}
 
 		return response;
