@@ -1,13 +1,12 @@
 import { vec3 } from 'gl-matrix';
 import { ChoreographiesManager, ChoreographyEventType, Material, RandomFloat, Repositories, Scene, Source1MaterialManager, Source1ModelInstance, Source1ParticleControler, Source1ParticleSystem, Source1SoundManager } from 'harmony-3d';
-import { OptionsManager } from 'harmony-browser-utils';
 import { unserializeDmxSync } from 'harmony-dmx';
+import { Tf2Team } from 'harmony-tf2-utils';
 import { EFFECTS_BLU, EFFECTS_RED, ENTITY_FLYING_BIRD_SPEED_MAX, ENTITY_FLYING_BIRD_SPEED_MIN, MATERIAL_GOLD_RAGDOLL, MATERIAL_ICE_RAGDOLL, MATERIAL_INVULN_BLU, MATERIAL_INVULN_RED, MEDIC_RELEASE_DOVE_COUNT } from '../../constants';
 import { Controller, ControllerEvent } from '../../controller';
 import { getKillstreak, KillstreakColor, killstreakList } from '../../paints/killstreaks';
 import { Effect } from '../effects/effect';
 import { EffectTemplate, EffectType } from '../effects/effecttemplate';
-import { Team } from '../enums';
 import { Item } from '../items/item';
 import { ItemManager } from '../items/itemmanager';
 import { ItemTemplate } from '../items/itemtemplate';
@@ -43,7 +42,7 @@ export class Character {
 	// [right, left]
 	#killstreakEffects: [Effect | null, Effect | null] = [null, null];
 	#decapitationEffects: [Effect | null, Effect | null] = [null, null];
-	#team = Team.Red;
+	#team = Tf2Team.Red;
 	#readyPromiseResolve!: (value: any) => void;
 	#ready = new Promise<boolean>((resolve) => {
 		this.#readyPromiseResolve = resolve;
@@ -116,7 +115,7 @@ export class Character {
 		}
 	}
 
-	async setTeam(team: Team): Promise<void> {
+	async setTeam(team: Tf2Team): Promise<void> {
 		this.#team = team;
 
 		for (const [, item] of this.items) {
@@ -177,7 +176,7 @@ export class Character {
 		}
 	}
 
-	getTeam(): Team {
+	getTeam(): Tf2Team {
 		return this.#team;
 	}
 
@@ -639,7 +638,7 @@ export class Character {
 	async #setEffectTeam(effect: Effect): Promise<void> {
 		let from: string;
 		let to: string;
-		if (this.#team == Team.Red) {
+		if (this.#team == Tf2Team.Red) {
 			from = EFFECTS_BLU;
 			to = EFFECTS_RED;
 		} else {

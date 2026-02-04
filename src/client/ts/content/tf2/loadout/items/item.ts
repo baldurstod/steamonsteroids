@@ -1,6 +1,7 @@
 import { vec3, vec4 } from 'gl-matrix';
 import { Material, Source1MaterialManager, Source1ModelInstance, Source1ParticleControler, Source1ParticleSystem } from 'harmony-3d';
 import { WeaponManager } from 'harmony-3d-utils';
+import { Tf2Team } from 'harmony-tf2-utils';
 import { MATERIAL_GOLD_RAGDOLL, MATERIAL_ICE_RAGDOLL, MATERIAL_INVULN_BLU, MATERIAL_INVULN_RED } from '../../constants';
 import { getKillstreak, Killstreak, KillstreakColor } from '../../paints/killstreaks';
 import { getPaint, Paint, Paints } from '../../paints/paints';
@@ -9,7 +10,6 @@ import { randomProperty } from '../../utils/randomproperty';
 import { Character, Ragdoll } from '../characters/character';
 import { weaponEffects } from '../effects/effect';
 import { EffectType } from '../effects/effecttemplate';
-import { Team } from '../enums';
 import { addTF2Model } from '../scene';
 import { hasConflict } from './hasconflict';
 import { ItemManager } from './itemmanager';
@@ -26,7 +26,7 @@ export class Item {
 	#attachedModels: Source1ModelInstance[] = [];
 	#festivizerModel?: Source1ModelInstance | null;
 	#stattrakModule?: Promise<Source1ModelInstance | null> | null;
-	#team = Team.None;
+	#team = Tf2Team.None;
 	#killCount: number | null = null;
 	#refreshingSkin = false;
 	#showFestivizer = false;
@@ -66,7 +66,7 @@ export class Item {
 		return this.#itemTemplate;
 	}
 
-	async setTeam(team: Team): Promise<void> {
+	async setTeam(team: Tf2Team): Promise<void> {
 		this.#team = team;
 		await this.#refreshSkin();
 		await this.#refreshSheen();
@@ -166,7 +166,7 @@ export class Item {
 
 		const sourceModelBlu = this.#modelBlu;
 		if (sourceModelBlu) {
-			if (this.#team == Team.Red) {
+			if (this.#team == Tf2Team.Red) {
 				this.#model?.setVisible(undefined);
 				sourceModelBlu.setVisible(false);
 			} else {
@@ -179,7 +179,7 @@ export class Item {
 			let systemName = '';
 			let glowColor = null;
 			let sys = null;
-			if (this.#team == Team.Red) {
+			if (this.#team == Tf2Team.Red) {
 				sys = this.#critBoostSysRed;
 				glowColor = [80, 8, 5];
 				systemName = 'critgun_weaponmodel_red';
@@ -210,7 +210,7 @@ export class Item {
 				}
 				*/
 			}
-			if (this.#team == Team.Red) {
+			if (this.#team == Tf2Team.Red) {
 				this.#critBoostSysRed = sys;
 			} else {
 				this.#critBoostSysBlu = sys;
@@ -435,7 +435,7 @@ export class Item {
 		if (this.#model) {
 			if (paint == null) {
 				this.#model.setTint(null);
-				if (this.#team == Team.Red) {
+				if (this.#team == Tf2Team.Red) {
 					if (this.#itemTemplate.setItemTintRGB) {
 						this.#model.setTint(colorToVec4(Number(this.#itemTemplate.setItemTintRGB)));
 					}

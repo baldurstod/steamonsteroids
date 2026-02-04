@@ -1,6 +1,6 @@
 import { vec3 } from 'gl-matrix';
+import { Tf2Team } from 'harmony-tf2-utils';
 import killstreaks from '../../../../json/killstreak.json';
-import { Team } from '../loadout/enums';
 
 export enum KillstreakColor {
 	None = 0,
@@ -112,11 +112,11 @@ export class Killstreak {
 	 * @param team The team to compute the color for
 	 * @returns vec3
 	 */
-	getSheenColor(team: Team): vec3 {
-		return vec3.clone(team == Team.Red ? this.#sheenRed : this.#sheenBlu);
+	getSheenColor(team: Tf2Team): vec3 {
+		return vec3.clone(team == Tf2Team.Red ? this.#sheenRed : this.#sheenBlu);
 	}
 
-	getKillstreakColor1(team: Team): vec3 {
-		return vec3.clone(team == Team.Red ? this.#color1Red : this.#color1Blu);
+	getKillstreakColor1(team: Tf2Team): vec3 {
+		return vec3.clone(team == Tf2Team.Red ? this.#color1Red : this.#color1Blu);
 	}
 }

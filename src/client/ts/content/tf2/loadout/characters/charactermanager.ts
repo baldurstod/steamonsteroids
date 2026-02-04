@@ -1,11 +1,11 @@
 import { quat, vec3 } from 'gl-matrix';
-import { Entity, getSceneExplorer, GraphicMouseEventData, GraphicPickEvent, GraphicsEvent, GraphicsEvents, Scene } from 'harmony-3d';
+import { Entity, getSceneExplorer, GraphicPickEvent, GraphicsEvent, GraphicsEvents, Scene } from 'harmony-3d';
 import { OptionsManager, OptionsManagerEvents } from 'harmony-browser-utils';
+import { Tf2Team } from 'harmony-tf2-utils';
 import { JSONObject, uint } from 'harmony-types';
 import positionJSON from '../../../../../json/slotsposition.json';
 import { TF2_TOOLBOX_MODEL } from '../../constants';
 import { Controller, ControllerEvent, SetInvulnerable, SetRagdoll } from '../../controller';
-import { Team } from '../enums';
 import { ItemManager } from '../items/itemmanager';
 import { firstPersonCamera, loadoutScene } from '../scene';
 import { ClassAnimations, getClassAnimations } from './animations';
@@ -49,7 +49,7 @@ export class CharacterManager {
 	static #currentSlot: CharacterSlot | null = null;
 	static #unusedCharacters: Character[] = [];
 	static #currentCharacter = new Map<Scene, Character | null>();
-	static #team: Team = Team.Red;
+	static #team: Tf2Team = Tf2Team.Red;
 	static #slotsPositions = new Map<string, CharacterPosition[]>();
 	static #applyToAll = true;
 	static #useBots = false;
@@ -195,7 +195,7 @@ export class CharacterManager {
 		}
 	}
 
-	static async setTeam(team: Team, scene: Scene = loadoutScene): Promise<void> {
+	static async setTeam(team: Tf2Team, scene: Scene = loadoutScene): Promise<void> {
 		const slots = this.#characterSlots.get(scene);
 		if (!slots) {
 			return;
@@ -216,7 +216,7 @@ export class CharacterManager {
 		}
 	}
 
-	static getTeam(): Team {
+	static getTeam(): Tf2Team {
 		return this.#team;
 	}
 

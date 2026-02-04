@@ -2,9 +2,11 @@ import { quat, vec3 } from 'gl-matrix';
 import { AmbientLight, ColorBackground, GraphicsEvent, GraphicsEvents, Group, PointLight, Repositories, RotationControl, Scene, SceneNode, Source1ModelInstance, Source1ParticleControler, Texture, WebRepository } from 'harmony-3d';
 import { TextureCombiner, WeaponManager, WeaponManagerItem } from 'harmony-3d-utils';
 import { blockSVG, pauseSVG, playSVG } from 'harmony-svg';
-import { WarpaintDefinitions } from 'harmony-tf2-utils';
+import { Tf2Team, WarpaintDefinitions } from 'harmony-tf2-utils';
 import { createElement, hide, show } from 'harmony-ui';
 import { Map2, setTimeoutPromise } from 'harmony-utils';
+import logoBlueWhite from '../../../img/logo_blue_white.png';
+import logoRedWhite from '../../../img/logo_red_white.png';
 import weaponsJSON from '../../../json/weapons.json';
 import { APP_ID_TF2, DECORATED_WEAPONS, MARKET_LISTING_BACKGROUND_COLOR, TF2_REPOSITORY, TF2_WARPAINT_DEFINITIONS_URL } from '../../constants';
 import { GenerationState } from '../../enums';
@@ -18,12 +20,10 @@ import { Character } from './loadout/characters/character';
 import { CharacterManager } from './loadout/characters/charactermanager';
 import { npcToClass, Tf2Class } from './loadout/characters/characters';
 import { EffectType } from './loadout/effects/effecttemplate';
-import { Team } from './loadout/enums';
 import { Item } from './loadout/items/item';
 import { ItemManager } from './loadout/items/itemmanager';
 import { ItemTemplate } from './loadout/items/itemtemplate';
 import { getPaintByTint } from './paints/paints';
-import { getTF2ModelName, setTF2ModelAttributes } from './tf2';
 import { TF2_CLASSES_REMOVABLE_PARTS, TF2_ITEM_CAMERA_POSITION, TF2_MERCENARIES, TF2_PLAYER_CAMERA_POSITION, TF2_PLAYER_CAMERA_TARGET } from './tf2constants';
 
 WarpaintDefinitions.setWarpaintDefinitionsURL(TF2_WARPAINT_DEFINITIONS_URL);
@@ -46,6 +46,7 @@ export class TF2Viewer {
 	#htmlControlsPerListing = new Map<string, HTMLElement>();
 	#htmlWeaponSelectorPerListing = new Map<string, HTMLSelectElement>();
 	#htmlClassIconsPerListing = new Map<string, HTMLElement>();
+	#htmlCharacterControlsPerListing = new Map<string, HTMLElement>();
 	#scene = new Scene();
 	readonly lightsGroup = new Group({
 		childs: [
@@ -61,7 +62,7 @@ export class TF2Viewer {
 	//#group = new Group({ parent: this.#scene });
 	#rotationControl = new RotationControl({ parent: this.#scene, speed: 0 });
 	#classModels = new Map<string, Source1ModelInstance>();
-	#teamColor: Team = Team.Red;
+	#teamColor: Tf2Team = Tf2Team.Red;
 	#currentClassName = '';
 	//#source1Model?: Source1ModelInstance | null;
 	//#selectClassPromise?: Promise<boolean>;
@@ -76,6 +77,7 @@ export class TF2Viewer {
 	#warpaints = new Map<Scene, Source1ModelInstance>();
 	#isWeaponsShowcase = false;
 	#characterPerListing = new Map<string, Character>();
+	#characters = new Set<Character>();
 	#cameraTarget = CameraTarget.Unknown;
 
 	constructor() {
@@ -143,11 +145,20 @@ export class TF2Viewer {
 			this.#htmlClassIconsPerListing.set(listingId, htmlClassIcons);
 		}
 
+		let htmlCharacterControls = this.#htmlCharacterControlsPerListing.get(listingId);
+		if (!htmlCharacterControls) {
+			htmlCharacterControls = createElement('div', {
+				parent: htmlControls,
+				class: 'canvas-container-characters-controls',
+			});
+			this.#htmlCharacterControlsPerListing.set(listingId, htmlClassIcons);
+		}
+
 		let buttonState = false;
 		const htmlPlayPauseButton = createElement('button', {
 			class: 'canvas-container-controls-playpause play',
 			innerHTML: playSVG,
-			parent: htmlControls,
+			parent: htmlCharacterControls,
 			events: {
 				click: () => {
 					buttonState = !buttonState;
@@ -177,6 +188,7 @@ export class TF2Viewer {
 		(async () => {
 			const result = await chrome.storage.sync.get('tf2.rotation');
 			const rotation = result['tf2.rotation'] ?? 1;
+			this.#rotationControl.setSpeed(rotation);
 
 			if (rotation) {
 				buttonState = true;
@@ -187,9 +199,28 @@ export class TF2Viewer {
 			}
 		})();
 
+		createElement('img', {
+			class: 'team',
+			parent: htmlCharacterControls,
+			src: logoRedWhite,
+			$click: () => this.#setTeam(Tf2Team.Red),
+		});
+		createElement('img', {
+			class: 'team',
+			parent: htmlCharacterControls,
+			src: logoBlueWhite,
+			$click: () => this.#setTeam(Tf2Team.Blu),
+		});
 
 		this.#loadWarpaintWeapon(listingId);
 		return htmlControls;
+	}
+
+	#setTeam(team: Tf2Team): void {
+		chrome.storage.sync.set({ 'tf2.team': team });
+		for (const character of this.#characters) {
+			character.setTeam(team);
+		}
 	}
 
 	setActiveListing(listingId: string): void {
@@ -233,6 +264,7 @@ export class TF2Viewer {
 			await ItemManager.initItems();
 			const scene = this.getListingScene(listingOrSteamId);
 			const character = weaponShowcase ? await CharacterManager.selectCharacter(Tf2Class.Empty, 0, scene) : this.#characterPerListing.get(listingOrSteamId) ?? await CharacterManager.selectCharacter(Tf2Class.Empty, 0, scene);
+			this.#characters.add(character);
 			const addItems: (keyof typeof weaponsJSON)[] = [];
 			if (weaponShowcase) {
 				for (const defIndex in weaponsJSON) {
@@ -370,7 +402,7 @@ export class TF2Viewer {
 
 	#setModelSkin(model: Source1ModelInstance, tf2Item: any/*TODO:improve type*/) {
 		if (model && tf2Item) {
-			let skin = Number(this.#teamColor == Team.Red ? tf2Item.skin_red : tf2Item.skin_blu ?? tf2Item.skin_red);
+			let skin = Number(this.#teamColor == Tf2Team.Red ? tf2Item.skin_red : tf2Item.skin_blu ?? tf2Item.skin_red);
 			if (skin) {
 				model.skin = String(skin);
 			}
