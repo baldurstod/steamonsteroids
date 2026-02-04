@@ -246,7 +246,6 @@ export class TF2Viewer {
 		if (weaponShowcase) {
 			this.#rotationControl.setSpeed(0);
 			this.#rotationControl._parent?.setQuaternion(quat.create());
-			weaponShowcase
 		}
 
 		show(this.#htmlControlsPerListing.get(listingOrSteamId));
@@ -525,6 +524,7 @@ export class TF2Viewer {
 
 		const scene = this.getListingScene(listingId);
 		const character = await CharacterManager.selectCharacter(tf2Class ?? Tf2Class.Empty, 0, scene);
+		this.#characters.add(character);
 
 		this.#characterPerListing.set(listingId, character);
 
