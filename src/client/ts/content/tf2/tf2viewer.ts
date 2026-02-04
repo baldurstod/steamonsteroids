@@ -221,6 +221,7 @@ export class TF2Viewer {
 		for (const character of this.#characters) {
 			character.setTeam(team);
 		}
+		this.#teamColor = team;
 	}
 
 	setActiveListing(listingId: string): void {
@@ -265,6 +266,7 @@ export class TF2Viewer {
 			const scene = this.getListingScene(listingOrSteamId);
 			const character = weaponShowcase ? await CharacterManager.selectCharacter(Tf2Class.Empty, 0, scene) : this.#characterPerListing.get(listingOrSteamId) ?? await CharacterManager.selectCharacter(Tf2Class.Empty, 0, scene);
 			this.#characters.add(character);
+			character.setTeam(this.#teamColor);
 			const addItems: (keyof typeof weaponsJSON)[] = [];
 			if (weaponShowcase) {
 				for (const defIndex in weaponsJSON) {
@@ -354,7 +356,8 @@ export class TF2Viewer {
 			if (paintKitId && paintKitWear && paintKitSeed) {
 				Controller.dispatchEvent(ControllerEvents.SetGenerationState, { detail: { state: GenerationState.WaitingForGeneration, listingId: listingOrSteamId } });
 				paintKitWear = (paintKitWear - 0.2) * 5 >> 0; // transform the wear from decimal point to integer
-				WeaponManager.refreshWarpaint({ model: await item.getModel(), warpaintId: Number(paintKitId), warpaintWear: paintKitWear, id: item.id, warpaintSeed: paintKitSeed, userData: listingOrSteamId, team: 0, updatePreview: false }, false);
+				//WeaponManager.refreshWarpaint({ model: await item.getModel(), warpaintId: Number(paintKitId), warpaintWear: paintKitWear, id: item.id, warpaintSeed: paintKitSeed, userData: listingOrSteamId, team: 0, updatePreview: false }, false);
+				item.setWarpaint(Number(paintKitId), paintKitWear, paintKitSeed);
 				if (htmlImg && assetId) {
 					Controller.dispatchEvent(ControllerEvents.SelectInventoryItem, { detail: { assetId: assetId, htmlImg: htmlImg } });
 				}
@@ -369,7 +372,7 @@ export class TF2Viewer {
 					//this.#setModelSkin(source1Model, tf2ItemStyle);
 				});
 			} else {
-				item.setTeam(this.#teamColor);
+				//item.setTeam(this.#teamColor);
 				//this.#setModelSkin(source1Model, tf2Item);
 			}
 
