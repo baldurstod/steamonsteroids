@@ -661,7 +661,7 @@ export class Application {
 		this.#setItemInfo(listingId, '');
 	}
 
-	addListing(listingId: string): boolean {
+	#addMarketListing(listingId: string): boolean {
 		const rowCanvasContainer = this.#marketListings.getCanvasContainer(listingId);
 		if (!rowCanvasContainer) {
 			return false;
@@ -681,7 +681,7 @@ export class Application {
 
 		const scene = this.#tf2Viewer.getListingScene(listingId);
 		scene.activeCamera = this.#camera;
-		const canvasAttributes = Graphics.addCanvas({ name: listingId, scene: scene, autoResize: true });
+		const canvasAttributes = Graphics.addCanvas({ name: listingId, scene, autoResize: true });
 		if (!canvasAttributes) {
 			return false;
 		}
@@ -703,7 +703,7 @@ export class Application {
 				this.#createFavoritesButton(listingId),
 			]
 		});
-		this.#canvasPerListing.set(listingId, { container: htmlContainer, attributes: canvasAttributes, scene: scene, state: htmlState, info: htmlInfo, row: row },);
+		this.#canvasPerListing.set(listingId, { container: htmlContainer, attributes: canvasAttributes, scene, state: htmlState, info: htmlInfo, row },);
 
 
 
@@ -721,6 +721,51 @@ export class Application {
 		//this.#bipmapContext = this.#htmlCanvas!.getContext('bitmaprenderer');
 
 		//this.#bipmapContextPerListing.set(listingId, { canvas: htmlCanvas, context: bipmapContext, scene: this.#tf2Viewer.getScene(listingId) });
+
+		return true;
+	}
+
+	#addInventoryListing(listingId: string): boolean {
+		const rowCanvasContainer = this.#htmlRowContainer;
+		rowCanvasContainer.replaceChildren();
+
+		const listingContext = this.#canvasPerListing.get(listingId);
+		if (listingContext) {
+			//c.container.appendChild(this.#tf2Viewer.initHtml());
+			rowCanvasContainer.append(listingContext.container, listingContext.state,);
+			return false;
+		}
+
+		const row = this.#htmlRowContainer;
+
+		const scene = this.#tf2Viewer.getListingScene(listingId);
+		scene.activeCamera = this.#camera;
+		const canvasAttributes = Graphics.addCanvas({ name: listingId, scene, autoResize: true });
+		if (!canvasAttributes) {
+			return false;
+		}
+		const htmlState = createElement('div');
+		const htmlInfo = createElement('div', { class: 'canvas-container-item-info' });
+		const htmlContainer = createElement('div', {
+			class: 'canvas-container',
+			childs: [
+				canvasAttributes.canvas,
+				htmlInfo,
+				this.#tf2Viewer.initHtml(listingId),
+				createElement('div', {
+					class: 'fullscreen-toolbar',
+					childs: [
+						...this.#createFullScreenButtons(listingId),
+						this.#createWeaponsShowcaseButton(listingId),
+					],
+				}),
+				this.#createFavoritesButton(listingId),
+			]
+		});
+		this.#canvasPerListing.set(listingId, { container: htmlContainer, attributes: canvasAttributes, scene, state: htmlState, info: htmlInfo, row: row },);
+
+
+		rowCanvasContainer.append(htmlContainer, htmlState,);
 
 		return true;
 	}
@@ -837,7 +882,7 @@ export class Application {
 		//this.#currentListingId = listingId;
 		let asset = await MarketAssets.getListingAssetData(listingId);
 		if (asset) {
-			this.addListing(listingId);
+			this.#addMarketListing(listingId);
 			//this.setGenerationState(GenerationState.RetrievingItemDatas, listingId);
 			switch (asset.appid) {
 				case APP_ID_TF2:
@@ -855,22 +900,26 @@ export class Application {
 	async #renderInventoryListing(appId: number, contextId: number, assetId: number, htmlImg?: HTMLImageElement, force = false) {
 		//console.log(assetId);
 		if (force || (this.#currentAssetId != assetId)) {
+
+			let steamUserId = await getInventorySteamId();
 			this.#currentAppId = appId;
 			this.#currentContextId = contextId;
 			this.#currentAssetId = assetId;
 			let activeInventoryPage = document.getElementById(ACTIVE_INVENTORY_PAGE);
+			this.#addInventoryListing(steamUserId);
 			if (activeInventoryPage && this.#htmlRowContainer) {
 				activeInventoryPage.parentNode?.insertBefore(this.#htmlRowContainer, activeInventoryPage);
+				show(this.#htmlRowContainer);
 			} else {
 				let tradeArea = document.getElementsByClassName('trade_area')[0];
 				if (tradeArea && this.#htmlRowContainer) {
 					tradeArea.parentNode?.insertBefore(this.#htmlRowContainer, tradeArea);
+					show(this.#htmlRowContainer);
 				}
 			}
 			let asset = await getInventoryAssetDatas(appId, contextId, assetId);
 			if (asset) {
 				//this.setGenerationState(GenerationState.RetrievingItemDatas, String(assetId));
-				let steamUserId = await getInventorySteamId();
 				switch (asset.appid) {
 					case APP_ID_TF2:
 						chrome.runtime.sendMessage({ action: 'get-asset-class-info', appId: asset.appid, classId: asset.classid }, (classInfo) => {

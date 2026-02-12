@@ -115,7 +115,7 @@ export async function getInventoryAssetDatas(appId: number, contextId: number, a
 	return promise;
 }
 
-export async function getInventorySteamId() {
+export async function getInventorySteamId(): Promise<string> {
 	let { promise, promiseId } = createPromise();
 	requestInventorySteamId(promiseId);
 	return promise;
