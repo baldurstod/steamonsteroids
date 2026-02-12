@@ -682,7 +682,7 @@ export class Item {
 	}
 
 	#refreshWarPaint(): void {
-		if (this.#model && this.#warpaintId !== null && this.#materialOverride === null) {
+		if (this.#model && this.#warpaintId !== null /*&& this.#materialOverride === null*/) {
 			WeaponManager.refreshWarpaint({
 				id: this.id,
 				warpaintId: this.#warpaintId,
