@@ -1,0 +1,32 @@
+{
+	"Attrib_AttachedParticle": {
+		"brazilian": "★ Efeito Incomum:",
+		"bulgarian": "★ Необичаен ефект:",
+		"czech": "★ Unusual efekt:",
+		"danish": "★ Usædvanlig effekt:",
+		"dutch": "★ Bijzonder effect:",
+		"english": "★ Unusual Effect:",
+		"finnish": "★ Epätavallinen tehoste:",
+		"french": "★ Effet inhabituel :",
+		"german": "★ Ungewöhnlicher Effekt:",
+		"greek": "★ Ασυνήθιστο εφέ:",
+		"hungarian": "★ Rendkívüli effekt:",
+		"italian": "★ Effetto Insolito:",
+		"japanese": "★ アンユージュアルエフェクト：",
+		"korean": "★ 범상찮은 효과:",
+		"koreana": "★ 범상찮은 효과:",
+		"latam": "★ Efecto Inusual:",
+		"norwegian": "★ Uvanlig effekt:",
+		"polish": "★ Nietypowy efekt:",
+		"portuguese": "★ Efeito Inusual:",
+		"romanian": "★ Efect neobișnuit:",
+		"russian": "★ Необычный эффект:",
+		"schinese": "★ 稀有特效：%s",
+		"spanish": "★ Efecto Inusual:",
+		"swedish": "★ Ovanlig effekt:",
+		"tchinese": "★異常效果：%s",
+		"thai": "★ เอฟเฟกต์ Unusual :",
+		"turkish": "★ Olağandışı Efekt:",
+		"ukrainian": "★ Незвичайний ефект:"
+	}
+}

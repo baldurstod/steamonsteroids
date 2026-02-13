@@ -81,3 +81,5 @@ window.addEventListener('message', event => {
 			break;
 	}
 });
+
+window.postMessage({ action: 'injected_ready' }, '*');

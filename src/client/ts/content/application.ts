@@ -2,8 +2,10 @@ import { quat, vec3 } from 'gl-matrix';
 import { AmbientLight, BoundingBox, Camera, CanvasAttributes, ColorBackground, Graphics, GraphicsEvent, GraphicsEvents, GraphicTickEvent, OrbitControl, Scene, Source1ModelInstance, WebGLStats } from 'harmony-3d';
 import { getCharCodes } from 'harmony-binary-reader';
 import { starSVG } from 'harmony-svg';
+import { JSONObject } from 'harmony-types';
 import { createElement, hide, show } from 'harmony-ui';
-import { ACTIVE_INVENTORY_PAGE, APP_ID_CS2, APP_ID_TF2, INVENTORY_BACKGROUND_COLOR, INVENTORY_ITEM_CLASSNAME, MARKET_LISTING_BACKGROUND_COLOR, MARKET_LISTING_ROW_CLASSNAME, MOUSE_ENTER_DELAY } from '../constants';
+import translationsJSON from '../../json/translations.json';
+import { ACTIVE_INVENTORY_PAGE, APP_ID_CS2, APP_ID_TF2, INVENTORY_BACKGROUND_COLOR, INVENTORY_ITEM_CLASSNAME, MARKET_LISTING_BACKGROUND_COLOR, MARKET_LISTING_EFFECT_COLOR, MARKET_LISTING_NAME_CLASSNAME, MARKET_LISTING_ROW_CLASSNAME, MOUSE_ENTER_DELAY } from '../constants';
 import { GenerationState } from '../enums';
 import { ClearMarketListingEvent, Controller, ControllerEvents, SetGenerationStateEvent, SetItemInfoEvent, Tf2RefreshListing } from './controller';
 import { CS2Viewer } from './cs2/cs2viewer';
@@ -13,6 +15,7 @@ import { MarketListings } from './steam/marketlistings';
 import { ItemManager } from './tf2/loadout/items/itemmanager';
 import { TF2_SHOWCASE_CAMERA_POSITION, TF2_SHOWCASE_CAMERA_TARGET } from './tf2/tf2constants';
 import { TF2Viewer } from './tf2/tf2viewer';
+import { MarketAsset } from './types';
 
 enum PageType {
 	Unknown = 0,
@@ -97,13 +100,15 @@ export class Application {
 	#isFullScreen = false;
 	#fullScreenMode = FullScreenMode.None;
 	#weaponShowcase = false;
+	#translations = new Map<string, Set<string>>();
 
 	constructor() {
+		this.#initTranslations();
+		this.#initEvents();
 		this.#initHtml();
 		this.#initGraphics();
 		this.#initScene();
 		this.#initPageType();
-		this.#initEvents();
 		this.#initObserver();
 		this.#initInventoryPageControls();
 		this.#initAjaxPagingControls();
@@ -184,6 +189,8 @@ export class Application {
 	}
 
 	#initEvents() {
+		addEventListener('message', event => this.#onMessage(event));
+
 		Controller.addEventListener(ControllerEvents.Tf2RefreshVisibleListing, () => this.#refreshTf2VisibleListings());
 		Controller.addEventListener(ControllerEvents.Tf2RefreshListing, (event: Event) => this.#refreshTf2Listing((event as CustomEvent<Tf2RefreshListing>).detail.listingId));
 		Controller.addEventListener(ControllerEvents.ClearMarketListing, (event: Event) => this.#clearMarketListing((event as CustomEvent<ClearMarketListingEvent>).detail.listingId));
@@ -224,7 +231,6 @@ export class Application {
 			this.#inventoryFavorites = inventoryFavoriteListings;
 		}
 
-		this.#createButtons();
 		this.#createInventoryListeners();
 	}
 
@@ -349,8 +355,6 @@ export class Application {
 
 	async #centerCameraTarget(sourceModel: Source1ModelInstance) {
 		if (sourceModel) {
-			let min = vec3.create();
-			let max = vec3.create();
 			let boundingBox = new BoundingBox();
 			sourceModel.getBoundingBox(boundingBox);
 			const pos = sourceModel.getWorldPosition();
@@ -403,7 +407,7 @@ export class Application {
 
 			this.#htmlPageControls.insertBefore(this.#htmlPageControlGoto, this.#htmlPageControls.firstChild);
 
-			const mutationCallback: MutationCallback = (mutationsList, observer) => {
+			const mutationCallback: MutationCallback = (mutationsList) => {
 				for (const mutation of mutationsList) {
 					if (mutation.target == this.#htmlPageControlCur && this.#htmlPageControlGoto) {
 						this.#htmlPageControlGoto.value = this.#htmlPageControlCur.innerText;
@@ -419,7 +423,7 @@ export class Application {
 	}
 
 	async #initAjaxPagingControls() {
-		const mutationCallback: MutationCallback = (mutationsList, observer) => {
+		const mutationCallback: MutationCallback = (mutationsList) => {
 			for (const mutation of mutationsList) {
 				if (mutation.type === 'childList') {
 					this.#initAjaxPagingControls2();
@@ -483,7 +487,7 @@ export class Application {
 
 	#initObserver() {
 		let config = { childList: true, subtree: true };
-		const mutationCallback: MutationCallback = (mutationsList, observer) => {
+		const mutationCallback: MutationCallback = (mutationsList) => {
 			for (const mutation of mutationsList) {
 				let addedNodes = mutation.addedNodes;
 				for (let addedNode of addedNodes) {
@@ -491,6 +495,7 @@ export class Application {
 						switch (true) {
 							case (addedNode as HTMLElement).classList.contains(MARKET_LISTING_ROW_CLASSNAME):
 								this.#createButton(addedNode as HTMLElement);
+								this.#addMarketListingInfo(addedNode as HTMLElement);
 								if (this.#fullScreenMode === FullScreenMode.MarketPerPage) {
 									this.#renderMarketRow(addedNode as HTMLElement);
 								}
@@ -521,6 +526,7 @@ export class Application {
 		let listings = document.getElementsByClassName(MARKET_LISTING_ROW_CLASSNAME);
 		for (let listing of listings) {
 			this.#createButton(listing as HTMLElement);
+			this.#addMarketListingInfo(listing as HTMLElement);
 		}
 	}
 
@@ -576,6 +582,43 @@ export class Application {
 		let marketListingId = marketListingRow.id.replace('listing_', '');
 		if (this.#favorites[marketListingId]) {
 			marketListingRow.classList.add('favorited-market-listing');
+		}
+	}
+
+	async #addMarketListingInfo(marketListingRow: HTMLElement): Promise<void> {
+		const listingId = marketListingRow.id.replace(MARKET_LISTING_ROW_PREFIX, '')
+		const asset = await MarketAssets.getListingAssetData(listingId);
+		if (asset) {
+			switch (asset.appid) {
+				case APP_ID_TF2:
+					this.#addMarketListingInfoTf2(marketListingRow, asset);
+					break;
+			}
+		}
+	}
+
+
+	async #addMarketListingInfoTf2(marketListingRow: HTMLElement, asset: MarketAsset): Promise<void> {
+		const translations = this.#translations.get('Attrib_AttachedParticle');
+		if (!translations) {
+			return;
+		}
+
+		for (const description of asset.descriptions) {
+			if (description.name == 'attribute') {
+				for (const translation of translations) {
+					if (description.value.includes(translation)) {
+						const title = marketListingRow.getElementsByClassName(MARKET_LISTING_NAME_CLASSNAME)[0];
+						title.append(
+							createElement('div', {
+								innerText: description.value,
+								style: `color:#${description.color ?? MARKET_LISTING_EFFECT_COLOR}`,
+							})
+						);
+						return;
+					}
+				}
+			}
 		}
 	}
 
@@ -837,7 +880,7 @@ export class Application {
 	}
 
 	#enableAllCanvas(enable: boolean): void {
-		for (const [id, canvasPerListing] of this.#canvasPerListing) {
+		for (const [id] of this.#canvasPerListing) {
 			Graphics.enableCanvas(id, enable);
 		}
 	}
@@ -954,6 +997,26 @@ export class Application {
 
 	isActive(): boolean {
 		return this.#active;
+	}
+
+	#onMessage(event: MessageEvent) {
+		const messageData = event.data;
+
+		if (messageData.action == 'injected_ready') {
+			this.#createButtons();
+		}
+	}
+
+	#initTranslations(): void {
+		for (const name in translationsJSON) {
+			const s = new Set<string>();
+			const translations = (translationsJSON as JSONObject)[name] as JSONObject;
+			for (const translation in translations) {
+				s.add(translations[translation] as string);
+			}
+
+			this.#translations.set(name, s);
+		}
 	}
 }
 

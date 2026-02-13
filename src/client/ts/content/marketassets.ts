@@ -1,3 +1,5 @@
+import { MarketAsset } from "./types";
+
 const promises = new Map<number, (value: unknown) => void>();
 let nextPromiseId = 1;
 
@@ -75,7 +77,7 @@ export class MarketAssets {
 		return this.#listingInfos.get(listingId);
 	}
 
-	static async getListingAssetData(listingId: string) {
+	static async getListingAssetData(listingId: string): Promise<MarketAsset> {
 		let listingInfo = await this.getListingInfo(listingId);
 		let asset = listingInfo?.asset;
 		let assetData = await getListingAsset(asset?.appid, asset?.contextid, asset?.id);

@@ -16,6 +16,7 @@ export const MARKET_BUTTON_CLASSNAME = 'market_listing_buy_button';
 export const MARKET_ACTION_BUTTONS_CLASSNAME = 'market_listing_action_buttons';
 
 export const MARKET_LISTING_BACKGROUND_COLOR = vec4.fromValues(0.086, 0.125, 0.176, 1.0);
+export const MARKET_LISTING_EFFECT_COLOR = 'ffd700';
 export const INVENTORY_BACKGROUND_COLOR = vec4.fromValues(0.11, 0.122, 0.129, 1.0);
 
 export const INVENTORY_ITEM_CLASSNAME = 'item';
