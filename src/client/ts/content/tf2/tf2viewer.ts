@@ -11,6 +11,7 @@ import weaponsJSON from '../../../json/weapons.json';
 import { APP_ID_TF2, DECORATED_WEAPONS, MARKET_LISTING_BACKGROUND_COLOR, TF2_REPOSITORY, TF2_WARPAINT_DEFINITIONS_URL } from '../../constants';
 import { GenerationState } from '../../enums';
 import { Controller, ControllerEvents, Tf2RefreshListing } from '../controller';
+import { ClassInfo, MarketAsset } from '../types';
 import { getInspectLink } from '../utils/inspectlink';
 import { sortSelect } from '../utils/sort';
 import { addSource1Model } from '../utils/sourcemodels';
@@ -24,7 +25,7 @@ import { Item } from './loadout/items/item';
 import { ItemManager } from './loadout/items/itemmanager';
 import { ItemTemplate } from './loadout/items/itemtemplate';
 import { getPaintByTint } from './paints/paints';
-import { TF2_CLASSES_REMOVABLE_PARTS, TF2_ITEM_CAMERA_POSITION, TF2_MERCENARIES, TF2_PLAYER_CAMERA_POSITION, TF2_PLAYER_CAMERA_TARGET } from './tf2constants';
+import { TF2_CLASSES_REMOVABLE_PARTS, TF2_ITEM_CAMERA_POSITION, TF2_MERCENARIES, TF2_PLAYER_CAMERA_POSITION, TF2_PLAYER_CAMERA_TARGET, TF2_TAUNT_CAMERA_POSITION } from './tf2constants';
 
 WarpaintDefinitions.setWarpaintDefinitionsURL(TF2_WARPAINT_DEFINITIONS_URL);
 
@@ -40,6 +41,7 @@ enum CameraTarget {
 	Unknown,
 	Item,
 	Character,
+	Taunt,
 }
 
 export class TF2Viewer {
@@ -79,6 +81,7 @@ export class TF2Viewer {
 	#characterPerListing = new Map<string, Character>();
 	#characters = new Set<Character>();
 	#cameraTarget = CameraTarget.Unknown;
+	#tauntCharacter: Tf2Class | null = null;
 
 	constructor() {
 		Repositories.addRepository(new WebRepository('tf2', TF2_REPOSITORY));
@@ -240,7 +243,7 @@ export class TF2Viewer {
 		Controller.dispatchEvent<Tf2RefreshListing>(ControllerEvents.Tf2RefreshListing, { detail: { listingId } });
 	}
 
-	async renderListingTF2(listingOrSteamId: string, listingDatas: any/*TODO: improve type*/, classInfo: any/*TODO: improve type*/, assetId?: number, htmlImg?: HTMLImageElement, weaponShowcase = false) {
+	async renderListingTF2(listingOrSteamId: string, listingDatas: MarketAsset, classInfo: ClassInfo, assetId?: number, htmlImg?: HTMLImageElement, weaponShowcase = false) {
 		this.#isWeaponsShowcase = weaponShowcase;
 
 		if (weaponShowcase) {
@@ -256,21 +259,43 @@ export class TF2Viewer {
 			hide(this.#htmlWeaponSelectorPerListing.get(listingOrSteamId));
 		}
 		Controller.dispatchEvent(ControllerEvents.ClearMarketListing, { detail: { listingId: listingOrSteamId } });
-		let defIndex = classInfo?.app_data?.def_index;
+		let defIndex: string | number = classInfo?.app_data?.def_index;
 		let remappedDefIndex: number | undefined;
 		if (defIndex) {
 			defIndex = Number(defIndex);
 
-			let warpaintTemplate: ItemTemplate | null = null;
+			//let warpaintTemplate: ItemTemplate | null = null;
 			// If it's a paintkit, give it the defindex of the base paintkit tool
 			if (defIndex >= 16000 && defIndex < 18000) {
 				remappedDefIndex = this.#forcedWeaponIndex ?? PAINT_KIT_TOOL_INDEX;
-				warpaintTemplate = ItemManager.getItemTemplate(defIndex);
+				//warpaintTemplate = ItemManager.getItemTemplate(defIndex);
 			}
 
 			await ItemManager.initItems();
 			const scene = this.getListingScene(listingOrSteamId);
-			const character = weaponShowcase ? await CharacterManager.selectCharacter(Tf2Class.Empty, 0, scene) : this.#characterPerListing.get(listingOrSteamId) ?? await CharacterManager.selectCharacter(Tf2Class.Empty, 0, scene);
+
+			// Default character for non weapon showcase
+			let defaultCharacter: Tf2Class = Tf2Class.Empty;
+
+			// Select a default character for taunts
+			const itemTemplate = ItemManager.getItemTemplate(defIndex);
+			if (itemTemplate?.isTaunt()) {
+				if (this.#tauntCharacter !== null) {
+					// TODO: check if this character is taunt compatible
+					defaultCharacter = this.#tauntCharacter;
+				} else {
+					for (const npc of itemTemplate.getUsedByClasses()) {
+						const c = npcToClass(npc);
+						if (c !== null) {
+							defaultCharacter = c;
+							this.#setTauntCamera();
+							break;
+						}
+					}
+				}
+			}
+
+			const character = weaponShowcase ? await CharacterManager.selectCharacter(Tf2Class.Empty, 0, scene) : this.#characterPerListing.get(listingOrSteamId) ?? await CharacterManager.selectCharacter(defaultCharacter, 0, scene);
 			this.#characters.add(character);
 			character.setTeam(this.#teamColor);
 			const addItems: (keyof typeof weaponsJSON)[] = [];
@@ -282,7 +307,7 @@ export class TF2Viewer {
 				character.removeAll();
 			} else {
 				// single weapon
-				addItems.push(remappedDefIndex ?? defIndex);
+				addItems.push(String(remappedDefIndex ?? defIndex) as (keyof typeof weaponsJSON));
 			}
 
 			for (const addItem of addItems) {
@@ -334,6 +359,8 @@ export class TF2Viewer {
 							this.#refreshWarpaintNew(character, listingOrSteamId, assetId, item, tf2Item.paintkit_proto_def_index, inspectLink, weaponShowcase, htmlImg);
 						});
 					}
+
+					itemTemplate.isTaunt()
 				}
 			}
 		}
@@ -573,6 +600,20 @@ export class TF2Viewer {
 			detail: {
 				target: TF2_PLAYER_CAMERA_TARGET,
 				position: TF2_PLAYER_CAMERA_POSITION,
+			}
+		});
+	}
+
+	#setTauntCamera() {
+		if (this.#cameraTarget == CameraTarget.Taunt) {
+			return;
+		}
+
+		this.#cameraTarget = CameraTarget.Taunt;
+		Controller.dispatchEvent(ControllerEvents.SetCameraTarget, {
+			detail: {
+				target: TF2_PLAYER_CAMERA_TARGET,
+				position: TF2_TAUNT_CAMERA_POSITION,
 			}
 		});
 	}

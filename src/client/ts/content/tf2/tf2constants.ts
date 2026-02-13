@@ -43,6 +43,7 @@ export const TF2_MERCENARIES = new Map<string, { modelPath: string, defaultAnima
 
 export const TF2_PLAYER_CAMERA_TARGET = vec3.fromValues(0, 0, 45);
 export const TF2_PLAYER_CAMERA_POSITION = vec3.fromValues(0, -300, 45);
+export const TF2_TAUNT_CAMERA_POSITION = vec3.fromValues(0, -500, 45);
 export const TF2_ITEM_CAMERA_TARGET = vec3.fromValues(0, 0, 0);
 export const TF2_ITEM_CAMERA_POSITION = vec3.fromValues(0, 300, 0);
 export const TF2_SHOWCASE_CAMERA_TARGET = vec3.fromValues(0, 15, 25);

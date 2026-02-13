@@ -63,3 +63,21 @@ export type MarketAsset = {
 	asset_properties: [];
 	is_stackable: boolean;
 }
+
+export type ClassInfoTag = {
+	category?: string;
+	category_name?: string;
+	color?: string;
+	internal_name?: string;
+	name?: string;
+}
+
+export type ClassInfoAppData = {
+	def_index: string;
+	containing_bundles?: Record<string, string>;
+}
+
+export type ClassInfo = MarketAsset & {
+	app_data: ClassInfoAppData;
+	tags: Record<string, ClassInfoTag>;
+}
