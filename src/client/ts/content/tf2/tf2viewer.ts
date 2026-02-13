@@ -389,6 +389,11 @@ export class TF2Viewer {
 					character.addEffect(attachedParticle);
 				}
 
+				const tauntEffect = ItemManager.getEffectTemplate(EffectType.Taunt, econitem.taunt_attached_particle);
+				if (tauntEffect) {
+					character.addEffect(tauntEffect);
+				}
+
 				const itemTintRGB = econitem.set_item_tint_rgb;
 				if (itemTintRGB !== undefined) {
 					const paint = getPaintByTint(itemTintRGB);
