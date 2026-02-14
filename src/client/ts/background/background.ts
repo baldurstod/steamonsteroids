@@ -35,6 +35,9 @@ class BackGround {
 			case 'get-tf2-effect':
 				sendResponse(await this.#getTF2Effect(Number(message.effectId)));
 				break;
+			case 'get-tf2-effect-by-name':
+				sendResponse(await this.#getTF2EffectByName(message.language, message.name));
+				break;
 			case 'get-cs2-item':
 				let item = await this.#getCS2Item(Number(message.defIndex));
 				let paintkit = await this.#getCS2Paintkit(Number(message.paintkitId));
@@ -136,6 +139,28 @@ class BackGround {
 			let system = systems[effectId];
 			if (system) {
 				return system;
+			}
+		}
+		return false;
+	}
+
+	static async #getTF2EffectByName(language: number, name: string) {
+		name = name.trim();
+		// TODO: use language
+		if (!this.#tf2Schema) {
+			let tf2Response = await fetch(TF2_ITEMS_URL);
+			this.#tf2Schema = await tf2Response.json();
+		}
+		let systems = this.#tf2Schema?.systems as JSONObject;
+		if (systems) {
+			for (const id in systems) {
+				const group = systems[id] as JSONObject;
+				for (const id2 in group) {
+					const system = group[id2] as JSONObject;
+					if (system.name == name) {
+						return system;
+					}
+				}
 			}
 		}
 		return false;

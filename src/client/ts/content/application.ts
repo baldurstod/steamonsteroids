@@ -5,7 +5,7 @@ import { starSVG } from 'harmony-svg';
 import { JSONObject } from 'harmony-types';
 import { createElement, hide, show } from 'harmony-ui';
 import translationsJSON from '../../json/translations.json';
-import { ACTIVE_INVENTORY_PAGE, APP_ID_CS2, APP_ID_TF2, INVENTORY_BACKGROUND_COLOR, INVENTORY_ITEM_CLASSNAME, MARKET_LISTING_BACKGROUND_COLOR, MARKET_LISTING_EFFECT_COLOR, MARKET_LISTING_NAME_CLASSNAME, MARKET_LISTING_ROW_CLASSNAME, MOUSE_ENTER_DELAY } from '../constants';
+import { ACTIVE_INVENTORY_PAGE, APP_ID_CS2, APP_ID_TF2, INVENTORY_BACKGROUND_COLOR, INVENTORY_ITEM_CLASSNAME, MARKET_LISTING_BACKGROUND_COLOR, MARKET_LISTING_EFFECT_COLOR, MARKET_LISTING_IMG_CLASSNAME, MARKET_LISTING_NAME_CLASSNAME, MARKET_LISTING_ROW_CLASSNAME, MOUSE_ENTER_DELAY } from '../constants';
 import { GenerationState } from '../enums';
 import { ClearMarketListingEvent, Controller, ControllerEvents, SetGenerationStateEvent, SetItemInfoEvent, Tf2RefreshListing } from './controller';
 import { CS2Viewer } from './cs2/cs2viewer';
@@ -100,7 +100,7 @@ export class Application {
 	#isFullScreen = false;
 	#fullScreenMode = FullScreenMode.None;
 	#weaponShowcase = false;
-	#translations = new Map<string, Set<string>>();
+	#translations = new Map<string, Map<string, string>>();
 
 	constructor() {
 		this.#initTranslations();
@@ -606,7 +606,7 @@ export class Application {
 
 		for (const description of asset.descriptions) {
 			if (description.name == 'attribute') {
-				for (const translation of translations) {
+				for (const [lang, translation] of translations) {
 					if (description.value.includes(translation)) {
 						const title = marketListingRow.getElementsByClassName(MARKET_LISTING_NAME_CLASSNAME)[0];
 						title.append(
@@ -615,6 +615,21 @@ export class Application {
 								style: `color:#${description.color ?? MARKET_LISTING_EFFECT_COLOR}`,
 							})
 						);
+
+						// Add a thumbnail based on name
+						chrome.runtime.sendMessage({ action: 'get-tf2-effect-by-name', language: lang, name: description.value.replace(translation, '') }, async (tf2Effect) => {
+							if (tf2Effect) {
+								const title = marketListingRow.getElementsByClassName(MARKET_LISTING_NAME_CLASSNAME)[0];
+								title.parentElement!.insertBefore(
+									createElement('img', {
+										src: `https://loadout.tf/img/unusuals/${tf2Effect.system}.webp`,
+										style: 'float:left;width: 62px;height: 62px;margin: 8px 5px;',
+									}),
+									title,
+								);
+							}
+						});
+
 						return;
 					}
 				}
@@ -1009,10 +1024,10 @@ export class Application {
 
 	#initTranslations(): void {
 		for (const name in translationsJSON) {
-			const s = new Set<string>();
+			const s = new Map<string, string>();
 			const translations = (translationsJSON as JSONObject)[name] as JSONObject;
 			for (const translation in translations) {
-				s.add(translations[translation] as string);
+				s.set(translation, translations[translation] as string);
 			}
 
 			this.#translations.set(name, s);
