@@ -299,12 +299,13 @@ export class TF2Viewer {
 			this.#characters.add(character);
 			character.setTeam(this.#teamColor);
 			const addItems: (keyof typeof weaponsJSON)[] = [];
+			await character.removeAll();
 			if (weaponShowcase) {
 				for (const defIndex in weaponsJSON) {
 					//console.info(defIndex);
 					addItems.push(defIndex as (keyof typeof weaponsJSON));
 				}
-				character.removeAll();
+				//character.removeAll();
 			} else {
 				// single weapon
 				addItems.push(String(remappedDefIndex ?? defIndex) as (keyof typeof weaponsJSON));
@@ -322,9 +323,11 @@ export class TF2Viewer {
 					*/
 
 					//console.info(itemTemplate);
+					/*
 					if (!weaponShowcase) {
-						character.removeAll();
+						await character.removeAll();
 					}
+					*/
 					const item = await character.addItem(itemTemplate);
 
 					item.getModel().then(model => {
@@ -359,8 +362,6 @@ export class TF2Viewer {
 							this.#refreshWarpaintNew(character, listingOrSteamId, assetId, item, tf2Item.paintkit_proto_def_index, inspectLink, weaponShowcase, htmlImg);
 						});
 					}
-
-					itemTemplate.isTaunt()
 				}
 			}
 		}

@@ -1,5 +1,5 @@
 import { vec3 } from 'gl-matrix';
-import { ChoreographiesManager, ChoreographyEventType, Material, RandomFloat, Repositories, Scene, Source1MaterialManager, Source1ModelInstance, Source1ParticleControler, Source1ParticleSystem, Source1SoundManager } from 'harmony-3d';
+import { ChoreographiesManager, Choreography, ChoreographyEventType, Material, RandomFloat, Repositories, Scene, Source1MaterialManager, Source1ModelInstance, Source1ParticleControler, Source1ParticleSystem, Source1SoundManager } from 'harmony-3d';
 import { unserializeDmxSync } from 'harmony-dmx';
 import { Tf2Team } from 'harmony-tf2-utils';
 import { EFFECTS_BLU, EFFECTS_RED, ENTITY_FLYING_BIRD_SPEED_MAX, ENTITY_FLYING_BIRD_SPEED_MIN, MATERIAL_GOLD_RAGDOLL, MATERIAL_ICE_RAGDOLL, MATERIAL_INVULN_BLU, MATERIAL_INVULN_RED, MEDIC_RELEASE_DOVE_COUNT } from '../../constants';
@@ -58,6 +58,7 @@ export class Character {
 	#flexControllers = new Map<string, number>;
 	#decapitationLevel = 0;
 	static autoSelectAnim = true;
+	#choreography?: Choreography;
 
 	constructor(characterClass: Tf2Class, scene: Scene) {
 		this.characterClass = characterClass;
@@ -215,10 +216,13 @@ export class Character {
 			const choreoName = item.getCustomTauntOutroScenePerClass(npc);
 			if (choreoName && this.#model) {
 				await this.#ready;
-				ChoreographiesManager.stopAll();
+				if (this.#choreography) {
+					ChoreographiesManager.stopChoreography(this.#choreography);
+				}
 				await ChoreographiesManager.init('tf2', './scenes/scenes.image');
 				const choreo = await ChoreographiesManager.playChoreography('tf2', choreoName, [this.#model]);
 				if (choreo) {
+					this.#choreography = choreo;
 					choreo.addEventListener(ChoreographyEventType.Stop, () => {
 						item.remove();
 						this.autoSelectAnim();
@@ -285,9 +289,14 @@ export class Character {
 			// Play choreo
 			const choreoName = item.getCustomTauntScenePerClass(npc);
 			if (this.#model && choreoName) {
-				ChoreographiesManager.stopAll();
+				if (this.#choreography) {
+					ChoreographiesManager.stopChoreography(this.#choreography);
+				}
 				await ChoreographiesManager.init('tf2', './scenes/scenes.image');
-				ChoreographiesManager.playChoreography('tf2', choreoName, [this.#model]);
+				const choreo = await ChoreographiesManager.playChoreography('tf2', choreoName, [this.#model]);
+				if (choreo) {
+					this.#choreography = choreo;
+				}
 			}
 
 			const choreoName2 = item.getCustomTauntPropScenePerClass(npc);
@@ -295,7 +304,7 @@ export class Character {
 			if (choreoName2 && itemModel) {
 				void itemModel.skeleton?.setParentSkeleton(null);
 				await ChoreographiesManager.init('tf2', './scenes/scenes.image');
-				ChoreographiesManager.playChoreography('tf2', choreoName2, [itemModel]);
+				await ChoreographiesManager.playChoreography('tf2', choreoName2, [itemModel]);
 			}
 		}
 
@@ -901,14 +910,14 @@ export class Character {
 		}
 	}
 
-	removeAll(): void {
-		this.removeAllItems();
+	async removeAll(): Promise<void> {
+		await this.removeAllItems();
 		this.removeAllEffects();
 	}
 
-	removeAllItems(): void {
+	async removeAllItems(): Promise<void> {
 		for (const [, item] of this.items) {
-			this.#removeItem(item);
+			await this.#removeItem(item);
 		}
 	}
 
