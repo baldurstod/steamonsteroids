@@ -15,7 +15,7 @@ import { MarketListings } from './steam/marketlistings';
 import { ItemManager } from './tf2/loadout/items/itemmanager';
 import { TF2_SHOWCASE_CAMERA_POSITION, TF2_SHOWCASE_CAMERA_TARGET } from './tf2/tf2constants';
 import { TF2Viewer } from './tf2/tf2viewer';
-import { MarketAsset } from './types';
+import { ClassInfo, MarketAsset } from './types';
 
 enum PageType {
 	Unknown = 0,
@@ -1092,23 +1092,23 @@ export class Application {
 
 		show(this.#htmlRowContainer);
 		itemPanel.append(this.#htmlRowContainer);
-		this.#tf2Viewer.renderListingTF2(MARKET_TF_LISTING_ID, {
-			name: '',
-			market_hash_name: 'War Paint',
-			appid: APP_ID_TF2,
-
-		},
+		this.#tf2Viewer.renderListingTF2(MARKET_TF_LISTING_ID,
+			{
+				name: '',
+				market_hash_name: 'War Paint',
+				appid: APP_ID_TF2,
+			} as MarketAsset,
 			{
 				app_data: {
 					def_index: defIndex,
 
 				}
-			}, undefined, undefined, undefined,
+			} as ClassInfo, undefined, undefined, undefined,
 			{
 				def_index: defIndex,
-				paint_wear: wear,
+				paint_wear: wear * 0.2,
 				custom_paintkit_seed: 0n,
-			}
+			},
 		);
 	}
 
