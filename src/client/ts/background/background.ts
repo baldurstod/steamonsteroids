@@ -5,7 +5,7 @@ import { API_GET_ASSET_CLASS_INFO_ENDPOINT, API_INSPECT_CS2_WEAPON_ENDPOINT, API
 class BackGround {
 	static #assetClassInfos = new Map<number, Map<number, any/*TODO: improve type*/>>();//TODO: turn into Map2
 	static #inspectedWeapons = new Map<string, any/*TODO: improve type*/>();
-	static #tf2Schema?: JSONObject/*TODO: improve type*/;
+	static #tf2Schema = new Map<string, Promise<JSONObject>>;
 	static #cs2Schema?: JSONObject/*TODO: improve type*/;
 	static #cache?: Cache;
 
@@ -47,7 +47,7 @@ class BackGround {
 				sendResponse(await this.#getCS2Sticker(Number(message.stickerId)));
 				break;
 			case 'inspect-item':
-				sendResponse(await this.inspectItem(message.link));
+				sendResponse(await this.#inspectItem(message.link));
 				break;
 			case 'fetch':
 				const response = await this.#fetch(message.resource, message.options);
@@ -93,11 +93,7 @@ class BackGround {
 	}
 
 	static async #getTF2Item(defindex: number, styleId = 0) {
-		if (!this.#tf2Schema) {
-			let tf2Response = await fetch(TF2_ITEMS_URL);
-			this.#tf2Schema = await tf2Response.json();
-		}
-		let items = this.#tf2Schema?.items;
+		let items = (await this.#getTf2Schema('english'))?.items;
 		if (items) {
 			let item = (items as JSONObject)[defindex] ?? (items as JSONObject)[`${defindex}~${styleId}`];
 			if (item) {
@@ -130,11 +126,7 @@ class BackGround {
 	}
 
 	static async #getTF2Effect(effectId: number) {
-		if (!this.#tf2Schema) {
-			let tf2Response = await fetch(TF2_ITEMS_URL);
-			this.#tf2Schema = await tf2Response.json();
-		}
-		let systems = this.#tf2Schema?.systems as JSONObject;
+		let systems = (await this.#getTf2Schema('english'))?.systems as JSONObject;
 		if (systems) {
 			let system = systems[effectId];
 			if (system) {
@@ -144,14 +136,9 @@ class BackGround {
 		return false;
 	}
 
-	static async #getTF2EffectByName(language: number, name: string) {
+	static async #getTF2EffectByName(language: string, name: string) {
 		name = name.trim();
-		// TODO: use language
-		if (!this.#tf2Schema) {
-			let tf2Response = await fetch(TF2_ITEMS_URL);
-			this.#tf2Schema = await tf2Response.json();
-		}
-		let systems = this.#tf2Schema?.systems as JSONObject;
+		let systems = (await this.#getTf2Schema(language))?.systems as JSONObject;
 		if (systems) {
 			for (const id in systems) {
 				const group = systems[id] as JSONObject;
@@ -211,7 +198,7 @@ class BackGround {
 		return false;
 	}
 
-	static async inspectItem(inspectLink: string) {
+	static async #inspectItem(inspectLink: string) {
 		if (!inspectLink) {
 			return null;
 		}
@@ -265,5 +252,23 @@ class BackGround {
 		}
 
 		return response;
+	}
+
+	static async #getTf2Schema(language: string): Promise<JSONObject> {
+		let schema = this.#tf2Schema.get(language);
+		if (schema) {
+			return schema;
+		}
+
+		schema = new Promise<JSONObject>(async resolve => {
+			const tf2Response = await fetch(TF2_ITEMS_URL.replace('english', language));
+			schema = await tf2Response.json();
+
+			resolve(schema!);
+		});
+
+		this.#tf2Schema.set(language, schema);
+
+		return schema;
 	}
 }

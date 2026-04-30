@@ -16,7 +16,7 @@ export default [
 			file: './build/client/content.js',
 			format: 'esm',
 			// Prevents a bug in firefox where globalThis['EventTarget'] doesn't work in extensions
-			banner: isFirefox ? "globalThis['EventTarget'] = window['EventTarget'];": '',
+			banner: isFirefox ? "globalThis['EventTarget'] = window['EventTarget'];" : '',
 		},
 		plugins: [
 			isProduction ? del({ targets: 'build/client/*' }) : null,

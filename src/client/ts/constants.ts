@@ -15,9 +15,9 @@ export const MARKET_LISTING_IMG_CLASSNAME = 'market_listing_item_img_container';
 export const MARKET_BUTTON_CLASSNAME = 'market_listing_buy_button';
 export const MARKET_ACTION_BUTTONS_CLASSNAME = 'market_listing_action_buttons';
 
-export const MARKET_LISTING_BACKGROUND_COLOR = vec4.fromValues(0.086, 0.125, 0.176, 1.0);
+export const MARKET_LISTING_BACKGROUND_COLOR = vec4.fromValues(0, 0, 0, 0);
 export const MARKET_LISTING_EFFECT_COLOR = 'ffd700';
-export const INVENTORY_BACKGROUND_COLOR = vec4.fromValues(0.11, 0.122, 0.129, 1.0);
+export const INVENTORY_BACKGROUND_COLOR = vec4.fromValues(0, 0, 0, 0);
 
 export const INVENTORY_ITEM_CLASSNAME = 'item';
 export const ACTIVE_INVENTORY_PAGE = 'active_inventory_page';
@@ -81,3 +81,7 @@ export const DECORATED_WEAPONS: Record<string, number> = {
 	'Panic Attack': 1153,
 	'Dragon\'s Fury': 1178,
 }
+
+export const MARKET_TF_ITEM_TITLE_CLASS = 'item-title-container';
+export const MARKET_TF_URL = 'https://marketplace.tf/items/tf2/';
+export const MARKET_TF_LISTING_ID = 'marketplace';

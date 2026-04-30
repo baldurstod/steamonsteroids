@@ -1,11 +1,14 @@
 {
 	"name": "Steam on steroids",
 	"description": "3D View TF2 Warpaints in the steam community market",
-	"version": "1.2.11",
+	"version": "1.2.12",
 	"manifest_version": 3,
-	"permissions": ["storage"],
+	"permissions": [
+		"storage"
+	],
 	"host_permissions": [
-		"*://*.loadout.tf/*", "*://*.accurateskins.com/*"
+		"*://*.loadout.tf/*",
+		"*://*.accurateskins.com/*"
 	],
 	"background": {
 		"scripts": [
@@ -23,24 +26,40 @@
 	},
 	"content_scripts": [
 		{
-			"matches": ["https://steamcommunity.com/market/listings/440/*", "https://steamcommunity.com/*/inventory*", "https://steamcommunity.com/market/", "https://steamcommunity.com/tradeoffer/*"],
-			"js": ["content.js"],
-			"css": ["css/content.css"]
+			"matches": [
+				"https://steamcommunity.com/market/listings/440/*",
+				"https://steamcommunity.com/*/inventory*",
+				"https://steamcommunity.com/market/",
+				"https://steamcommunity.com/tradeoffer/*",
+				"https://marketplace.tf/*"
+			],
+			"js": [
+				"content.js"
+			],
+			"css": [
+				"css/content.css"
+			]
 		}
 	],
 	"web_accessible_resources": [
 		{
-			"resources": ["injected.js", "img/*"],
-			"matches": ["https://steamcommunity.com/*"]
+			"resources": [
+				"injected.js",
+				"img/*"
+			],
+			"matches": [
+				"https://steamcommunity.com/*",
+				"https://marketplace.tf/*"
+			]
 		}
 	],
 	"options_ui": {
 		"page": "options/options.html",
-		"open_in_tab":false
+		"open_in_tab": false
 	},
 	"browser_specific_settings": {
 		"gecko": {
-		  "id": "{de35d679-fcd4-428d-8cd1-49e6dd135b44}"
+			"id": "{de35d679-fcd4-428d-8cd1-49e6dd135b44}"
 		}
 	}
 }

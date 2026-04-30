@@ -30,7 +30,7 @@ export function setCustomLightsContainer(container: Entity): void {
 
 export let activeCamera = orbitCamera;
 setActiveCamera(CameraType.Orbit);
-new SceneExplorer().setScene(loadoutScene);
+//new SceneExplorer().setScene(loadoutScene);
 loadoutScene.activeCamera = orbitCamera;
 loadoutScene.addChild(orbitCamera);
 loadoutScene.background = loadoutColorBackground;

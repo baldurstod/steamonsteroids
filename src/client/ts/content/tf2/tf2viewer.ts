@@ -8,7 +8,7 @@ import { Map2, setTimeoutPromise } from 'harmony-utils';
 import logoBlueWhite from '../../../img/logo_blue_white.png';
 import logoRedWhite from '../../../img/logo_red_white.png';
 import weaponsJSON from '../../../json/weapons.json';
-import { APP_ID_TF2, DECORATED_WEAPONS, MARKET_LISTING_BACKGROUND_COLOR, TF2_REPOSITORY, TF2_WARPAINT_DEFINITIONS_URL } from '../../constants';
+import { APP_ID_TF2, DECORATED_WEAPONS, MARKET_LISTING_BACKGROUND_COLOR, MARKET_TF_LISTING_ID, TF2_REPOSITORY, TF2_WARPAINT_DEFINITIONS_URL } from '../../constants';
 import { GenerationState } from '../../enums';
 import { Controller, ControllerEvents, Tf2RefreshListing } from '../controller';
 import { ClassInfo, MarketAsset } from '../types';
@@ -42,6 +42,12 @@ enum CameraTarget {
 	Item,
 	Character,
 	Taunt,
+}
+
+type EconItem = {
+	def_index: string;
+	paint_wear: number;
+	custom_paintkit_seed: BigInt;
 }
 
 export class TF2Viewer {
@@ -243,7 +249,7 @@ export class TF2Viewer {
 		Controller.dispatchEvent<Tf2RefreshListing>(ControllerEvents.Tf2RefreshListing, { detail: { listingId } });
 	}
 
-	async renderListingTF2(listingOrSteamId: string, listingDatas: MarketAsset, classInfo: ClassInfo, assetId?: number, htmlImg?: HTMLImageElement, weaponShowcase = false) {
+	async renderListingTF2(listingOrSteamId: string, listingDatas: MarketAsset, classInfo: ClassInfo, assetId?: number, htmlImg?: HTMLImageElement, weaponShowcase = false, econItem?: EconItem) {
 		this.#isWeaponsShowcase = weaponShowcase;
 
 		if (weaponShowcase) {
@@ -355,7 +361,13 @@ export class TF2Viewer {
 						}
 					});
 
-					let inspectLink = getInspectLink(listingDatas, listingOrSteamId, assetId);
+
+					let inspectLink: string | undefined | EconItem;
+					if (!econItem) {
+						inspectLink = getInspectLink(listingDatas, listingOrSteamId, assetId);
+					} else {
+						inspectLink = econItem;
+					}
 					if (inspectLink) {
 						// TODO: add warpaints to item list and remove this call
 						chrome.runtime.sendMessage({ action: 'get-tf2-item', defIndex: defIndex ?? remappedDefIndex }, async (tf2Item) => {
@@ -367,12 +379,13 @@ export class TF2Viewer {
 		}
 	}
 
-	#refreshWarpaintNew(character: Character, listingOrSteamId: string, assetId: number | undefined, item: Item, warpaintId: number, inspectLink: string, weaponShowcase: boolean, htmlImg?: HTMLImageElement): void {
+	#refreshWarpaintNew(character: Character, listingOrSteamId: string, assetId: number | undefined, item: Item, warpaintId: number, inspectLink: string | EconItem, weaponShowcase: boolean, htmlImg?: HTMLImageElement): void {
 		let paintKitId = warpaintId;
 
 		Controller.dispatchEvent(ControllerEvents.SetGenerationState, { detail: { state: GenerationState.RetrievingItemDatas, listingId: listingOrSteamId } });
-		chrome.runtime.sendMessage({ action: 'inspect-item', link: inspectLink }, async (itemDatas) => {
-			const econitem = itemDatas.econitem;
+
+		const refreshWarpaint = async (econitem: any) => {
+			//const econitem = itemDatas.econitem;
 			if (!econitem) {
 				return null;
 			}
@@ -387,7 +400,7 @@ export class TF2Viewer {
 			let craftIndex = econitem?.unique_craft_index;
 
 			this.#populateTF2MarketListing(listingOrSteamId, Number(paintKitId), paintKitSeed, craftIndex);
-			if (paintKitId && paintKitWear && paintKitSeed) {
+			if (paintKitId && paintKitWear) {
 				Controller.dispatchEvent(ControllerEvents.SetGenerationState, { detail: { state: GenerationState.WaitingForGeneration, listingId: listingOrSteamId } });
 				paintKitWear = (paintKitWear - 0.2) * 5 >> 0; // transform the wear from decimal point to integer
 				//WeaponManager.refreshWarpaint({ model: await item.getModel(), warpaintId: Number(paintKitId), warpaintWear: paintKitWear, id: item.id, warpaintSeed: paintKitSeed, userData: listingOrSteamId, team: 0, updatePreview: false }, false);
@@ -439,7 +452,15 @@ export class TF2Viewer {
 			setTF2ModelAttributes(source1Model, itemDatas?.econitem);
 			this.#displayClassIcons(listingOrSteamId, path, remappedTf2Item ?? tf2Item);
 			*/
-		});
+		};
+
+		if (typeof inspectLink === 'string') {
+			chrome.runtime.sendMessage({ action: 'inspect-item', link: inspectLink }, async (itemDatas) => {
+				refreshWarpaint(itemDatas.econitem);
+			});
+		} else {
+			refreshWarpaint(inspectLink);
+		}
 	}
 
 	#setModelSkin(model: Source1ModelInstance, tf2Item: any/*TODO:improve type*/) {

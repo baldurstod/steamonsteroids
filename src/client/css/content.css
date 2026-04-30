@@ -124,7 +124,7 @@ canvas:focus {
 	cursor: pointer;
 }
 
-.exit-fullscreen-button {
+.fullscreen-toolbar .exit-fullscreen-button {
 	display: none;
 }
 

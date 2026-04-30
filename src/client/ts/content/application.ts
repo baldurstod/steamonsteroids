@@ -5,7 +5,7 @@ import { starSVG } from 'harmony-svg';
 import { JSONObject } from 'harmony-types';
 import { createElement, hide, show } from 'harmony-ui';
 import translationsJSON from '../../json/translations.json';
-import { ACTIVE_INVENTORY_PAGE, APP_ID_CS2, APP_ID_TF2, INVENTORY_BACKGROUND_COLOR, INVENTORY_ITEM_CLASSNAME, MARKET_LISTING_BACKGROUND_COLOR, MARKET_LISTING_EFFECT_COLOR, MARKET_LISTING_IMG_CLASSNAME, MARKET_LISTING_NAME_CLASSNAME, MARKET_LISTING_ROW_CLASSNAME, MOUSE_ENTER_DELAY } from '../constants';
+import { ACTIVE_INVENTORY_PAGE, APP_ID_CS2, APP_ID_TF2, INVENTORY_BACKGROUND_COLOR, INVENTORY_ITEM_CLASSNAME, MARKET_LISTING_BACKGROUND_COLOR, MARKET_LISTING_EFFECT_COLOR, MARKET_LISTING_NAME_CLASSNAME, MARKET_LISTING_ROW_CLASSNAME, MARKET_TF_ITEM_TITLE_CLASS, MARKET_TF_LISTING_ID, MARKET_TF_URL, MOUSE_ENTER_DELAY } from '../constants';
 import { GenerationState } from '../enums';
 import { ClearMarketListingEvent, Controller, ControllerEvents, SetGenerationStateEvent, SetItemInfoEvent, Tf2RefreshListing } from './controller';
 import { CS2Viewer } from './cs2/cs2viewer';
@@ -21,7 +21,8 @@ enum PageType {
 	Unknown = 0,
 	Market,
 	Inventory,
-	TradeOffer
+	TradeOffer,
+	MarketPlaceTf,
 }
 
 const CAMERA_DISTANCE = 200;
@@ -104,11 +105,11 @@ export class Application {
 
 	constructor() {
 		this.#initTranslations();
+		this.#initPageType();
 		this.#initEvents();
 		this.#initHtml();
 		this.#initGraphics();
 		this.#initScene();
-		this.#initPageType();
 		this.#initObserver();
 		this.#initInventoryPageControls();
 		this.#initAjaxPagingControls();
@@ -182,6 +183,9 @@ export class Application {
 				break;
 			case document.URL.includes('/inventory'):
 				this.#pageType = PageType.Inventory;
+				break;
+			case document.URL.startsWith('https://marketplace.tf/'):
+				this.#pageType = PageType.MarketPlaceTf;
 				break;
 			default:
 				this.#pageType = PageType.Unknown;
@@ -300,36 +304,31 @@ export class Application {
 			}
 		}
 
-		let htmlFilter = document.createElement('div');
-		htmlFilter.className = 'filter_tag_button_ctn';
-		htmlFilter.innerHTML = '<div class="btn_black btn_details btn_small"><span>Tradable warpaints only</span></div>';
+		switch (this.#pageType) {
+			case PageType.Market:
+			case PageType.Inventory:
+			case PageType.TradeOffer:
 
-		htmlFilter.addEventListener('click', () => window.postMessage({ action: 'setInventoryFilter', filter: { Exterior: ['TFUI_InvTooltip_BattleScared', 'TFUI_InvTooltip_FactoryNew', 'TFUI_InvTooltip_FieldTested', 'TFUI_InvTooltip_MinimalWear', 'TFUI_InvTooltip_WellWorn'], misc: ['tradable'] } }, '*'));
+				let htmlFilter = document.createElement('div');
+				htmlFilter.className = 'filter_tag_button_ctn';
+				htmlFilter.innerHTML = '<div class="btn_black btn_details btn_small"><span>Tradable warpaints only</span></div>';
 
-		let filterNode = document.getElementById('filter_tag_show')?.parentNode;
-		if (filterNode && this.isInventory()) {
-			filterNode.parentNode?.insertBefore(htmlFilter, filterNode.nextSibling);
+				htmlFilter.addEventListener('click', () => window.postMessage({ action: 'setInventoryFilter', filter: { Exterior: ['TFUI_InvTooltip_BattleScared', 'TFUI_InvTooltip_FactoryNew', 'TFUI_InvTooltip_FieldTested', 'TFUI_InvTooltip_MinimalWear', 'TFUI_InvTooltip_WellWorn'], misc: ['tradable'] } }, '*'));
+
+				let filterNode = document.getElementById('filter_tag_show')?.parentNode;
+				if (filterNode && this.isInventory()) {
+					filterNode.parentNode?.insertBefore(htmlFilter, filterNode.nextSibling);
+				}
+
+				this.#htmlRowContainer.append(this.#canvasContainer);
+				hide(this.#htmlRowContainer);
+
+				break;
+			case PageType.MarketPlaceTf:
+				console.info(document.URL);
+				this.#htmlRowContainer.append(this.#canvasContainer);
+				break;
 		}
-
-
-		//this.#htmlState = document.createElement('div');
-
-		this.#htmlRowContainer.append(this.#canvasContainer/*, this.#htmlState*/);
-		hide(this.#htmlRowContainer);
-		/*
-				let htmlFavoriteButton = document.createElement('div');
-				htmlFavoriteButton.className = 'favorite-button';
-				htmlFavoriteButton.innerHTML = '<a class="item_market_action_button btn_green_white_innerfade btn_small"><span>Favorite</span></a>';
-				htmlFavoriteButton.addEventListener('click', () => this.#favoriteListing());
-
-				let htmlUnFavoriteButton = document.createElement('div');
-				htmlUnFavoriteButton.className = 'unfavorite-button';
-				htmlUnFavoriteButton.innerHTML = '<a class="item_market_action_button btn_green_white_innerfade btn_small"><span>Unfavorite</span></a>';
-				htmlUnFavoriteButton.addEventListener('click', () => this.#unfavoriteListing());
-				*/
-		//this.#htmlCanvasItemInfo = createElement('div', { class: 'canvas-container-item-info' });
-
-		//this.#canvasContainer.append(/*htmlFavoriteButton, htmlUnFavoriteButton, *//*this.#htmlCanvasItemInfo, */this.#tf2Viewer.initHtml()/*, this.cs2Viewer.initHtml()*/);
 	}
 
 	#tradeActivate(activate: boolean) {
@@ -503,6 +502,9 @@ export class Application {
 							case (addedNode as HTMLElement).classList.contains(INVENTORY_ITEM_CLASSNAME):
 								this.#createInventoryListener(addedNode as HTMLElement);
 								break;
+							case (this.#pageType == PageType.MarketPlaceTf) && (addedNode as HTMLElement).classList.contains(MARKET_TF_ITEM_TITLE_CLASS):
+								this.#renderMarketPlaceTf(addedNode.parentElement as HTMLElement);
+								break;
 						}
 					}
 				}
@@ -527,6 +529,13 @@ export class Application {
 		for (let listing of listings) {
 			this.#createButton(listing as HTMLElement);
 			this.#addMarketListingInfo(listing as HTMLElement);
+		}
+	}
+
+	#initMarketPlaceTf() {
+		let items = document.getElementsByClassName(MARKET_TF_ITEM_TITLE_CLASS);
+		for (let item of items) {
+			this.#renderMarketPlaceTf(item.parentElement as HTMLElement);
 		}
 	}
 
@@ -708,6 +717,9 @@ export class Application {
 			case PageType.Inventory:
 				await this.#renderInventoryListing(this.#currentAppId, this.#currentContextId, this.#currentAssetId, undefined, true);
 				break;
+			case PageType.MarketPlaceTf:
+				await this.#initMarketPlaceTf();
+				break;
 		}
 	}
 
@@ -828,6 +840,51 @@ export class Application {
 		return true;
 	}
 
+	#addMarketPlace(listingId: string): boolean {
+		const rowCanvasContainer = this.#htmlRowContainer;
+		rowCanvasContainer.replaceChildren();
+
+		const listingContext = this.#canvasPerListing.get(listingId);
+		if (listingContext) {
+			//c.container.appendChild(this.#tf2Viewer.initHtml());
+			rowCanvasContainer.append(listingContext.container, listingContext.state,);
+			return false;
+		}
+
+		const row = this.#htmlRowContainer;
+
+		const scene = this.#tf2Viewer.getListingScene(listingId);
+		scene.activeCamera = this.#camera;
+		const canvasAttributes = Graphics.addCanvas({ name: listingId, scene, autoResize: true });
+		if (!canvasAttributes) {
+			return false;
+		}
+		const htmlState = createElement('div');
+		const htmlInfo = createElement('div', { class: 'canvas-container-item-info' });
+		const htmlContainer = createElement('div', {
+			class: 'canvas-container',
+			childs: [
+				canvasAttributes.canvas,
+				htmlInfo,
+				this.#tf2Viewer.initHtml(listingId),
+				createElement('div', {
+					class: 'fullscreen-toolbar',
+					childs: [
+						...this.#createFullScreenButtonMarketPlace(listingId),
+						this.#createWeaponsShowcaseButtonMarketPlace(listingId),
+					],
+				}),
+				this.#createFavoritesButton(listingId),
+			]
+		});
+		this.#canvasPerListing.set(listingId, { container: htmlContainer, attributes: canvasAttributes, scene, state: htmlState, info: htmlInfo, row: row },);
+
+
+		rowCanvasContainer.append(htmlContainer, htmlState,);
+
+		return true;
+	}
+
 	#createFavoritesButton(listingId: string): HTMLElement {
 		return createElement('div', {
 			class: 'favorite-button',
@@ -880,10 +937,51 @@ export class Application {
 		return [htmlFullScreenButton, htmlExitFullScreenButton, htmlFullScreenButton2];
 	}
 
+	#createFullScreenButtonMarketPlace(listingId: string): [HTMLElement, HTMLElement] {
+		const htmlFullScreenButton = createElement('button', {
+			class: 'button fullscreen-button-single btn btn-info btn-sm',
+			innerText: 'Fullscreen this item',
+			$click: () => {
+				const canvasPerListing = this.#canvasPerListing.get(listingId);
+				if (canvasPerListing) {
+					this.#setFullScreenMode(FullScreenMode.MarketPerListing);
+					canvasPerListing.row.requestFullscreen();
+					this.#enableAllCanvas(false);
+					const context = this.#canvasPerListing.get(listingId);
+					if (context) {
+						this.#enableCanvas(listingId, true);
+					}
+				}
+			}
+		});
+
+		const htmlExitFullScreenButton = createElement('button', {
+			class: 'button exit-fullscreen-button btn btn-info btn-sm',
+			innerHTML: 'Exit fullscreen',
+			$click: () => document.exitFullscreen(),
+		});
+
+		return [htmlFullScreenButton, htmlExitFullScreenButton];
+	}
+
 	#createWeaponsShowcaseButton(listingId: string): HTMLElement {
 		return createElement('div', {
 			class: 'button',
 			innerHTML: '<a class="item_market_action_button btn_green_white_innerfade btn_small"><span>Weapons showcase</span></a>',
+			$click: () => {
+				if (!this.#weaponShowcase) {
+					this.#setCameraTarget(TF2_SHOWCASE_CAMERA_TARGET, TF2_SHOWCASE_CAMERA_POSITION);
+				}
+				this.#weaponShowcase = true;
+				this.#renderMarketListing(listingId, undefined);
+			}
+		});
+	}
+
+	#createWeaponsShowcaseButtonMarketPlace(listingId: string): HTMLElement {
+		return createElement('button', {
+			class: 'button btn btn-info btn-sm',
+			innerText: 'Weapons showcase',
 			$click: () => {
 				if (!this.#weaponShowcase) {
 					this.#setCameraTarget(TF2_SHOWCASE_CAMERA_TARGET, TF2_SHOWCASE_CAMERA_POSITION);
@@ -955,6 +1053,65 @@ export class Application {
 		}
 	}
 
+	async #renderMarketPlaceTf(itemPanel: HTMLElement): Promise<void> {
+		const url = document.URL;
+		if (!url.startsWith(MARKET_TF_URL)) {
+			return;
+		}
+
+		const params = url.substring(MARKET_TF_URL.length).split(';');
+		if (params.length < 1) {
+			return;
+		}
+
+		const defIndex = params[0];
+		let wear = 0;
+		let paintKit = -1;
+		let unusual = -1;
+
+		for (const param of params) {
+			switch (true) {
+				case param.startsWith('w'):// Wear
+					wear = Number(param.substring(1));
+					break;
+				case param.startsWith('pk'):// paint kit
+					paintKit = Number(param.substring(2));
+					break;
+				case param.startsWith('u'):// unusual
+					unusual = Number(param.substring(1));// TODO: use unusual
+					break;
+			}
+		}
+
+		if (paintKit === -1) {
+			return;
+		}
+
+		console.info(params);
+		this.#addMarketPlace(MARKET_TF_LISTING_ID);
+
+		show(this.#htmlRowContainer);
+		itemPanel.append(this.#htmlRowContainer);
+		this.#tf2Viewer.renderListingTF2(MARKET_TF_LISTING_ID, {
+			name: '',
+			market_hash_name: 'War Paint',
+			appid: APP_ID_TF2,
+
+		},
+			{
+				app_data: {
+					def_index: defIndex,
+
+				}
+			}, undefined, undefined, undefined,
+			{
+				def_index: defIndex,
+				paint_wear: wear,
+				custom_paintkit_seed: 0n,
+			}
+		);
+	}
+
 	async #renderInventoryListing(appId: number, contextId: number, assetId: number, htmlImg?: HTMLImageElement, force = false) {
 		//console.log(assetId);
 		if (force || (this.#currentAssetId != assetId)) {
@@ -1019,6 +1176,7 @@ export class Application {
 
 		if (messageData.action == 'injected_ready') {
 			this.#createButtons();
+			this.#initMarketPlaceTf();
 		}
 	}
 

@@ -1,4 +1,4 @@
-export function getInspectLink(listingDatas: any/*TODO: change type*/, listingOrSteamId: string, assetId?: number) {
+export function getInspectLink(listingDatas: any/*TODO: change type*/, listingOrSteamId: string, assetId?: number): string | undefined {
 	if (listingDatas.actions) {
 		for (let action of listingDatas.actions) {
 			let link = action.link;
