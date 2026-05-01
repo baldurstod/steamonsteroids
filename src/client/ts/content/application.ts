@@ -5,13 +5,13 @@ import { starSVG } from 'harmony-svg';
 import { JSONObject } from 'harmony-types';
 import { createElement, hide, show } from 'harmony-ui';
 import translationsJSON from '../../json/translations.json';
-import { ACTIVE_INVENTORY_PAGE, APP_ID_CS2, APP_ID_TF2, INVENTORY_BACKGROUND_COLOR, INVENTORY_ITEM_CLASSNAME, MARKET_LISTING_BACKGROUND_COLOR, MARKET_LISTING_EFFECT_COLOR, MARKET_LISTING_NAME_CLASSNAME, MARKET_LISTING_ROW_CLASSNAME, MARKET_TF_ITEM_TITLE_CLASS, MARKET_TF_LISTING_ID, MARKET_TF_URL, MOUSE_ENTER_DELAY } from '../constants';
+import { ACTIVE_INVENTORY_PAGE, APP_ID_CS2, APP_ID_TF2, INVENTORY_BACKGROUND_COLOR, INVENTORY_ITEM_CLASSNAME, MARKET_LISTING_BACKGROUND_COLOR, MARKET_LISTING_EFFECT_COLOR, MARKET_LISTING_NAME_CLASSNAME, MARKET_LISTING_ROW_CLASSNAME, MARKET_TF_ITEM_TITLE_CLASS, MARKET_TF_LISTING_ID, MARKET_TF_URL, MARKETPLACE_LISTINGS_ID, MOUSE_ENTER_DELAY } from '../constants';
 import { GenerationState } from '../enums';
 import { ClearMarketListingEvent, Controller, ControllerEvents, SetGenerationStateEvent, SetItemInfoEvent, Tf2RefreshListing } from './controller';
 import { CS2Viewer } from './cs2/cs2viewer';
 import { getInventoryAssetDatas, getInventorySteamId, MarketAssets } from './marketassets';
 import { MARKET_LISTING_ROW_PREFIX, MARKET_LISTINGS_ID, SEARCH_RESULT_ROWS } from './steam/constants';
-import { MarketListings } from './steam/marketlistings';
+import { ListingElement, MarketListings } from './steam/marketlistings';
 import { ItemManager } from './tf2/loadout/items/itemmanager';
 import { TF2_SHOWCASE_CAMERA_POSITION, TF2_SHOWCASE_CAMERA_TARGET } from './tf2/tf2constants';
 import { TF2Viewer } from './tf2/tf2viewer';
@@ -95,6 +95,7 @@ export class Application {
 	#isTradeOffer = false;
 	#timeouts = new Map<HTMLElement, ReturnType<typeof setTimeout>>();
 	#marketListings = new MarketListings();
+	#marketPlaceListings = new Map<string, ListingElement>();
 	//#bipmapContext?: ImageBitmapRenderingContext | null;
 	#canvasPerListing = new Map<string, ContextPerListing>();
 	#active = true;
@@ -325,7 +326,6 @@ export class Application {
 
 				break;
 			case PageType.MarketPlaceTf:
-				console.info(document.URL);
 				this.#htmlRowContainer.append(this.#canvasContainer);
 				break;
 		}
@@ -537,6 +537,7 @@ export class Application {
 		for (let item of items) {
 			this.#renderMarketPlaceTf(item.parentElement as HTMLElement);
 		}
+		this.#renderAllMarketPlaceRows();
 	}
 
 	#createInventoryListeners() {
@@ -656,13 +657,22 @@ export class Application {
 		const listingId = marketListingRow.id.replace(MARKET_LISTING_ROW_PREFIX, '')
 		const htmlMarketRow = this.#marketListings.getCanvasContainer(listingId);
 		if (htmlMarketRow) {
-			//htmlMarketRow.append(this.#htmlRowContainer);
 			this.#renderMarketListing(listingId);
 		}
-		/*
-		marketListingRow.append(this.#htmlRowContainer);
-		this.renderListing(marketListingRow.id.replace(MASKET_LISTING_ROW_PREFIX, ''));
-		*/
+	}
+
+	#renderMarketPlaceRow(marketListingRow: HTMLElement): void {
+		const link = marketListingRow?.getElementsByTagName('a')[0]?.href;
+		const listingId = marketListingRow?.getElementsByTagName('button')[0]?.getAttribute('data-id');
+		if (!link || !listingId) {
+			return;
+		}
+
+		const line = createElement('tr');
+		marketListingRow.parentElement?.insertBefore(line, marketListingRow.nextSibling);
+
+		this.#addMarketPlaceListing(listingId, line);
+		this.#renderMarketPlaceListing(listingId, line, link);
 	}
 
 	async #toggleMarketListing(marketListingId: string) {
@@ -724,7 +734,7 @@ export class Application {
 				await this.#renderInventoryListing(this.#currentAppId, this.#currentContextId, this.#currentAssetId, undefined, true);
 				break;
 			case PageType.MarketPlaceTf:
-				await this.#initMarketPlaceTf();
+				this.#initMarketPlaceTf();
 				break;
 		}
 	}
@@ -846,18 +856,24 @@ export class Application {
 		return true;
 	}
 
-	#addMarketPlace(listingId: string): boolean {
-		const rowCanvasContainer = this.#htmlRowContainer;
-		rowCanvasContainer.replaceChildren();
-
+	#addMarketPlaceListing(listingId: string, rowCanvasContainer: HTMLElement): boolean {
 		const listingContext = this.#canvasPerListing.get(listingId);
 		if (listingContext) {
-			//c.container.appendChild(this.#tf2Viewer.initHtml());
-			rowCanvasContainer.append(listingContext.container, listingContext.state,);
+			rowCanvasContainer.append(listingContext.container/*, listingContext.state,*/);
 			return false;
 		}
 
-		const row = this.#htmlRowContainer;
+		let row = this.#marketPlaceListings.get(listingId)?.canvas;
+		if (!row) {
+			row = createElement('div', {
+				class: 'market-listing-canvas',
+				parent: rowCanvasContainer,
+			});
+			this.#marketPlaceListings.set(listingId, {
+				row: rowCanvasContainer,
+				canvas: row,
+			});
+		}
 
 		const scene = this.#tf2Viewer.getListingScene(listingId);
 		scene.activeCamera = this.#camera;
@@ -967,6 +983,8 @@ export class Application {
 			$click: () => document.exitFullscreen(),
 		});
 
+		//this.#renderAllMarketPlaceRows();
+
 		return [htmlFullScreenButton, htmlExitFullScreenButton];
 	}
 
@@ -1038,7 +1056,17 @@ export class Application {
 		}
 	}
 
-	async #renderMarketListing(listingId: string, force = false) {
+	async #renderAllMarketPlaceRows(): Promise<void> {
+		let listings = document.getElementById(MARKETPLACE_LISTINGS_ID)?.getElementsByTagName('tbody')?.[0]?.getElementsByTagName('tr');
+		if (!listings) {
+			return;
+		}
+		for (let listing of listings) {
+			this.#renderMarketPlaceRow(listing as HTMLElement);
+		}
+	}
+
+	async #renderMarketListing(listingId: string, force = false): Promise<void> {
 		//this.#tf2Viewer.hide();
 		this.#cs2Viewer.hide();
 		//this.#currentListingId = listingId;
@@ -1059,15 +1087,73 @@ export class Application {
 		}
 	}
 
+	async #renderMarketPlaceListing(listingId: string, container: HTMLElement, link: string, force = false): Promise<void> {
+		const params = this.#getMarketPlaceParams();
+		if (params === null) {
+			return;
+		}
+
+		const { defIndex, wear, paintKit, unusual } = params;
+
+		this.#tf2Viewer.renderListingTF2(listingId,
+			{
+				name: '',
+				market_hash_name: 'War Paint',
+				appid: APP_ID_TF2,
+			} as MarketAsset,
+			{
+				app_data: {
+					def_index: defIndex,
+				}
+			} as ClassInfo, undefined, undefined, undefined,
+			link,
+		);
+	}
+
 	async #renderMarketPlaceTf(itemPanel: HTMLElement): Promise<void> {
+		const params = this.#getMarketPlaceParams();
+		if (params === null) {
+			return;
+		}
+
+		const { defIndex, wear, paintKit, unusual } = params;
+
+		if (paintKit === -1) {
+			return;
+		}
+
+		console.info(params);
+		this.#addMarketPlaceListing(MARKET_TF_LISTING_ID, itemPanel);
+
+		this.#tf2Viewer.renderListingTF2(MARKET_TF_LISTING_ID,
+			{
+				name: '',
+				market_hash_name: 'War Paint',
+				appid: APP_ID_TF2,
+			} as MarketAsset,
+			{
+				app_data: {
+					def_index: defIndex,
+
+				}
+			} as ClassInfo, undefined, undefined, undefined,
+			{
+				def_index: defIndex,
+				paint_wear: wear * 0.2,
+				custom_paintkit_seed: 0n,
+			},
+		);
+	}
+
+	#getMarketPlaceParams(): { defIndex: string, wear: number, paintKit: number, unusual: number } | null {
 		const url = document.URL;
 		if (!url.startsWith(MARKET_TF_URL)) {
-			return;
+			return null;
 		}
 
 		const params = url.substring(MARKET_TF_URL.length).split(';');
 		if (params.length < 1) {
-			return;
+			return null;
 		}
 
 		const defIndex = params[0]!;
@@ -1090,32 +1176,10 @@ export class Application {
 		}
 
 		if (paintKit === -1) {
-			return;
+			return null;
 		}
 
-		console.info(params);
-		this.#addMarketPlace(MARKET_TF_LISTING_ID);
-
-		show(this.#htmlRowContainer);
-		itemPanel.append(this.#htmlRowContainer);
-		this.#tf2Viewer.renderListingTF2(MARKET_TF_LISTING_ID,
-			{
-				name: '',
-				market_hash_name: 'War Paint',
-				appid: APP_ID_TF2,
-			} as MarketAsset,
-			{
-				app_data: {
-					def_index: defIndex,
-
-				}
-			} as ClassInfo, undefined, undefined, undefined,
-			{
-				def_index: defIndex,
-				paint_wear: wear * 0.2,
-				custom_paintkit_seed: 0n,
-			},
-		);
+		return { defIndex, wear, paintKit, unusual };
 	}
 
 	async #renderInventoryListing(appId: number, contextId: number, assetId: number, htmlImg?: HTMLImageElement, force = false) {

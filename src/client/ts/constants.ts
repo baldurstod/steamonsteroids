@@ -85,3 +85,4 @@ export const DECORATED_WEAPONS: Record<string, number> = {
 export const MARKET_TF_ITEM_TITLE_CLASS = 'item-title-container';
 export const MARKET_TF_URL = 'https://marketplace.tf/items/tf2/';
 export const MARKET_TF_LISTING_ID = 'marketplace';
+export const MARKETPLACE_LISTINGS_ID = 'items-list';

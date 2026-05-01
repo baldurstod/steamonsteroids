@@ -8,7 +8,7 @@ import { Map2, setTimeoutPromise } from 'harmony-utils';
 import logoBlueWhite from '../../../img/logo_blue_white.png';
 import logoRedWhite from '../../../img/logo_red_white.png';
 import weaponsJSON from '../../../json/weapons.json';
-import { APP_ID_TF2, DECORATED_WEAPONS, MARKET_LISTING_BACKGROUND_COLOR, MARKET_TF_LISTING_ID, TF2_REPOSITORY, TF2_WARPAINT_DEFINITIONS_URL } from '../../constants';
+import { APP_ID_TF2, DECORATED_WEAPONS, MARKET_LISTING_BACKGROUND_COLOR, TF2_REPOSITORY, TF2_WARPAINT_DEFINITIONS_URL } from '../../constants';
 import { GenerationState } from '../../enums';
 import { Controller, ControllerEvents, Tf2RefreshListing } from '../controller';
 import { ClassInfo, MarketAsset } from '../types';
@@ -249,7 +249,7 @@ export class TF2Viewer {
 		Controller.dispatchEvent<Tf2RefreshListing>(ControllerEvents.Tf2RefreshListing, { detail: { listingId } });
 	}
 
-	async renderListingTF2(listingOrSteamId: string, listingDatas: MarketAsset, classInfo: ClassInfo, assetId?: number, htmlImg?: HTMLImageElement, weaponShowcase = false, econItem?: EconItem) {
+	async renderListingTF2(listingOrSteamId: string, listingDatas: MarketAsset, classInfo: ClassInfo, assetId?: number, htmlImg?: HTMLImageElement, weaponShowcase = false, econItem?: EconItem | string) {
 		this.#isWeaponsShowcase = weaponShowcase;
 
 		if (weaponShowcase) {
