@@ -49,7 +49,7 @@ export function getTF2ModelName(item: any/*TODO: improve type*/, className: stri
 		if (item.model_player_per_class) {
 			let arr = Object.keys(item.model_player_per_class);
 			if (arr.length > 0) {
-				return { model: item.model_player_per_class[arr[0]], attachedModels: attachedModels };
+				return { model: item.model_player_per_class[arr[0]!], attachedModels: attachedModels };
 			}
 		}
 	}

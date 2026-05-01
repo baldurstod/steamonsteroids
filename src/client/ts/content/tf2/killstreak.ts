@@ -15,7 +15,7 @@ export function getSheenTint(effectId: number, teamId: 0 | 1 = 0): vec3 {
 	let sheenTint = 0;
 	let row = KillStreakSheenTint[effectId];
 	if (row) {
-		sheenTint = row[teamId] ?? row[0];
+		sheenTint = row[teamId] ?? row[0]!;
 	}
 	return [((sheenTint >> 16) & 0xFF) / 255.0, ((sheenTint >> 8) & 0xFF) / 255.0, ((sheenTint >> 0) & 0xFF) / 255.0];
 }

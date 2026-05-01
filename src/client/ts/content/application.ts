@@ -618,6 +618,9 @@ export class Application {
 				for (const [lang, translation] of translations) {
 					if (description.value.includes(translation)) {
 						const title = marketListingRow.getElementsByClassName(MARKET_LISTING_NAME_CLASSNAME)[0];
+						if (!title) {
+							continue;
+						}
 						title.append(
 							createElement('div', {
 								innerText: description.value,
@@ -629,6 +632,9 @@ export class Application {
 						chrome.runtime.sendMessage({ action: 'get-tf2-effect-by-name', language: lang, name: description.value.replace(translation, '') }, async (tf2Effect) => {
 							if (tf2Effect) {
 								const title = marketListingRow.getElementsByClassName(MARKET_LISTING_NAME_CLASSNAME)[0];
+								if (!title) {
+									return;
+								}
 								title.parentElement!.insertBefore(
 									createElement('img', {
 										src: `https://loadout.tf/img/unusuals/${tf2Effect.system}.webp`,
@@ -1064,7 +1070,7 @@ export class Application {
 			return;
 		}
 
-		const defIndex = params[0];
+		const defIndex = params[0]!;
 		let wear = 0;
 		let paintKit = -1;
 		let unusual = -1;
@@ -1195,6 +1201,9 @@ export class Application {
 
 async function injectScript(path: string, tag: string) {
 	var node = document.getElementsByTagName(tag)[0];
+	if (!node) {
+		return;
+	}
 	var script = document.createElement('script');
 	script.setAttribute('type', 'text/javascript');
 	script.setAttribute('src', path);
