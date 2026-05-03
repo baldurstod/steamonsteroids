@@ -1,5 +1,5 @@
-import { quat, vec3 } from 'gl-matrix';
-import { AmbientLight, ColorBackground, GraphicsEvent, GraphicsEvents, Group, PointLight, Repositories, RotationControl, Scene, SceneNode, Source1ModelInstance, Source1ParticleControler, Texture, WebRepository } from 'harmony-3d';
+import { quat, vec3, vec4 } from 'gl-matrix';
+import { AmbientLight, ColorBackground, GraphicsEvent, GraphicsEvents, Group, PointLight, Repositories, RotationControl, Scene, SceneNode, Source1ModelInstance, Texture, WebRepository } from 'harmony-3d';
 import { TextureCombiner, WeaponManager, WeaponManagerItem } from 'harmony-3d-utils';
 import { blockSVG, pauseSVG, playSVG } from 'harmony-svg';
 import { Tf2Team, WarpaintDefinitions } from 'harmony-tf2-utils';
@@ -16,7 +16,6 @@ import { getInspectLink } from '../utils/inspectlink';
 import { sortSelect } from '../utils/sort';
 import { addSource1Model } from '../utils/sourcemodels';
 import { PAINT_KIT_TOOL_INDEX } from './constants';
-import { getSheenTint } from './killstreak';
 import { Character } from './loadout/characters/character';
 import { CharacterManager } from './loadout/characters/charactermanager';
 import { npcToClass, Tf2Class } from './loadout/characters/characters';
@@ -25,7 +24,7 @@ import { Item } from './loadout/items/item';
 import { ItemManager } from './loadout/items/itemmanager';
 import { ItemTemplate } from './loadout/items/itemtemplate';
 import { getPaintByTint } from './paints/paints';
-import { TF2_CLASSES_REMOVABLE_PARTS, TF2_ITEM_CAMERA_POSITION, TF2_MERCENARIES, TF2_PLAYER_CAMERA_POSITION, TF2_PLAYER_CAMERA_TARGET, TF2_TAUNT_CAMERA_POSITION } from './tf2constants';
+import { TF2_ITEM_CAMERA_POSITION, TF2_PLAYER_CAMERA_POSITION, TF2_PLAYER_CAMERA_TARGET, TF2_TAUNT_CAMERA_POSITION } from './tf2constants';
 
 WarpaintDefinitions.setWarpaintDefinitionsURL(TF2_WARPAINT_DEFINITIONS_URL);
 
@@ -646,12 +645,12 @@ export class TF2Viewer {
 		return this.#scene;
 	}
 
-	getListingScene(listingId: string): Scene {
+	getListingScene(listingId: string, color: vec4 = MARKET_LISTING_BACKGROUND_COLOR): Scene {
 		let scene = this.#scenePerId.get(listingId);
 		if (!scene) {
 			scene = new Scene({
 				parent: this.#scene,
-				background: new ColorBackground({ color: MARKET_LISTING_BACKGROUND_COLOR }),
+				background: new ColorBackground({ color }),
 				childs: [
 					//new Manipulator(),
 					new SceneNode({ entity: this.lightsGroup }),

@@ -5,7 +5,7 @@ import { starSVG } from 'harmony-svg';
 import { JSONObject } from 'harmony-types';
 import { createElement, hide, show } from 'harmony-ui';
 import translationsJSON from '../../json/translations.json';
-import { ACTIVE_INVENTORY_PAGE, APP_ID_CS2, APP_ID_TF2, INVENTORY_BACKGROUND_COLOR, INVENTORY_ITEM_CLASSNAME, MARKET_LISTING_BACKGROUND_COLOR, MARKET_LISTING_EFFECT_COLOR, MARKET_LISTING_NAME_CLASSNAME, MARKET_LISTING_ROW_CLASSNAME, MARKET_TF_ITEM_TITLE_CLASS, MARKET_TF_LISTING_ID, MARKET_TF_URL, MARKETPLACE_LISTINGS_ID, MOUSE_ENTER_DELAY } from '../constants';
+import { ACTIVE_INVENTORY_PAGE, APP_ID_CS2, APP_ID_TF2, INVENTORY_BACKGROUND_COLOR, INVENTORY_ITEM_CLASSNAME, MARKET_LISTING_BACKGROUND_COLOR, MARKET_LISTING_EFFECT_COLOR, MARKET_LISTING_NAME_CLASSNAME, MARKET_LISTING_ROW_CLASSNAME, MARKET_TF_ITEM_TITLE_CLASS, MARKET_TF_LISTING_ID, MARKET_TF_URL, MARKETPLACE_LISTING_BACKGROUND_COLOR, MARKETPLACE_LISTINGS_ID, MOUSE_ENTER_DELAY } from '../constants';
 import { GenerationState } from '../enums';
 import { ClearMarketListingEvent, Controller, ControllerEvents, SetGenerationStateEvent, SetItemInfoEvent, Tf2RefreshListing } from './controller';
 import { CS2Viewer } from './cs2/cs2viewer';
@@ -881,7 +881,7 @@ export class Application {
 			});
 		}
 
-		const scene = this.#tf2Viewer.getListingScene(listingId);
+		const scene = this.#tf2Viewer.getListingScene(listingId, MARKETPLACE_LISTING_BACKGROUND_COLOR);
 		scene.activeCamera = this.#camera;
 		const canvasAttributes = Graphics.addCanvas({ name: listingId, scene, autoResize: true });
 		if (!canvasAttributes) {
