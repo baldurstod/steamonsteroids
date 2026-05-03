@@ -45,6 +45,7 @@ export class Item {
 	#textureSize?: number;
 	changeTextureSize?: number;
 	#customTexture: string | null = null;
+	userData?: any;
 
 	#readyPromiseResolve!: (value: any) => void;
 	#ready = new Promise<boolean>((resolve) => {
@@ -692,6 +693,7 @@ export class Item {
 				team: this.#team,
 				textureSize: this.#textureSize,
 				updatePreview,
+				userData: this.userData,
 			});
 		}
 	}

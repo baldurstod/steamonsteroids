@@ -335,6 +335,7 @@ export class TF2Viewer {
 					}
 					*/
 					const item = await character.addItem(itemTemplate);
+					item.userData = listingOrSteamId;
 
 					item.getModel().then(model => {
 						if (model) {
