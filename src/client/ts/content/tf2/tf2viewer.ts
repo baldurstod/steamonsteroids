@@ -48,6 +48,7 @@ type EconItem = {
 	def_index: string;
 	paint_wear: number;
 	custom_paintkit_seed: BigInt;
+	set_attached_particle: number;
 }
 
 export class TF2Viewer {
@@ -430,6 +431,8 @@ export class TF2Viewer {
 				if (attachedParticle) {
 					character.addEffect(attachedParticle);
 				}
+
+				item.setWeaponEffectId(econitem.set_attached_particle);
 
 				const tauntEffect = ItemManager.getEffectTemplate(EffectType.Taunt, econitem.taunt_attached_particle);
 				if (tauntEffect) {

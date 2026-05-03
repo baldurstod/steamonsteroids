@@ -1124,10 +1124,6 @@ export class Application {
 
 		const { defIndex, wear, paintKit, unusual } = params;
 
-		if (paintKit === -1) {
-			return;
-		}
-
 		console.info(params);
 		this.#addMarketPlaceListing(MARKET_TF_LISTING_ID, itemPanel);
 
@@ -1147,6 +1143,7 @@ export class Application {
 				def_index: defIndex,
 				paint_wear: wear * 0.2,
 				custom_paintkit_seed: 0n,
+				set_attached_particle: unusual,
 			},
 		);
 	}
@@ -1179,10 +1176,6 @@ export class Application {
 					unusual = Number(param.substring(1));// TODO: use unusual
 					break;
 			}
-		}
-
-		if (paintKit === -1) {
-			return null;
 		}
 
 		return { defIndex, wear, paintKit, unusual };
