@@ -64,6 +64,12 @@ enum FullScreenMode {
 	MarketPerListing = 2,
 }
 
+type MarketPlaceListingElement = ListingElement & {
+	row: HTMLElement;
+	canvas: HTMLElement;
+	link?: string;
+}
+
 export class Application {
 	#htmlTradeAreaContainer?: HTMLElement;
 	#htmlPageControls: HTMLElement | null = null;
@@ -95,7 +101,7 @@ export class Application {
 	#isTradeOffer = false;
 	#timeouts = new Map<HTMLElement, ReturnType<typeof setTimeout>>();
 	#marketListings = new MarketListings();
-	#marketPlaceListings = new Map<string, ListingElement>();
+	#marketPlaceListings = new Map<string, MarketPlaceListingElement>();
 	//#bipmapContext?: ImageBitmapRenderingContext | null;
 	#canvasPerListing = new Map<string, ContextPerListing>();
 	#active = true;
@@ -677,7 +683,7 @@ export class Application {
 		//const shadow = cell.attachShadow({ mode: 'closed' });
 		marketListingRow.parentElement?.insertBefore(line, marketListingRow.nextSibling);
 
-		this.#addMarketPlaceListing(listingId, cell);
+		this.#addMarketPlaceListing(listingId, cell, link);
 		this.#renderMarketPlaceListing(listingId, link);
 	}
 
@@ -746,7 +752,21 @@ export class Application {
 	}
 
 	async #refreshTf2Listing(listingId: string): Promise<void> {
-		await this.#renderMarketListing(listingId, true);
+
+		if (this.#marketListings.getRow(listingId)) {
+			await this.#renderMarketListing(listingId, true);
+		} else {
+			const listing = this.#marketPlaceListings.get(listingId);
+			if (listing) {
+				const link = listing.link;
+				if (link) {
+					await this.#renderMarketPlaceListing(listingId, link);
+				} else {
+					await this.#renderMarketPlaceTf(listing.row);
+
+				}
+			}
+		}
 	}
 
 	#clearMarketListing(listingId: string) {
@@ -862,7 +882,7 @@ export class Application {
 		return true;
 	}
 
-	#addMarketPlaceListing(listingId: string, rowCanvasContainer: HTMLElement): boolean {
+	#addMarketPlaceListing(listingId: string, rowCanvasContainer: HTMLElement, link?: string): boolean {
 		const listingContext = this.#canvasPerListing.get(listingId);
 		if (listingContext) {
 			rowCanvasContainer.append(listingContext.container/*, listingContext.state,*/);
@@ -878,6 +898,7 @@ export class Application {
 			this.#marketPlaceListings.set(listingId, {
 				row: rowCanvasContainer,
 				canvas: row,
+				link,
 			});
 		}
 
