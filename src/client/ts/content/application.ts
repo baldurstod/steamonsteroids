@@ -252,7 +252,7 @@ export class Application {
 				canvasPerListing.state.innerText = 'Generating...';
 				canvasPerListing.state.classList.add('waiting');
 				break;
-			case GenerationState.Sucess:
+			case GenerationState.Success:
 				canvasPerListing.state.innerText = 'Finished';
 				canvasPerListing.state.classList.add('success');
 				break;

@@ -1,6 +1,6 @@
 export enum GenerationState {
 	Started = 0,
-	Sucess,
+	Success,
 	Failure,
 	LoadingModel,
 	RetrievingItemDatas,

@@ -100,7 +100,7 @@ export class TF2Viewer {
 
 	#initEvents() {
 		WeaponManager.addEventListener('started', (event: Event) => Controller.dispatchEvent(ControllerEvents.SetGenerationState, { detail: { state: GenerationState.Started, listingId: (event as CustomEvent<WeaponManagerItem>).detail.userData } }));
-		WeaponManager.addEventListener('success', (event: Event) => Controller.dispatchEvent(ControllerEvents.SetGenerationState, { detail: { state: GenerationState.Sucess, listingId: (event as CustomEvent<WeaponManagerItem>).detail.userData } }));
+		WeaponManager.addEventListener('success', (event: Event) => Controller.dispatchEvent(ControllerEvents.SetGenerationState, { detail: { state: GenerationState.Success, listingId: (event as CustomEvent<WeaponManagerItem>).detail.userData } }));
 		WeaponManager.addEventListener('failure', (event: Event) => Controller.dispatchEvent(ControllerEvents.SetGenerationState, { detail: { state: GenerationState.Failure, listingId: (event as CustomEvent<WeaponManagerItem>).detail.userData } }));
 
 		GraphicsEvents.addEventListener(GraphicsEvent.Tick, event => this.#flipWarpaints());
@@ -409,7 +409,7 @@ export class TF2Viewer {
 					Controller.dispatchEvent(ControllerEvents.SelectInventoryItem, { detail: { assetId: assetId, htmlImg: htmlImg } });
 				}
 			} else {
-				Controller.dispatchEvent(ControllerEvents.SetGenerationState, { detail: { state: GenerationState.Sucess, listingId: listingOrSteamId } });
+				Controller.dispatchEvent(ControllerEvents.SetGenerationState, { detail: { state: GenerationState.Success, listingId: listingOrSteamId } });
 			}
 
 			let itemStyleOverride = econitem?.item_style_override;
