@@ -13,7 +13,7 @@
 }
 
 .texture-generation-state.success {
-	color: #abce4e;
+	color: #abce4e !important;
 }
 
 .texture-generation-state.failure {

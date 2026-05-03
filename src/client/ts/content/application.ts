@@ -668,11 +668,17 @@ export class Application {
 			return;
 		}
 
-		const line = createElement('tr');
+		let cell: HTMLElement;
+		const line = createElement('tr', {
+			child: cell = createElement('td', {
+				colspan: 3,// extend the cell to occupy the 3 cols: name, price, actions
+			})
+		});
+		//const shadow = cell.attachShadow({ mode: 'closed' });
 		marketListingRow.parentElement?.insertBefore(line, marketListingRow.nextSibling);
 
-		this.#addMarketPlaceListing(listingId, line);
-		this.#renderMarketPlaceListing(listingId, line, link);
+		this.#addMarketPlaceListing(listingId, cell);
+		this.#renderMarketPlaceListing(listingId, link);
 	}
 
 	async #toggleMarketListing(marketListingId: string) {
@@ -892,8 +898,8 @@ export class Application {
 				createElement('div', {
 					class: 'fullscreen-toolbar',
 					childs: [
-						...this.#createFullScreenButtonMarketPlace(listingId),
-						this.#createWeaponsShowcaseButtonMarketPlace(listingId),
+						//...this.#createFullScreenButtonMarketPlace(listingId),
+						//this.#createWeaponsShowcaseButtonMarketPlace(listingId),
 					],
 				}),
 				this.#createFavoritesButton(listingId),
@@ -1087,7 +1093,7 @@ export class Application {
 		}
 	}
 
-	async #renderMarketPlaceListing(listingId: string, container: HTMLElement, link: string, force = false): Promise<void> {
+	async #renderMarketPlaceListing(listingId: string, link: string, force = false): Promise<void> {
 		const params = this.#getMarketPlaceParams();
 		if (params === null) {
 			return;
