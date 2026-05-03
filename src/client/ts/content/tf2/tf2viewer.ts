@@ -464,70 +464,6 @@ export class TF2Viewer {
 		}
 	}
 
-	#setModelSkin(model: Source1ModelInstance, tf2Item: any/*TODO:improve type*/) {
-		if (model && tf2Item) {
-			let skin = Number(this.#teamColor == Tf2Team.Red ? tf2Item.skin_red : tf2Item.skin_blu ?? tf2Item.skin_red);
-			if (skin) {
-				model.skin = String(skin);
-			}
-		}
-	}
-
-	async #attachModels(source1Model: Source1ModelInstance, tf2Item: any/*TODO:improve type*/, econItem: any/*TODO:improve type*/) {
-		if (source1Model && tf2Item && econItem) {
-			if (econItem.is_strange && tf2Item.weapon_uses_stattrak_module) {
-				let stattrakModule = await addSource1Model('tf2', tf2Item.weapon_uses_stattrak_module, source1Model);
-				if (stattrakModule) {
-					let stattrakBone = source1Model.getBoneByName('c_weapon_stattrack');
-					if (stattrakBone) {
-						let scale = Number(tf2Item.weapon_stattrak_module_scale ?? 1);
-						stattrakBone.scale = [scale, scale, scale];
-					}
-					stattrakModule.materialsParams['StatTrakNumber'] = econItem.kill_eater ?? 0;
-				}
-			}
-			if (econItem.is_festivized && tf2Item.attached_models_festive) {
-				let festivizerModel = await addSource1Model('tf2', tf2Item.attached_models_festive, source1Model);
-			}
-
-			let killStreakIdleEffect = econItem.killstreak_idleeffect;
-			if (killStreakIdleEffect) {
-				source1Model.sheen = getSheenTint(killStreakIdleEffect);
-			}
-		}
-	}
-
-	async #attachTF2Effects(source1Model: Source1ModelInstance, tf2Item: any/*TODO:improve type*/, econItem: any/*TODO:improve type*/) {
-		if (source1Model && tf2Item && econItem) {
-			if (econItem.set_attached_particle) {
-				this.#attachTF2Effect(source1Model, econItem.set_attached_particle, tf2Item.particle_suffix);
-			}
-			if (tf2Item.set_attached_particle_static) {
-				this.#attachTF2Effect(source1Model, tf2Item.set_attached_particle_static, tf2Item.particle_suffix);
-			}
-		}
-	}
-
-	async #attachTF2Effect(model: Source1ModelInstance, effectId: number, particleSuffix: string) {
-		chrome.runtime.sendMessage({ action: 'get-tf2-effect', effectId: effectId }, async (tf2Effect) => {
-			console.log(tf2Effect);
-			if (tf2Effect && tf2Effect.system) {
-				let completeSystemName = ((tf2Effect.use_suffix_name == 1) && particleSuffix) ? `${tf2Effect.system}_${particleSuffix}` : tf2Effect.system;
-				let sys = await Source1ParticleControler.createSystem('tf2', completeSystemName);
-
-				let attachementPoint = (tf2Effect.attachment != 'unusual' && tf2Effect.attachment != 'muzzle') ? tf2Effect.attachment ?? 'bip_head' : 'bip_head';
-				model.attachSystem(sys, attachementPoint);
-				let controlPointId = 0;
-				let attachementName;
-				while (attachementName = tf2Effect['control_point_' + controlPointId]) {
-					model.attachSystem(sys, attachementName, controlPointId);
-					++controlPointId;
-				}
-				sys.start();
-			}
-		});
-	}
-
 	async #displayClassIcons(listingId: string, item: Item) {
 		let usedByClasses = item.getTemplate().getUsedByClasses();
 		let removeCurrentClassModel = true;
@@ -590,27 +526,6 @@ export class TF2Viewer {
 		} else {
 			this.#setCharacterCamera();
 		}
-
-
-		/*
-		await this.#selectClassPromise;
-		this.#selectClassPromise = new Promise(async (resolve, reject) => {
-			this.#currentClassName = className;
-			this.#setActiveClass(null);
-
-			let classModel = await this.#getClassModel(className);
-			this.#setActiveClass(className);
-			//this.#checkBodyGroups(className, tf2Item);
-			if (classModel) {
-				selectCharacterAnim(className, classModel, tf2Item);
-				classModel.addChild((await this.#getWarPaint(listingId, path))?.model);
-				this.#setCharacterCamera();
-			} else {
-				this.#setItemCamera();
-			}
-			resolve(true);
-		});
-		*/
 	}
 
 	#setCharacterCamera() {
@@ -715,34 +630,6 @@ export class TF2Viewer {
 		Controller.dispatchEvent(ControllerEvents.SetItemInfo, { detail: { listingId: listingOrSteamId, info: s } });
 	}
 
-	async #getClassModel(className: string) {
-		let classModel: Source1ModelInstance | null | undefined = this.#classModels.get(className);
-		let mercenary = TF2_MERCENARIES.get(className);
-		if (!classModel) {
-			if (mercenary) {
-				let classModel = await addSource1Model('tf2', mercenary.modelPath/*, this.#group*/);
-				if (classModel) {
-					this.#classModels.set(className, classModel);
-				}
-			}
-		}
-		if (classModel && mercenary) {
-			classModel.playSequence(mercenary.defaultAnimation);
-		}
-		return classModel;
-	}
-
-	/*
-	#setActiveClass(activeClassName: string | null) {
-		if (activeClassName == null) {
-			this.#setItemCamera();
-		}
-		for (let [className, classModel] of this.#classModels) {
-			classModel.setVisible(className == activeClassName);
-		}
-	}
-	*/
-
 	#hasActiveClass() {
 		for (let [className, classModel] of this.#classModels) {
 			if (classModel.visible) {
@@ -751,43 +638,6 @@ export class TF2Viewer {
 		}
 		return false;
 	}
-
-	async #checkBodyGroups(className: string, tf2Item: any/*TODO:improve type*/) {
-		let classModel = await this.#getClassModel(className);
-		if (classModel) {
-			let bodyGroupList;
-			classModel.renderBodyParts(true);
-
-			classModel.resetBodyPartModels();
-			for (let bodyPart of TF2_CLASSES_REMOVABLE_PARTS) {
-				classModel.renderBodyPart(bodyPart, false);
-			}
-
-			// Check bodygroups
-			bodyGroupList = tf2Item.player_bodygroups;
-			if (bodyGroupList) {
-				for (let bodyGroupIndex in bodyGroupList) {
-					let bodyGroup = bodyGroupList[bodyGroupIndex];
-					classModel.setBodyPartModel(bodyGroupIndex, bodyGroup);
-				}
-			}
-
-			// Override bodygroups
-			bodyGroupList = tf2Item.wm_bodygroup_override;
-			if (bodyGroupList) {
-				for (let bodyGroupIndex in bodyGroupList) {
-					let bodyGroup = bodyGroupList[bodyGroupIndex];
-					classModel.setBodyPartIdModel(Number(bodyGroupIndex), bodyGroup);
-				}
-			}
-		}
-	}
-
-	/*
-	hide() {
-		hide(this.#htmlControls);
-	}
-	*/
 
 	getScene(): Scene {
 		return this.#scene;
@@ -808,28 +658,6 @@ export class TF2Viewer {
 		}
 		return scene;
 	}
-
-	/*
-	async #getRotationControl(listingId: string): Promise<RotationControl> {
-		let rotationControl = this.#rotationControlPerId.get(listingId);
-		if (!rotationControl) {
-			rotationControl = new RotationControl();
-			this.#rotationControlPerId.set(listingId, rotationControl);
-
-			const result = await chrome.storage.sync.get('tf2.rotation');
-			const rotation = result['tf2.rotation'];
-			rotationControl.setSpeed(rotation ?? 1);
-		}
-
-		return rotationControl;
-	}
-	*/
-
-	/*
-	getCameraGroup(): Group {
-		return this.#lightsGroup;
-	}
-	*/
 
 	#flipWarpaints(): void {
 		const position = vec3.create();
