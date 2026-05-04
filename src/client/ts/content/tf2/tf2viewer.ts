@@ -48,6 +48,7 @@ type EconItem = {
 	paint_wear: number;
 	custom_paintkit_seed: BigInt;
 	set_attached_particle: number;
+	taunt_attached_particle: number;
 }
 
 export class TF2Viewer {

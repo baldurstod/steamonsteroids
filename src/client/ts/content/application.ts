@@ -683,6 +683,17 @@ export class Application {
 		//const shadow = cell.attachShadow({ mode: 'closed' });
 		marketListingRow.parentElement?.insertBefore(line, marketListingRow.nextSibling);
 
+		const params = this.#getMarketPlaceParams();
+		if (params === null) {
+			return;
+		}
+
+		const { paintKit } = params;
+		if (paintKit == -1) {
+			// This is not a warpaint, quit
+			return;
+		}
+
 		this.#addMarketPlaceListing(listingId, cell, link);
 		this.#renderMarketPlaceListing(listingId, link);
 	}
@@ -763,7 +774,6 @@ export class Application {
 					await this.#renderMarketPlaceListing(listingId, link);
 				} else {
 					await this.#renderMarketPlaceTf(listing.row);
-
 				}
 			}
 		}
@@ -1165,6 +1175,7 @@ export class Application {
 				paint_wear: wear * 0.2,
 				custom_paintkit_seed: 0n,
 				set_attached_particle: unusual,
+				taunt_attached_particle: unusual,
 			},
 		);
 	}
