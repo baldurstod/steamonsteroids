@@ -86,4 +86,4 @@ export const MARKET_TF_ITEM_TITLE_CLASS = 'item-title-container';
 export const MARKET_TF_URL = 'https://marketplace.tf/items/tf2/';
 export const MARKET_TF_LISTING_ID = 'marketplace';
 export const MARKETPLACE_LISTINGS_ID = 'items-list';
-export const MARKETPLACE_LISTING_BACKGROUND_COLOR = vec4.fromValues(1, 1, 1, 1);
+export const MARKETPLACE_LISTING_BACKGROUND_COLOR = vec4.fromValues(55/255, 71/255, 79/255, 1);

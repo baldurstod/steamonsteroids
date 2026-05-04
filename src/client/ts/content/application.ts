@@ -677,6 +677,7 @@ export class Application {
 		let cell: HTMLElement;
 		const line = createElement('tr', {
 			child: cell = createElement('td', {
+				style: 'padding:0;',
 				colspan: 3,// extend the cell to occupy the 3 cols: name, price, actions
 			})
 		});
