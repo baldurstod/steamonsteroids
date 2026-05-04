@@ -543,7 +543,7 @@ export class Application {
 		for (let item of items) {
 			this.#renderMarketPlaceTf(item.parentElement as HTMLElement);
 		}
-		this.#renderAllMarketPlaceRows();
+		//this.#renderAllMarketPlaceRows();
 	}
 
 	#createInventoryListeners() {
@@ -1164,7 +1164,17 @@ export class Application {
 			marketHashName = 'War Paint';
 		}
 
-		console.info(params);
+		const listingContext = this.#canvasPerListing.get(MARKET_TF_LISTING_ID);
+		if (!listingContext) {
+			createElement('div', {
+				class: 'alert-warning',
+				style: 'cursor:pointer;font-size:2rem;padding:0.5rem;text-align:center;',
+				parent: itemPanel,
+				innerText: 'You are viewing the default seed. Click here to open individual listings.',
+				$click: () => this.#renderAllMarketPlaceRows(),
+			});
+		}
+
 		await this.#addMarketPlaceListing(MARKET_TF_LISTING_ID, itemPanel);
 
 		this.#tf2Viewer.renderListingTF2(MARKET_TF_LISTING_ID,
