@@ -1131,11 +1131,15 @@ export class Application {
 		}
 
 		const { defIndex, wear, paintKit, unusual } = params;
+		let marketHashName = '';
+		if (paintKit !== -1) {
+			marketHashName = 'War Paint';
+		}
 
 		this.#tf2Viewer.renderListingTF2(listingId,
 			{
 				name: '',
-				market_hash_name: 'War Paint',
+				market_hash_name: marketHashName,
 				appid: APP_ID_TF2,
 			} as MarketAsset,
 			{
@@ -1154,6 +1158,10 @@ export class Application {
 		}
 
 		const { defIndex, wear, paintKit, unusual } = params;
+		let marketHashName = '';
+		if (paintKit !== -1) {
+			marketHashName = 'War Paint';
+		}
 
 		console.info(params);
 		this.#addMarketPlaceListing(MARKET_TF_LISTING_ID, itemPanel);
@@ -1161,7 +1169,7 @@ export class Application {
 		this.#tf2Viewer.renderListingTF2(MARKET_TF_LISTING_ID,
 			{
 				name: '',
-				market_hash_name: 'War Paint',
+				market_hash_name: marketHashName,
 				appid: APP_ID_TF2,
 			} as MarketAsset,
 			{
