@@ -667,7 +667,7 @@ export class Application {
 		}
 	}
 
-	#renderMarketPlaceRow(marketListingRow: HTMLElement): void {
+	async #renderMarketPlaceRow(marketListingRow: HTMLElement): Promise<void> {
 		const link = marketListingRow?.getElementsByTagName('a')[0]?.href;
 		const listingId = marketListingRow?.getElementsByTagName('button')[0]?.getAttribute('data-id');
 		if (!link || !listingId) {
@@ -695,7 +695,7 @@ export class Application {
 			return;
 		}
 
-		this.#addMarketPlaceListing(listingId, cell, link);
+		await this.#addMarketPlaceListing(listingId, cell, link);
 		this.#renderMarketPlaceListing(listingId, link);
 	}
 
@@ -784,7 +784,7 @@ export class Application {
 		this.#setItemInfo(listingId, '');
 	}
 
-	#addMarketListing(listingId: string): boolean {
+	async #addMarketListing(listingId: string): Promise<boolean> {
 		const rowCanvasContainer = this.#marketListings.getCanvasContainer(listingId);
 		if (!rowCanvasContainer) {
 			return false;
@@ -815,7 +815,7 @@ export class Application {
 			childs: [
 				canvasAttributes.canvas,
 				htmlInfo,
-				this.#tf2Viewer.initHtml(listingId),
+				await this.#tf2Viewer.initHtml(listingId),
 				createElement('div', {
 					class: 'fullscreen-toolbar',
 					childs: [
@@ -848,7 +848,7 @@ export class Application {
 		return true;
 	}
 
-	#addInventoryListing(listingId: string): boolean {
+	async #addInventoryListing(listingId: string): Promise<boolean> {
 		const rowCanvasContainer = this.#htmlRowContainer;
 		rowCanvasContainer.replaceChildren();
 
@@ -874,7 +874,7 @@ export class Application {
 			childs: [
 				canvasAttributes.canvas,
 				htmlInfo,
-				this.#tf2Viewer.initHtml(listingId),
+				await this.#tf2Viewer.initHtml(listingId),
 				createElement('div', {
 					class: 'fullscreen-toolbar',
 					childs: [
@@ -893,7 +893,7 @@ export class Application {
 		return true;
 	}
 
-	#addMarketPlaceListing(listingId: string, rowCanvasContainer: HTMLElement, link?: string): boolean {
+	async #addMarketPlaceListing(listingId: string, rowCanvasContainer: HTMLElement, link?: string): Promise<boolean> {
 		const listingContext = this.#canvasPerListing.get(listingId);
 		if (listingContext) {
 			rowCanvasContainer.append(listingContext.container/*, listingContext.state,*/);
@@ -926,7 +926,7 @@ export class Application {
 			childs: [
 				canvasAttributes.canvas,
 				htmlInfo,
-				this.#tf2Viewer.initHtml(listingId),
+				await this.#tf2Viewer.initHtml(listingId),
 				createElement('div', {
 					class: 'fullscreen-toolbar',
 					childs: [
@@ -1100,7 +1100,7 @@ export class Application {
 			return;
 		}
 		for (let listing of listings) {
-			this.#renderMarketPlaceRow(listing as HTMLElement);
+			await this.#renderMarketPlaceRow(listing as HTMLElement);
 		}
 	}
 
@@ -1110,7 +1110,7 @@ export class Application {
 		//this.#currentListingId = listingId;
 		let asset = await MarketAssets.getListingAssetData(listingId);
 		if (asset) {
-			this.#addMarketListing(listingId);
+			await this.#addMarketListing(listingId);
 			//this.setGenerationState(GenerationState.RetrievingItemDatas, listingId);
 			switch (asset.appid) {
 				case APP_ID_TF2:
@@ -1165,7 +1165,7 @@ export class Application {
 		}
 
 		console.info(params);
-		this.#addMarketPlaceListing(MARKET_TF_LISTING_ID, itemPanel);
+		await this.#addMarketPlaceListing(MARKET_TF_LISTING_ID, itemPanel);
 
 		this.#tf2Viewer.renderListingTF2(MARKET_TF_LISTING_ID,
 			{
@@ -1231,7 +1231,7 @@ export class Application {
 			this.#currentContextId = contextId;
 			this.#currentAssetId = assetId;
 			let activeInventoryPage = document.getElementById(ACTIVE_INVENTORY_PAGE);
-			this.#addInventoryListing(steamUserId);
+			await this.#addInventoryListing(steamUserId);
 			if (activeInventoryPage && this.#htmlRowContainer) {
 				activeInventoryPage.parentNode?.insertBefore(this.#htmlRowContainer, activeInventoryPage);
 				show(this.#htmlRowContainer);

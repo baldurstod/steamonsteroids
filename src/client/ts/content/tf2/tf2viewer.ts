@@ -115,7 +115,7 @@ export class TF2Viewer {
 	}
 	*/
 
-	initHtml(listingId: string): HTMLElement {
+	async initHtml(listingId: string): Promise<HTMLElement> {
 		let htmlControls = this.#htmlControlsPerListing.get(listingId);
 		if (!htmlControls) {
 			htmlControls = createElement('div', { class: 'canvas-container-controls' });
@@ -222,7 +222,7 @@ export class TF2Viewer {
 			$click: () => this.#setTeam(Tf2Team.Blu),
 		});
 
-		this.#loadWarpaintWeapon(listingId);
+		await this.#loadWarpaintWeapon(listingId);
 		return htmlControls;
 	}
 
