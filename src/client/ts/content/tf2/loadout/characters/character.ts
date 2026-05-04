@@ -2,7 +2,7 @@ import { vec3 } from 'gl-matrix';
 import { ChoreographiesManager, Choreography, ChoreographyEventType, Material, RandomFloat, Repositories, Scene, Source1MaterialManager, Source1ModelInstance, Source1ParticleControler, Source1ParticleSystem, Source1SoundManager } from 'harmony-3d';
 import { unserializeDmxSync } from 'harmony-dmx';
 import { Tf2Team } from 'harmony-tf2-utils';
-import { EFFECTS_BLU, EFFECTS_RED, ENTITY_FLYING_BIRD_SPEED_MAX, ENTITY_FLYING_BIRD_SPEED_MIN, MATERIAL_GOLD_RAGDOLL, MATERIAL_ICE_RAGDOLL, MATERIAL_INVULN_BLU, MATERIAL_INVULN_RED, MEDIC_RELEASE_DOVE_COUNT } from '../../constants';
+import { EFFECTS_BLU, EFFECTS_RED, ENTITY_FLYING_BIRD_SPEED_MAX, ENTITY_FLYING_BIRD_SPEED_MIN, MATERIAL_GOLD_RAGDOLL, MATERIAL_ICE_RAGDOLL, MATERIAL_INVULN_BLU, MATERIAL_INVULN_RED, MEDIC_RELEASE_DOVE_COUNT, PAINT_KIT_TOOL_INDEX } from '../../constants';
 import { Controller, ControllerEvent } from '../../controller';
 import { getKillstreak, KillstreakColor, killstreakList } from '../../paints/killstreaks';
 import { Effect } from '../effects/effect';
@@ -266,6 +266,28 @@ export class Character {
 				if (this.#model) {
 					this.#model.useNewAnimSystem = false;
 					this.#userAnim = '';
+				}
+			}
+
+			let forceWeaponSlot = template.getTauntForceWeaponSlot();
+
+			if (forceWeaponSlot) {
+				forceWeaponSlot = forceWeaponSlot.toLowerCase();
+
+				if (this.characterClass === Tf2Class.Spy && forceWeaponSlot === 'primary') {
+					// The spy don't have a primary weapon yet it is internaly referenced as primary. Go figure.
+					forceWeaponSlot = 'secondary';
+				}
+
+				for (const [, a] of ItemManager.getItems()) {
+					if (!a.isUsedByClass(this.characterClass) || a.id == String(PAINT_KIT_TOOL_INDEX)) {
+						continue;
+					}
+
+					if (a.getItemSlot() === forceWeaponSlot && !a.isTaunt()) {
+						await this.#addItem(a);
+						break;
+					}
 				}
 			}
 

@@ -396,6 +396,10 @@ export class ItemTemplate {
 	getWorkshopRepository(): string {
 		return `tf2_workshop_${this.#definition.id}`;
 	}
+
+	getTauntForceWeaponSlot(): string | null {
+		return this.#definition.taunt_force_weapon_slot as string ?? null;
+	}
 }
 
 async function addVcd(itemRepository: string, path: string): Promise<void> {
