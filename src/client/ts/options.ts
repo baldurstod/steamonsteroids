@@ -1,3 +1,5 @@
+import { textureSizeOption } from './constants';
+
 const LOADOUT_CREDENTIAL_URL = 'https://loadout.tf/patreon.php';
 const STEAM_MARKET_LISTING_URL = 'https://steamcommunity.com/market/listings';
 const STEAM_INVENTORY_URL = 'https://steamcommunity.com/profiles/';
@@ -160,8 +162,13 @@ async function clearInventoryFavorites() {
 	chrome.storage.sync.remove('app.inventory.favoritelistings');
 }
 
+async function changeTextureSize(event: Event) {
+	const option: Record<string, string> = {};
+	option[textureSizeOption] = (event.target as HTMLSelectElement).value;
+	chrome.storage.sync.set(option);
+}
 
-document.addEventListener('DOMContentLoaded', (event) => {
+document.addEventListener('DOMContentLoaded', () => {
 	document.getElementById('button-login-loadout-tf')?.addEventListener('click', () => getPatreonCredential(LOADOUT_CREDENTIAL_URL));
 	document.getElementById('button-clear-datas')?.addEventListener('click', () => clearExtensionDatas());
 	document.getElementById('button-clear-market-favorites')?.addEventListener('click', () => clearMarketFavorites());
@@ -172,6 +179,12 @@ document.addEventListener('DOMContentLoaded', (event) => {
 
 	document.getElementById('options-inventory-favorites-expand-button')?.addEventListener('click', () => expandInventoryFavorites());
 	document.getElementById('options-inventory-favorites-collapse-button')?.addEventListener('click', () => collapseInventoryFavorites());
+
+	document.getElementById('option-texture-size')?.addEventListener('change', (event) => changeTextureSize(event));
+
+	chrome.storage.sync.get(textureSizeOption).then((result) => {
+		(document.getElementById('option-texture-size') as HTMLSelectElement).value = result[textureSizeOption] ?? 1024;
+	});
 
 	checkCredentials();
 	collapseMarketFavorites();

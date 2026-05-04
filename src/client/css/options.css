@@ -12,7 +12,7 @@ body{
 #messages.error{
 	color: #CC0000;
 }
-.button{
+.button, .container{
 	width: 100%;
 	text-align: center;
 	background-color: #265c66;

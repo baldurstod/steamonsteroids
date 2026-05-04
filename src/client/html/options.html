@@ -1,34 +1,48 @@
 <!DOCTYPE html>
 <html>
-	<head>
-		<link rel="stylesheet" href="options.css">
-		<script src="options.js"></script>
-	</head>
-	<body>
-		<div id="messages"></div>
-		<div id="credentials">
-			<div class="button" id="button-login-loadout-tf">Login using loadout.tf</div>
+
+<head>
+	<link rel="stylesheet" href="options.css">
+	<script src="options.js"></script>
+</head>
+
+<body>
+	<div id="messages"></div>
+	<div id="credentials">
+		<div class="button" id="button-login-loadout-tf">Login using loadout.tf</div>
+	</div>
+	<div>
+		<div class="button" id="button-clear-datas">Clear extension datas</div>
+		<div class="button" id="button-clear-market-favorites">Clear favorites market items</div>
+		<div class="button" id="button-clear-inventory-favorites">Clear favorites inventory items</div>
+	</div>
+	<div id="options-market-favorites-container">
+		<div id="options-market-favorites-header">
+			<div class="button" id="options-market-favorites-expand-button">Show market favorites</div>
+			<div class="button" id="options-market-favorites-collapse-button">Hide market favorites</div>
 		</div>
-		<div>
-			<div class="button" id="button-clear-datas">Clear extension datas</div>
-			<div class="button" id="button-clear-market-favorites">Clear favorites market items</div>
-			<div class="button" id="button-clear-inventory-favorites">Clear favorites inventory items</div>
+		<div id="options-market-favorites-listings">
 		</div>
-		<div id="options-market-favorites-container">
-			<div id="options-market-favorites-header">
-				<div class="button" id="options-market-favorites-expand-button">Show market favorites</div>
-				<div class="button" id="options-market-favorites-collapse-button">Hide market favorites</div>
-			</div>
-			<div id="options-market-favorites-listings">
-			</div>
+	</div>
+	<div id="options-inventory-favorites-container">
+		<div id="options-inventory-favorites-header">
+			<div class="button" id="options-inventory-favorites-expand-button">Show inventory favorites</div>
+			<div class="button" id="options-inventory-favorites-collapse-button">Hide inventory favorites</div>
 		</div>
-		<div id="options-inventory-favorites-container">
-			<div id="options-inventory-favorites-header">
-				<div class="button" id="options-inventory-favorites-expand-button">Show inventory favorites</div>
-				<div class="button" id="options-inventory-favorites-collapse-button">Hide inventory favorites</div>
-			</div>
-			<div id="options-inventory-favorites-listings">
-			</div>
+		<div id="options-inventory-favorites-listings">
 		</div>
-	</body>
+	</div>
+	<div class="container">
+		<label>
+			<span>Texture quality</span>
+			<select id="option-texture-size">
+				<option value="256">Low</option>
+				<option value="512">Medium</option>
+				<option value="1024">High</option>
+				<option value="2048">Highest</option>
+			</select>
+		</label>
+	</div>
+</body>
+
 </html>

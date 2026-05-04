@@ -8,7 +8,7 @@ import { Map2, setTimeoutPromise } from 'harmony-utils';
 import logoBlueWhite from '../../../img/logo_blue_white.png';
 import logoRedWhite from '../../../img/logo_red_white.png';
 import weaponsJSON from '../../../json/weapons.json';
-import { APP_ID_TF2, DECORATED_WEAPONS, MARKET_LISTING_BACKGROUND_COLOR, TF2_REPOSITORY, TF2_WARPAINT_DEFINITIONS_URL } from '../../constants';
+import { APP_ID_TF2, DECORATED_WEAPONS, MARKET_LISTING_BACKGROUND_COLOR, textureSizeOption, TF2_REPOSITORY, TF2_WARPAINT_DEFINITIONS_URL } from '../../constants';
 import { GenerationState } from '../../enums';
 import { Controller, ControllerEvents, Tf2RefreshListing } from '../controller';
 import { ClassInfo, MarketAsset } from '../types';
@@ -94,9 +94,11 @@ export class TF2Viewer {
 		Repositories.addRepository(new WebRepository('tf2', TF2_REPOSITORY));
 
 		//WeaponManager.reuseTextures = true;
-		TextureCombiner.setTextureSize(2048);//TODO: set an option
 		this.#initEvents();
 		//this.#initOptions();
+
+		TextureCombiner.setTextureSize(1024);
+		chrome.storage.sync.get(textureSizeOption).then((result) => TextureCombiner.setTextureSize(result[textureSizeOption] ?? 1024));
 	}
 
 	#initEvents() {
