@@ -302,7 +302,6 @@ export class Character {
 			const choreoName2 = item.getCustomTauntPropScenePerClass(npc);
 			const itemModel = await item.getModel();
 			if (choreoName2 && itemModel) {
-				void itemModel.skeleton?.setParentSkeleton(null);
 				await ChoreographiesManager.init('tf2', './scenes/scenes.image');
 				await ChoreographiesManager.playChoreography('tf2', choreoName2, [itemModel]);
 			}
