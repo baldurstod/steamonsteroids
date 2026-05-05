@@ -1166,12 +1166,15 @@ export class Application {
 
 		const listingContext = this.#canvasPerListing.get(MARKET_TF_LISTING_ID);
 		if (!listingContext) {
-			createElement('div', {
+			const warning = createElement('div', {
 				class: 'alert-warning',
 				style: 'cursor:pointer;font-size:2rem;padding:0.5rem;text-align:center;',
 				parent: itemPanel,
 				innerText: 'You are viewing the default seed. Click here to open individual listings.',
-				$click: () => this.#renderAllMarketPlaceRows(),
+				$click: () => {
+					this.#renderAllMarketPlaceRows();
+					hide(warning);
+				},
 			});
 		}
 
