@@ -7,7 +7,7 @@ import { createElement, hide, show } from 'harmony-ui';
 import translationsJSON from '../../json/translations.json';
 import { ACTIVE_INVENTORY_PAGE, APP_ID_CS2, APP_ID_TF2, INVENTORY_BACKGROUND_COLOR, INVENTORY_ITEM_CLASSNAME, MARKET_LISTING_BACKGROUND_COLOR, MARKET_LISTING_EFFECT_COLOR, MARKET_LISTING_NAME_CLASSNAME, MARKET_LISTING_ROW_CLASSNAME, MARKET_TF_ITEM_TITLE_CLASS, MARKET_TF_LISTING_ID, MARKET_TF_URL, MARKETPLACE_LISTING_BACKGROUND_COLOR, MARKETPLACE_LISTINGS_ID, MOUSE_ENTER_DELAY } from '../constants';
 import { GenerationState } from '../enums';
-import { ClearMarketListingEvent, Controller, ControllerEvents, SetGenerationStateEvent, SetItemInfoEvent, Tf2RefreshListing } from './controller';
+import { ClearMarketListingEvent, Controller, ControllerEvents, ExportLoadout, SetGenerationStateEvent, SetItemInfoEvent, Tf2RefreshListing } from './controller';
 import { CS2Viewer } from './cs2/cs2viewer';
 import { getInventoryAssetDatas, getInventorySteamId, MarketAssets } from './marketassets';
 import { MARKET_LISTING_ROW_PREFIX, MARKET_LISTINGS_ID, SEARCH_RESULT_ROWS } from './steam/constants';
@@ -821,6 +821,7 @@ export class Application {
 					childs: [
 						...this.#createFullScreenButtons(listingId),
 						this.#createWeaponsShowcaseButton(listingId),
+						this.#createExportButton(listingId),
 					],
 				}),
 				this.#createFavoritesButton(listingId),
@@ -880,6 +881,7 @@ export class Application {
 					childs: [
 						...this.#createFullScreenButtons(listingId),
 						this.#createWeaponsShowcaseButton(listingId),
+						this.#createExportButton(listingId),
 					],
 				}),
 				this.#createFavoritesButton(listingId),
@@ -932,6 +934,7 @@ export class Application {
 					childs: [
 						//...this.#createFullScreenButtonMarketPlace(listingId),
 						//this.#createWeaponsShowcaseButtonMarketPlace(listingId),
+						this.#createExportButton(listingId),
 					],
 				}),
 				this.#createFavoritesButton(listingId),
@@ -950,6 +953,16 @@ export class Application {
 			class: 'favorite-button',
 			innerHTML: starSVG,
 			$click: () => this.#toggleFavoriteListing(listingId),
+		});
+	}
+
+	#createExportButton(listingId: string): HTMLElement {
+		return createElement('div', {
+			class: 'button',
+			innerHTML: '<a class="item_market_action_button btn_green_white_innerfade btn_small"><span>Export</span></a>',
+			$click: () => Controller.dispatchEvent<ExportLoadout>(ControllerEvents.ExportLoadout, {
+				detail: { listingId, },
+			}),
 		});
 	}
 

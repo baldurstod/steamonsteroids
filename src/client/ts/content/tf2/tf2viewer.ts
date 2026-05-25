@@ -3,6 +3,7 @@ import { AmbientLight, ColorBackground, GraphicsEvent, GraphicsEvents, Group, Po
 import { TextureCombiner, WeaponManager, WeaponManagerItem } from 'harmony-3d-utils';
 import { blockSVG, pauseSVG, playSVG } from 'harmony-svg';
 import { Tf2Team, WarpaintDefinitions } from 'harmony-tf2-utils';
+import { JSONObject } from 'harmony-types';
 import { createElement, hide, show } from 'harmony-ui';
 import { Map2, setTimeoutPromise } from 'harmony-utils';
 import logoBlueWhite from '../../../img/logo_blue_white.png';
@@ -10,7 +11,7 @@ import logoRedWhite from '../../../img/logo_red_white.png';
 import weaponsJSON from '../../../json/weapons.json';
 import { APP_ID_TF2, DECORATED_WEAPONS, MARKET_LISTING_BACKGROUND_COLOR, textureSizeOption, TF2_REPOSITORY, TF2_WARPAINT_DEFINITIONS_URL } from '../../constants';
 import { GenerationState } from '../../enums';
-import { Controller, ControllerEvents, Tf2RefreshListing } from '../controller';
+import { Controller, ControllerEvents, ExportLoadout, Tf2RefreshListing } from '../controller';
 import { ClassInfo, MarketAsset } from '../types';
 import { getInspectLink } from '../utils/inspectlink';
 import { sortSelect } from '../utils/sort';
@@ -107,6 +108,8 @@ export class TF2Viewer {
 		WeaponManager.addEventListener('failure', (event: Event) => Controller.dispatchEvent(ControllerEvents.SetGenerationState, { detail: { state: GenerationState.Failure, listingId: (event as CustomEvent<WeaponManagerItem>).detail.userData } }));
 
 		GraphicsEvents.addEventListener(GraphicsEvent.Tick, event => this.#flipWarpaints());
+
+		Controller.addEventListener(ControllerEvents.ExportLoadout, (event) => this.#exportLoadout((event as CustomEvent<ExportLoadout>).detail.listingId));
 	}
 
 	/*
@@ -257,7 +260,7 @@ export class TF2Viewer {
 
 		if (weaponShowcase) {
 			this.#rotationControl.setSpeed(0);
-			this.#rotationControl._parent?.setQuaternion(quat.create());
+			this.#rotationControl._parent?.setOrientation(quat.create());
 		}
 
 		show(this.#htmlControlsPerListing.get(listingOrSteamId));
@@ -305,6 +308,7 @@ export class TF2Viewer {
 			}
 
 			const character = weaponShowcase ? await CharacterManager.selectCharacter(Tf2Class.Empty, 0, scene) : this.#characterPerListing.get(listingOrSteamId) ?? await CharacterManager.selectCharacter(defaultCharacter, 0, scene);
+			this.#characterPerListing.set(listingOrSteamId, character);
 			this.#characters.add(character);
 			character.setTeam(this.#teamColor);
 			const addItems: (keyof typeof weaponsJSON)[] = [];
@@ -675,5 +679,39 @@ export class TF2Viewer {
 				}
 			}
 		}
+	}
+
+	#exportLoadout(listingId: string): void {
+		const character = this.#characterPerListing.get(listingId);
+		if (!character) {
+			return;
+		}
+
+		const preset = character.savePreset('a');
+
+		const items: JSONObject[] = [];
+
+		for (const item of preset.items) {
+			let idStyle = item.id.split('~');
+
+			items.push({
+				id: idStyle[0],
+				style: idStyle[1],
+				warpaint_id: item.warpaintId,
+				warpaint_seed: String(item.warpaintSeed),
+				warpaint_wear: item.warpaintWear,
+				weapon_effect_id: item.weaponEffect,
+			});
+		}
+
+		const exported: JSONObject = {
+			characters: [{
+				npc: preset.character,
+				character: preset.character,
+				items,
+			},],
+		};
+
+		open(`https://loadout.tf/@jsonloadout/${encodeURI(JSON.stringify(exported))}`);
 	}
 }

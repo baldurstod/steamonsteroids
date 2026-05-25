@@ -11,6 +11,7 @@ export enum ControllerEvents {
 	CenterCameraTarget = 'centercameratarget',
 	SetCameraTarget = 'setcameratarget',
 	SetItemInfo = 'setiteminfo',
+	ExportLoadout = 'exportloadout',
 }
 
 export type ClearMarketListingEvent = {
@@ -28,6 +29,10 @@ export type SetItemInfoEvent = {
 }
 
 export type Tf2RefreshListing = {
+	listingId: string;
+}
+
+export type ExportLoadout = {
 	listingId: string;
 }
 
