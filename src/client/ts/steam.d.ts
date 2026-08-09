@@ -6,3 +6,4 @@ declare var g_rgListingInfo: any;
 declare var Filter: any;
 declare var UserThem: any;
 declare var UserYou: any;
+declare var SSR: any;

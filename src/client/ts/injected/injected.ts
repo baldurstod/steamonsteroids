@@ -1,4 +1,4 @@
-import { ActiveInventorySetActivePage, AjaxPagingControlsGoToPage, AjaxPagingControlsSetPageSize, Message, Messages, RequestInventoryAssetDatas, RequestInventorySteamId, RequestListingAsset, RequestListingAssets, RequestListingInfo, SetInventoryFilterMessage } from '../messages/messages';
+import { ActiveInventorySetActivePage, AjaxPagingControlsGoToPage, AjaxPagingControlsSetPageSize, Message, Messages, RequestInventoryAssetDatas, RequestInventorySteamId, RequestListingAsset, RequestListingAssets, RequestListingInfo, ResponseSSRQueryData, SetInventoryFilterMessage } from '../messages/messages';
 
 window.addEventListener('message', (event: MessageEvent<Message>) => {
 	let messageData = event.data;
@@ -80,6 +80,9 @@ window.addEventListener('message', (event: MessageEvent<Message>) => {
 				}
 
 			}
+			break;
+		case Messages.RequestSSRQueryData:
+			window.postMessage({ action: Messages.ResponseSSRQueryData, queryData: (window as any).SSR?.renderContext?.queryData, promiseId: (messageData as RequestInventorySteamId).promiseId } as ResponseSSRQueryData, '*');
 			break;
 	}
 });

@@ -4,6 +4,7 @@ export enum Messages {
 	RequestListingInfo = 'requestlistinginfo',
 	RequestInventoryAssetDatas = 'requestinventoryassetdatas',
 	RequestInventorySteamId = 'requestinventorysteamid',
+	RequestSSRQueryData = 'requestssrquerydata',
 	SetInventoryFilter = 'setinventoryfilter',
 	ActiveInventorySetActivePage = 'activeinventorysetactivepage',
 	AjaxPagingControlsGoToPage = 'ajaxpagingcontrolsgotopage',
@@ -14,6 +15,7 @@ export enum Messages {
 	ResponseListingInfo = 'responselistinginfo',
 	ResponseInventoryAssetDatas = 'responseinventoryassetdatas',
 	ResponseInventorySteamId = 'responseinventorysteamid',
+	ResponseSSRQueryData = 'responsessrquerydata',
 }
 
 export type Message = {
@@ -36,6 +38,8 @@ export type RequestListingInfo = RequestListingAssets;
 export type RequestInventoryAssetDatas = RequestListingAsset;
 
 export type RequestInventorySteamId = RequestListingAssets;
+
+export type RequestSSR = RequestListingAssets;
 
 export type SetInventoryFilterMessage = Message & {
 	filter: {
@@ -86,5 +90,10 @@ export type ResponseInventoryAssetDatas = Message & {
 
 export type ResponseInventorySteamId = Message & {
 	steamId: string;
+	promiseId: number;
+};
+
+export type ResponseSSRQueryData = Message & {
+	queryData: string;
 	promiseId: number;
 };

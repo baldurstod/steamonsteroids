@@ -1,4 +1,6 @@
-import { Message, Messages, ResponseInventoryAssetDatas, ResponseInventorySteamId, ResponseListingAsset, ResponseListingAssets, ResponseListingInfo } from '../messages/messages';
+import { JSONArray, JSONObject } from 'harmony-types';
+import { Message, Messages, ResponseInventoryAssetDatas, ResponseInventorySteamId, ResponseListingAsset, ResponseListingAssets, ResponseListingInfo, ResponseSSRQueryData } from '../messages/messages';
+import { getCurrency } from './market/currencies';
 import { MarketAsset } from './types';
 
 const promises = new Map<number, (value: unknown) => void>();
@@ -18,6 +20,22 @@ function resolvePromise(promiseId: number, resolveValue?: any) {
 	if (promiseResolve) {
 		promiseResolve(resolveValue);
 	}
+}
+
+export type OrderBook = {
+	// Steam currency. See currencies.ts
+	currency: string;
+	// Store buy / sell orders in a map with the price a key an count as value. Price is stored as cents
+	orders: Map<number, number>;
+}
+
+/**
+ * Order book, as stored by steam
+ */
+export type OrderBookJSON = {
+	eCurrency: number;
+	rgCompactBuyOrders: number[];
+	rgCompactSellOrders: number[];
 }
 
 export class MarketAssets {
@@ -67,6 +85,8 @@ export class MarketAssets {
 				break;
 			case Messages.ResponseInventorySteamId:
 				resolvePromise((messageData as ResponseInventorySteamId).promiseId, (messageData as ResponseInventorySteamId).steamId);
+			case Messages.ResponseSSRQueryData:
+				resolvePromise((messageData as ResponseSSRQueryData).promiseId, (messageData as ResponseSSRQueryData).queryData);
 				break;
 		}
 	}
@@ -84,6 +104,84 @@ export class MarketAssets {
 		let assetData = await getListingAsset(asset?.appid, asset?.contextid, asset?.id);
 		return assetData;
 	}
+
+	/**
+	 * Get buy orders. Only works for the new market version.
+	 * @returns
+	 */
+	static async getBuyOrders(): Promise<OrderBook | null> {
+		return this.#getOrders('rgCompactBuyOrders');
+	}
+
+	/**
+	 * Get sell orders. Only works for the new market version.
+	 * @returns
+	 */
+	static async getSellOrders(): Promise<OrderBook | null> {
+		return this.#getOrders('rgCompactSellOrders');
+	}
+
+	/**
+	 * Get buy or sell orders. Only works for the new market version.
+	 * @returns
+	 */
+	static async #getOrders(key: 'rgCompactBuyOrders' | 'rgCompactSellOrders'): Promise<OrderBook | null> {
+		const orderBook = await this.#getOrderBook();
+		if (!orderBook) {
+			return null;
+		}
+
+		const rgCompactBuyOrSellOrders = orderBook[key] as number[];
+		if (!rgCompactBuyOrSellOrders) {
+			return null;
+		}
+
+		const orders = new Map<number, number>();
+		for (let i = 0; i < rgCompactBuyOrSellOrders.length; i += 2) {
+			const price = rgCompactBuyOrSellOrders[i];
+			const count = rgCompactBuyOrSellOrders[i + 1];
+
+			if (price === undefined || count === undefined) {
+				continue;
+			}
+
+			orders.set(price, count);
+		}
+
+		return { currency: getCurrency(orderBook.eCurrency) ?? '', orders };
+	}
+
+	static async #getOrderBook(): Promise<OrderBookJSON | null> {
+		// Get SSR
+		let { promise, promiseId } = createPromise();
+		requestSsrQueryData(promiseId);
+		const queryData = await promise;
+
+		let queryDataJ: JSONObject;
+		try {
+			queryDataJ = JSON.parse(queryData);
+		} catch (e) {
+			return null;
+		}
+		const queries = queryDataJ.queries as JSONArray;
+		if (!queries) {
+			return null;
+		}
+
+		// Look for a query having 'market' and'orderbook' keys
+		for (const query of queries) {
+			const queryKey = (query as JSONObject).queryKey as JSONArray;
+			if (!queryKey || queryKey[0] !== 'market' || queryKey[1] !== 'orderbook') {
+				continue;
+			}
+
+			const data = ((query as JSONObject)?.state as JSONObject)?.data;
+			return data as OrderBookJSON;
+		}
+
+		return null;
+	}
+
 }
 
 function requestListingAssets(promiseId: number) {
@@ -104,6 +202,10 @@ function requestInventoryAssetDatas(appId: number, contextId: number, assetId: n
 
 function requestInventorySteamId(promiseId: number) {
 	window.postMessage({ action: Messages.RequestInventorySteamId, promiseId: promiseId }, '*');
+}
+
+function requestSsrQueryData(promiseId: number) {
+	window.postMessage({ action: Messages.RequestSSRQueryData, promiseId: promiseId }, '*');
 }
 
 async function getListingAsset(appId: number, contextId: number, assetId: number) {

@@ -1,0 +1,58 @@
+/**
+ * List of steam currencies ( eCurrency )
+ */
+
+const currencies: (string | null)[] = [
+	null,
+	'USD',
+	'GBP',
+	'EUR',
+	'CHF',
+	'RUB',
+	'PLN',
+	'BRL',
+	'JPY',
+	'NOK',
+	'IDR',
+	'MYR',
+	'PHP',
+	'SGD',
+	'THB',
+	'VND',
+	'KRW',
+	'TRY',
+	'UAH',
+	'MXN',
+	'CAD',
+	'AUD',
+	'NZD',
+	'CNY',
+	'INR',
+	'CLP',
+	'PEN',
+	'COP',
+	'ZAR',
+	'HKD',
+	'TWD',
+	'SAR',
+	'AED',
+	'SEK',
+	'ARS',
+	'ILS',
+	'BYN',
+	'KZT',
+	'KWD',
+	'QAR',
+	'CRC',
+	'UYU',
+	'BGN',
+	'HRK',
+	'CZK',
+	'DKK',
+	'HUF',
+	'RON',
+]
+
+export function getCurrency(eCurrency: number): string | null {
+	return currencies[eCurrency] ?? null;
+}

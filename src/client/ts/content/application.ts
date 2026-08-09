@@ -4,9 +4,11 @@ import { getCharCodes } from 'harmony-binary-reader';
 import { starSVG } from 'harmony-svg';
 import { JSONObject } from 'harmony-types';
 import { createElement, hide, show } from 'harmony-ui';
+import { setTimeoutPromise } from 'harmony-utils';
 import translationsJSON from '../../json/translations.json';
 import { ACTIVE_INVENTORY_PAGE, APP_ID_CS2, APP_ID_TF2, INVENTORY_BACKGROUND_COLOR, INVENTORY_ITEM_CLASSNAME, MARKET_LISTING_BACKGROUND_COLOR, MARKET_LISTING_EFFECT_COLOR, MARKET_LISTING_NAME_CLASSNAME, MARKET_LISTING_ROW_CLASSNAME, MARKET_TF_ITEM_TITLE_CLASS, MARKET_TF_LISTING_ID, MARKET_TF_URL, MARKETPLACE_LISTING_BACKGROUND_COLOR, MARKETPLACE_LISTINGS_ID, MOUSE_ENTER_DELAY } from '../constants';
 import { GenerationState } from '../enums';
+import { Messages } from '../messages/messages';
 import { ClearMarketListingEvent, Controller, ControllerEvents, ExportLoadout, SetGenerationStateEvent, SetItemInfoEvent, Tf2RefreshListing } from './controller';
 import { CS2Viewer } from './cs2/cs2viewer';
 import { getInventoryAssetDatas, getInventorySteamId, MarketAssets } from './marketassets';
@@ -16,7 +18,6 @@ import { ItemManager } from './tf2/loadout/items/itemmanager';
 import { TF2_SHOWCASE_CAMERA_POSITION, TF2_SHOWCASE_CAMERA_TARGET } from './tf2/tf2constants';
 import { TF2Viewer } from './tf2/tf2viewer';
 import { ClassInfo, MarketAsset } from './types';
-import { Messages } from '../messages/messages';
 
 enum PageType {
 	Unknown = 0,
@@ -545,6 +546,72 @@ export class Application {
 			this.#renderMarketPlaceTf(item.parentElement as HTMLElement);
 		}
 		//this.#renderAllMarketPlaceRows();
+	}
+
+	async #initSteamMarketOrders(): Promise<void> {
+		if (this.#pageType !== PageType.Market) {
+			return;
+		}
+
+		// Search the buy / sell tables
+		const tables = Array.from(document.getElementsByTagName('table'));
+
+		const buyOrders = await MarketAssets.getBuyOrders();
+		const sellOrders = await MarketAssets.getSellOrders();
+		console.info(buyOrders);
+		console.info(sellOrders);
+
+		await setTimeoutPromise(1000);
+
+		for (let i = 0; i < tables.length; i++) {
+			const table = tables[i]!;
+
+			// Figure out which table we are in ? buy or sell
+			let o = sellOrders;
+			if (table.parentElement?.parentElement?.previousElementSibling) {
+				o = buyOrders;
+			};
+
+			if (!o) {
+				continue;
+			}
+
+			// The order book is already fully displayed
+			if (o.orders.size <= 6) {
+				continue;
+			}
+
+			table.style.gridRowStart = '2';
+			(table.previousElementSibling as HTMLSpanElement).style.gridColumn = '1 / 3';
+
+			const cloned = table.cloneNode(true) as HTMLTableElement;
+			table.parentElement!.append(cloned);
+			table.parentElement!.style.display = 'grid';
+			table.parentElement!.style.gridTemplateColumns = 'auto auto';
+			cloned.style.overflow = 'auto';
+			cloned.style.height = `${table.clientHeight}px`;
+			cloned.style.display = 'block';
+
+			const clonedBody = (cloned as HTMLTableElement).getElementsByTagName('tbody')[0];
+			if (clonedBody) {
+				clonedBody.replaceChildren();
+
+				for (const [price, count] of o.orders) {
+					createElement('tr', {
+						parent: clonedBody,
+						childs: [
+							createElement('td', {
+								innerText: (price / 100).toLocaleString(undefined, { style: 'currency', currency: o.currency }),
+							}),
+							createElement('td', {
+								innerText: count.toLocaleString(),
+							}),
+						]
+					});
+				}
+			}
+		}
+
 	}
 
 	#createInventoryListeners() {
@@ -1314,6 +1381,7 @@ export class Application {
 		if (messageData.action == 'injected_ready') {
 			this.#createButtons();
 			this.#initMarketPlaceTf();
+			this.#initSteamMarketOrders();
 		}
 	}
 
