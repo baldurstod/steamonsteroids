@@ -16,6 +16,7 @@ import { ItemManager } from './tf2/loadout/items/itemmanager';
 import { TF2_SHOWCASE_CAMERA_POSITION, TF2_SHOWCASE_CAMERA_TARGET } from './tf2/tf2constants';
 import { TF2Viewer } from './tf2/tf2viewer';
 import { ClassInfo, MarketAsset } from './types';
+import { Messages } from '../messages/messages';
 
 enum PageType {
 	Unknown = 0,
@@ -320,7 +321,7 @@ export class Application {
 				htmlFilter.className = 'filter_tag_button_ctn';
 				htmlFilter.innerHTML = '<div class="btn_black btn_details btn_small"><span>Tradable warpaints only</span></div>';
 
-				htmlFilter.addEventListener('click', () => window.postMessage({ action: 'setInventoryFilter', filter: { Exterior: ['TFUI_InvTooltip_BattleScared', 'TFUI_InvTooltip_FactoryNew', 'TFUI_InvTooltip_FieldTested', 'TFUI_InvTooltip_MinimalWear', 'TFUI_InvTooltip_WellWorn'], misc: ['tradable'] } }, '*'));
+				htmlFilter.addEventListener('click', () => window.postMessage({ action: Messages.SetInventoryFilter, filter: { Exterior: ['TFUI_InvTooltip_BattleScared', 'TFUI_InvTooltip_FactoryNew', 'TFUI_InvTooltip_FieldTested', 'TFUI_InvTooltip_MinimalWear', 'TFUI_InvTooltip_WellWorn'], misc: ['tradable'] } }, '*'));
 
 				let filterNode = document.getElementById('filter_tag_show')?.parentNode;
 				if (filterNode && this.isInventory()) {
@@ -406,7 +407,7 @@ export class Application {
 			this.#htmlPageControlMax = document.getElementById('pagecontrol_max');
 			this.#htmlPageControlGoto = createElement('input', {
 				type: 'number', style: 'float: left;width:50px;text-align:center;', events: {
-					change: (event: InputEvent) => window.postMessage({ action: 'activeInventorySetActivePage', page: Number((event.target as HTMLInputElement).value) }, '*')
+					change: (event: InputEvent) => window.postMessage({ action: Messages.ActiveInventorySetActivePage, page: Number((event.target as HTMLInputElement).value) }, '*')
 				}
 			}) as HTMLInputElement;
 
@@ -460,12 +461,12 @@ export class Application {
 			min: 1,
 			value: '1',
 			style: 'float: left;width:50px;text-align:center;',
-			$change: (event: InputEvent) => window.postMessage({ action: 'AjaxPagingControlsGoToPage', name: name, page: Number((event.target as HTMLInputElement).value) }, '*'),
+			$change: (event: InputEvent) => window.postMessage({ action: Messages.AjaxPagingControlsGoToPage, name: name, page: Number((event.target as HTMLInputElement).value) }, '*'),
 		});
 
 		const htmlAjaxPagingControlPageSize = createElement('select', {
 			class: 'steam-select',
-			$change: (event: InputEvent) => window.postMessage({ action: 'AjaxPagingControlsSetPageSize', name: name, pageSize: Number((event.target as HTMLInputElement).value) }, '*'),
+			$change: (event: InputEvent) => window.postMessage({ action: Messages.AjaxPagingControlsSetPageSize, name: name, pageSize: Number((event.target as HTMLInputElement).value) }, '*'),
 		});
 
 		const pageLen = [10, 20, 100]

@@ -1,4 +1,5 @@
-import { MarketAsset } from "./types";
+import { Message, Messages, ResponseInventoryAssetDatas, ResponseInventorySteamId, ResponseListingAsset, ResponseListingAssets, ResponseListingInfo } from '../messages/messages';
+import { MarketAsset } from './types';
 
 const promises = new Map<number, (value: unknown) => void>();
 let nextPromiseId = 1;
@@ -31,12 +32,12 @@ export class MarketAssets {
 		window.addEventListener('message', event => this.#onMessage(event));
 	}
 
-	static #onMessage(event: MessageEvent) {
+	static #onMessage(event: MessageEvent<Message>) {
 		let messageData = event.data;
 		//console.log(event);
 		switch (messageData.action) {
-			case 'responseListingAssets':
-				let apps = messageData.listingAssets;
+			case Messages.ResponseListingAssets:
+				let apps = (messageData as ResponseListingAssets).listingAssets;
 				for (let appId in apps) {
 					let appDatas = apps[appId];
 					//console.log(appDatas);
@@ -48,24 +49,24 @@ export class MarketAssets {
 					}
 				}
 				//console.log(this.assets);
-				resolvePromise(messageData.promiseId);
+				resolvePromise((messageData as ResponseListingAssets).promiseId);
 				break;
-			case 'responseListingAsset':
-				resolvePromise(messageData.promiseId, messageData.listingAssetDatas);
+			case Messages.ResponseListingAsset:
+				resolvePromise((messageData as ResponseListingAsset).promiseId, (messageData as ResponseListingAsset).listingAssetDatas);
 				break;
-			case 'responseListingInfo':
-				let listings = messageData.listingInfo;
+			case Messages.ResponseListingInfo:
+				let listings = (messageData as ResponseListingInfo).listingInfo;
 				for (let listingId in listings) {
 					let listingDatas = listings[listingId];
 					this.#listingInfos.set(listingId, listingDatas);
 				}
-				resolvePromise(messageData.promiseId);
+				resolvePromise((messageData as ResponseListingInfo).promiseId);
 				break;
-			case 'responseInventoryAssetDatas':
-				resolvePromise(messageData.promiseId, messageData.inventoryAssetDatas);
+			case Messages.ResponseInventoryAssetDatas:
+				resolvePromise((messageData as ResponseInventoryAssetDatas).promiseId, (messageData as ResponseInventoryAssetDatas).inventoryAssetDatas);
 				break;
-			case 'responseInventorySteamId':
-				resolvePromise(messageData.promiseId, messageData.steamId);
+			case Messages.ResponseInventorySteamId:
+				resolvePromise((messageData as ResponseInventorySteamId).promiseId, (messageData as ResponseInventorySteamId).steamId);
 				break;
 		}
 	}
@@ -86,23 +87,23 @@ export class MarketAssets {
 }
 
 function requestListingAssets(promiseId: number) {
-	window.postMessage({ action: 'requestListingAssets', promiseId: promiseId }, '*');
+	window.postMessage({ action: Messages.RequestListingAssets, promiseId: promiseId }, '*');
 }
 
 function requestListingAsset(appId: number, contextId: number, assetId: number, promiseId: number) {
-	window.postMessage({ action: 'requestListingAsset', appId: appId, contextId: contextId, assetId: assetId, promiseId: promiseId }, '*');
+	window.postMessage({ action: Messages.RequestListingAsset, appId: appId, contextId: contextId, assetId: assetId, promiseId: promiseId }, '*');
 }
 
 function requestListingInfo(promiseId: number) {
-	window.postMessage({ action: 'requestListingInfo', promiseId: promiseId }, '*');
+	window.postMessage({ action: Messages.RequestListingInfo, promiseId: promiseId }, '*');
 }
 
 function requestInventoryAssetDatas(appId: number, contextId: number, assetId: number, promiseId: number) {
-	window.postMessage({ action: 'requestInventoryAssetDatas', appId: appId, contextId: contextId, assetId: assetId, promiseId: promiseId }, '*');
+	window.postMessage({ action: Messages.RequestInventoryAssetDatas, appId: appId, contextId: contextId, assetId: assetId, promiseId: promiseId }, '*');
 }
 
 function requestInventorySteamId(promiseId: number) {
-	window.postMessage({ action: 'requestInventorySteamId', promiseId: promiseId }, '*');
+	window.postMessage({ action: Messages.RequestInventorySteamId, promiseId: promiseId }, '*');
 }
 
 async function getListingAsset(appId: number, contextId: number, assetId: number) {

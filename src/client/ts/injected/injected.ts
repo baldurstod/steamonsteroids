@@ -1,29 +1,31 @@
-window.addEventListener('message', event => {
+import { ActiveInventorySetActivePage, AjaxPagingControlsGoToPage, AjaxPagingControlsSetPageSize, Message, Messages, RequestInventoryAssetDatas, RequestInventorySteamId, RequestListingAsset, RequestListingAssets, RequestListingInfo, SetInventoryFilterMessage } from '../messages/messages';
+
+window.addEventListener('message', (event: MessageEvent<Message>) => {
 	let messageData = event.data;
 	let controlName: string;
 	switch (messageData.action) {
-		case 'requestListingAssets':
-			window.postMessage({ action: 'responseListingAssets', listingAssets: window.g_rgAssets, promiseId: messageData.promiseId }, '*');
+		case Messages.RequestListingAssets:
+			window.postMessage({ action: Messages.ResponseListingAssets, listingAssets: window.g_rgAssets, promiseId: (messageData as RequestListingAssets).promiseId }, '*');
 			break;
-		case 'requestListingAsset':
+		case Messages.RequestListingAsset:
 			let asset;
 			try {
-				asset = window.g_rgAssets[messageData.appId][messageData.contextId][messageData.assetId];
+				asset = window.g_rgAssets[(messageData as RequestListingAsset).appId][(messageData as RequestListingAsset).contextId][(messageData as RequestListingAsset).assetId];
 			} catch (e) { }
 			if (asset) {
 				delete asset.$row;//delete the junk added by SIH
 			}
-			window.postMessage({ action: 'responseListingAsset', listingAssetDatas: asset, promiseId: messageData.promiseId }, '*');
+			window.postMessage({ action: Messages.ResponseListingAsset, listingAssetDatas: asset, promiseId: (messageData as RequestListingAsset).promiseId }, '*');
 			break;
-		case 'requestListingInfo':
-			window.postMessage({ action: 'responseListingInfo', listingInfo: window.g_rgListingInfo, promiseId: messageData.promiseId }, '*');
+		case Messages.RequestListingInfo:
+			window.postMessage({ action: Messages.ResponseListingInfo, listingInfo: window.g_rgListingInfo, promiseId: (messageData as RequestListingInfo).promiseId }, '*');
 			break;
-		case 'requestInventoryAssetDatas':
+		case Messages.RequestInventoryAssetDatas:
 			let description;
 			try {
-				let appId = messageData.appId;
-				let contextId = messageData.contextId;
-				let assetId = messageData.assetId;
+				let appId = (messageData as RequestInventoryAssetDatas).appId;
+				let contextId = (messageData as RequestInventoryAssetDatas).contextId;
+				let assetId = (messageData as RequestInventoryAssetDatas).assetId;
 				description = window.g_rgAppContextData?.[appId]?.rgContexts?.[contextId]?.inventory?.m_rgAssets?.[assetId]?.description;
 				if (!description) {
 					// We are in a trade window. Search the asset in both inventories
@@ -38,41 +40,41 @@ window.addEventListener('message', event => {
 					actions: description.actions,
 					id: description.id
 				};
-				window.postMessage({ action: 'responseInventoryAssetDatas', inventoryAssetDatas: assetDatas, promiseId: messageData.promiseId }, '*');
+				window.postMessage({ action: Messages.ResponseInventoryAssetDatas, inventoryAssetDatas: assetDatas, promiseId: (messageData as RequestInventoryAssetDatas).promiseId }, '*');
 			}
 			break;
-		case 'requestInventorySteamId':
-			window.postMessage({ action: 'responseInventorySteamId', steamId: window.g_ActiveUser?.strSteamId, promiseId: messageData.promiseId }, '*');
+		case Messages.RequestInventorySteamId:
+			window.postMessage({ action: Messages.ResponseInventorySteamId, steamId: window.g_ActiveUser?.strSteamId, promiseId: (messageData as RequestInventorySteamId).promiseId }, '*');
 			break;
-		case 'setInventoryFilter':
+		case Messages.SetInventoryFilter:
 			if (window.g_ActiveInventory && window.g_ActiveInventory.LoadCompleteInventory) {
-				window.g_ActiveInventory.LoadCompleteInventory().done(() => window.Filter.UpdateTagFiltering(messageData.filter));
+				window.g_ActiveInventory.LoadCompleteInventory().done(() => window.Filter.UpdateTagFiltering((messageData as SetInventoryFilterMessage).filter));
 			}
 			break;
-		case 'activeInventorySetActivePage':
+		case Messages.ActiveInventorySetActivePage:
 			if (window.g_ActiveInventory) {
-				let page = Math.max(Math.min(messageData.page, window.g_ActiveInventory.m_cPages), 1);
+				let page = Math.max(Math.min((messageData as ActiveInventorySetActivePage).page, window.g_ActiveInventory.m_cPages), 1);
 				window.g_ActiveInventory.SetActivePage(page - 1)
 			}
 			break;
-		case 'AjaxPagingControlsGoToPage':
-			controlName = messageData.name;
+		case Messages.AjaxPagingControlsGoToPage:
+			controlName = (messageData as AjaxPagingControlsGoToPage).name;
 			if (controlName) {
 				let control = (window as any)[controlName] as any;
 				if (control) {
-					let page = Math.max(Math.min(messageData.page, control.m_cMaxPages), 1);
+					let page = Math.max(Math.min((messageData as AjaxPagingControlsGoToPage).page, control.m_cMaxPages), 1);
 					control.GoToPage(page - 1);
 				}
 			}
 			break;
-		case 'AjaxPagingControlsSetPageSize':
-			controlName = messageData.name;
+		case Messages.AjaxPagingControlsSetPageSize:
+			controlName = (messageData as AjaxPagingControlsSetPageSize).name;
 			let control = (window as any)[controlName] as any;
 			if (control) {
 				const oldPage = control.m_iCurrentPage;
 				const oldPageSize = control.m_cPageSize;
-				control.m_cPageSize = messageData.pageSize;
-				const page = Math.floor((oldPage * oldPageSize) / messageData.pageSize);
+				control.m_cPageSize = (messageData as AjaxPagingControlsSetPageSize).pageSize;
+				const page = Math.floor((oldPage * oldPageSize) / (messageData as AjaxPagingControlsSetPageSize).pageSize);
 				if (!isNaN(page)) {
 					control.GoToPage(page, true);
 				}
