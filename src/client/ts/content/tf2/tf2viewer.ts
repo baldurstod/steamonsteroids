@@ -27,7 +27,7 @@ import { ItemTemplate } from './loadout/items/itemtemplate';
 import { getPaintByTint } from './paints/paints';
 import { TF2_ITEM_CAMERA_POSITION, TF2_PLAYER_CAMERA_POSITION, TF2_PLAYER_CAMERA_TARGET, TF2_TAUNT_CAMERA_POSITION } from './tf2constants';
 
-WarpaintDefinitions.setWarpaintDefinitionsURL(TF2_WARPAINT_DEFINITIONS_URL);
+WarpaintDefinitions.setWarpaintDefinitionsURL(`${TF2_WARPAINT_DEFINITIONS_URL}?t=${new Date().getTime()}`);
 
 const PAINTKIT_TOOL_ID = '9536';
 

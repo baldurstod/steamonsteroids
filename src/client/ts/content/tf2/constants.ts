@@ -38,7 +38,6 @@ export const ENTITY_FLYING_BIRD_SPEED_MAX = 500;
 
 export const ACCURATE_SKINS_EXTENSION_LINK = 'https://accurateskins.com/';
 
-export const TF2_WARPAINT_DEFINITIONS_URL = TF2_REPOSITORY + 'generated/warpaint_definitions.json';
 export const TF2_WARPAINT_PICTURES_URL = TF2_REPOSITORY + 'generated/warpaint_pictures.json';
 export const TF2_WARPAINT_ENGLISH_URL = TF2_REPOSITORY + 'generated/items/tf_proto_obj_defs_english.json';
 export const STEAM_ECONOMY_IMAGE_PREFIX = 'https://steamcommunity-a.akamaihd.net/economy/image/';
