@@ -112,6 +112,7 @@ export class Application {
 	#fullScreenMode = FullScreenMode.None;
 	#weaponShowcase = false;
 	#translations = new Map<string, Map<string, string>>();
+	#injectedReady = false;
 
 	constructor() {
 		this.#initTranslations();
@@ -192,10 +193,10 @@ export class Application {
 				case location.pathname === '/market/':
 					this.#pageType = PageType.MarketHome;
 					break;
-				case location.pathname.startsWith('https://steamcommunity.com/market/'):
+				case location.pathname.startsWith('/market/'):
 					this.#pageType = PageType.Market;
 					break;
-				case document.URL.startsWith('https://steamcommunity.com/tradeoffer/'):
+				case document.URL.startsWith('/tradeoffer/'):
 					this.#pageType = PageType.TradeOffer;
 					break;
 				case document.URL.includes('/inventory'):
@@ -524,6 +525,13 @@ export class Application {
 							case (this.#pageType == PageType.MarketPlaceTf) && (addedNode as HTMLElement).classList.contains(MARKET_TF_ITEM_TITLE_CLASS):
 								this.#renderMarketPlaceTf(addedNode.parentElement as HTMLElement);
 								break;
+							case (addedNode as HTMLElement).children.length > 0:
+								for (const child of (addedNode as HTMLElement).children) {
+									if (child.tagName === 'TABLE') {
+										this.#initSteamMarketOrders();
+									}
+								}
+								break;
 						}
 					}
 				}
@@ -541,6 +549,8 @@ export class Application {
 		if (inventories) {
 			observer.observe(inventories, config);
 		}
+
+		observer.observe(document.body, config);
 	}
 
 	#createButtons() {
@@ -626,6 +636,9 @@ export class Application {
 	}
 
 	async #initSteamMarketOrders(): Promise<void> {
+		if (!this.#injectedReady) {
+			return;
+		}
 		if (this.#pageType !== PageType.Market) {
 			return;
 		}
@@ -635,8 +648,6 @@ export class Application {
 
 		const buyOrders = await MarketAssets.getBuyOrders();
 		const sellOrders = await MarketAssets.getSellOrders();
-		console.info(buyOrders);
-		console.info(sellOrders);
 
 		await setTimeoutPromise(1000);
 
@@ -659,7 +670,9 @@ export class Application {
 			}
 
 			table.style.gridRowStart = '2';
-			(table.previousElementSibling as HTMLSpanElement).style.gridColumn = '1 / 3';
+			if (table.previousElementSibling) {
+				(table.previousElementSibling as HTMLSpanElement).style.gridColumn = '1 / 3';
+			}
 
 			const cloned = table.cloneNode(true) as HTMLTableElement;
 			table.parentElement!.append(cloned);
@@ -1456,6 +1469,7 @@ export class Application {
 		const messageData = event.data;
 
 		if (messageData.action == 'injected_ready') {
+			this.#injectedReady = true;
 			this.#createButtons();
 			this.#initMarketPlaceTf();
 			this.#initSteamMarketOrders();

@@ -28,7 +28,7 @@
 		{
 			"matches": [
 				"https://steamcommunity.com/*/inventory*",
-				"https://steamcommunity.com/market/",
+				"https://steamcommunity.com/market/*",
 				"https://steamcommunity.com/tradeoffer/*",
 				"https://marketplace.tf/*"
 			],
