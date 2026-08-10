@@ -21,6 +21,7 @@ import { ClassInfo, MarketAsset } from './types';
 
 enum PageType {
 	Unknown = 0,
+	MarketHome,
 	Market,
 	Inventory,
 	TradeOffer,
@@ -183,21 +184,31 @@ export class Application {
 	}
 
 	#initPageType() {
-		switch (true) {
-			case document.URL.startsWith('https://steamcommunity.com/market/'):
-				this.#pageType = PageType.Market;
-				break;
-			case document.URL.startsWith('https://steamcommunity.com/tradeoffer/'):
-				this.#pageType = PageType.TradeOffer;
-				break;
-			case document.URL.includes('/inventory'):
-				this.#pageType = PageType.Inventory;
-				break;
-			case document.URL.startsWith('https://marketplace.tf/'):
-				this.#pageType = PageType.MarketPlaceTf;
-				break;
-			default:
-				this.#pageType = PageType.Unknown;
+		const location = document.location;
+
+		if (location.hostname === 'steamcommunity.com') {
+
+			switch (true) {
+				case location.pathname === '/market/':
+					this.#pageType = PageType.MarketHome;
+					break;
+				case location.pathname.startsWith('https://steamcommunity.com/market/'):
+					this.#pageType = PageType.Market;
+					break;
+				case document.URL.startsWith('https://steamcommunity.com/tradeoffer/'):
+					this.#pageType = PageType.TradeOffer;
+					break;
+				case document.URL.includes('/inventory'):
+					this.#pageType = PageType.Inventory;
+					break;
+				default:
+					this.#pageType = PageType.Unknown;
+			}
+
+		} else if (location.hostname === 'marketplace.tf') {
+			this.#pageType = PageType.MarketPlaceTf;
+		} else {
+			this.#pageType = PageType.Unknown;
 		}
 	}
 
@@ -546,6 +557,72 @@ export class Application {
 			this.#renderMarketPlaceTf(item.parentElement as HTMLElement);
 		}
 		//this.#renderAllMarketPlaceRows();
+	}
+
+	async #initSteamMarketHome(): Promise<void> {
+		const tabContentsMyListings = document.getElementById('tabContentsMyListings');
+		if (!tabContentsMyListings) {
+			return
+		}
+		const myListings = Array.from(tabContentsMyListings.getElementsByClassName('my_listing_section'));
+		console.info(myListings);
+
+		let offset = 0
+		// Add offset for My listings awaiting confirmation which may or may not be there
+		if (myListings.length > 2) {
+			offset = 1;
+		}
+
+		// myListings contains 2 elements: first is sell listings, second is buy orders,
+		this.#processSellListings(myListings[0 + offset] as HTMLElement);
+		this.#processBuyOrders(myListings[1 + offset] as HTMLElement);
+
+	}
+
+
+	async #processSellListings(container: HTMLElement): Promise<void> {
+		return;
+		const listings = Array.from(container.getElementsByClassName('market_listing_row'));
+
+		const total = 0;
+		for (const listing of listings) {
+			const values = listing.getElementsByClassName('market_listing_price');
+			console.info(values);
+
+		}
+	}
+
+	async #processBuyOrders(container: HTMLElement): Promise<void> {
+		let currency = 'USD';
+
+		const listings = Array.from(container.getElementsByClassName('market_listing_row'));
+
+		let total = 0;
+		for (const listing of listings) {
+			const values = Array.from(listing.getElementsByClassName('market_listing_price')) as HTMLElement[];
+
+			if (values.length !== 2) {
+				continue;
+			}
+
+			const price = parseMarketPrice(values[0]!.innerText);
+			const qty = Number.parseInt(values[1]!.innerText);
+
+			if (!Number.isNaN(price) || !!Number.isNaN(qty)) { // TODO: error if NaN ?
+				total += price * qty;
+
+				currency = getCurrencyFromPrice(values[0]!.innerText);
+			}
+		}
+
+		const header = container.getElementsByClassName('my_market_header')[0];
+		if (header) {
+			const s = createElement('span', {
+				style: 'color:greenyellow;',
+				innerText: Number(total.toFixed(2)).toLocaleString(undefined, { style: 'currency', currency }),
+				parent: header,
+			});
+		}
 	}
 
 	async #initSteamMarketOrders(): Promise<void> {
@@ -1382,6 +1459,12 @@ export class Application {
 			this.#createButtons();
 			this.#initMarketPlaceTf();
 			this.#initSteamMarketOrders();
+
+			switch (this.#pageType) {
+				case PageType.MarketHome:
+					this.#initSteamMarketHome();
+					break;
+			}
 		}
 	}
 
@@ -1433,3 +1516,167 @@ async function backgroundFetch(input: string | URL | globalThis.Request, init?: 
 window.fetch = async (...args) => {
 	return backgroundFetch(...args);
 };
+
+
+function parseMarketPrice(price: string): number {
+	// For prices like 2,--€
+	price = price.replace(',--', ',00');
+
+	// Remove everything except digits, dot, comma
+	price = price.replace(/[^0-9.,]+/g, '');
+
+	// Figure out the decimal character
+	const priceLength = price.length;
+	const commaLastPos = price.lastIndexOf(',');
+	const dotLastPos = price.lastIndexOf('.');
+
+	if (commaLastPos === priceLength - 3) {
+		// Comma is the decimal point, remove dots
+		price = price.replaceAll('.', '');
+		// Replace the comma with a dot
+		price = price.replace(',', '.');
+	} else if (dotLastPos === priceLength - 3) {
+		// Dot is the decimal point, remove commas
+		price = price.replaceAll(',', '');
+	} else {
+		// There is no decimal point, remove the thousand separator which can be dot or comma depending on the currency
+		price = price.replace(/[.,]+/g, '');
+	}
+
+	return Number.parseFloat(price);
+}
+
+function getCurrencyFromPrice(price: string): string {
+	price = price.trim();
+	switch (true) {
+		// Do the Uruguayan Peso first as it starts with the $ sign
+		case price.indexOf('$U') !== -1:
+			return 'UYU';
+		case price[0] === '$':
+			return 'USD';
+		case price[0] === '£':
+			return 'GBP';
+		case price.indexOf('€') !== -1:
+			return 'EUR';
+		case price.indexOf('CHF') === 0:
+			return 'CHF';
+		case price.indexOf('руб.') !== -1:
+			return 'RUB';
+		case price.indexOf('zł') !== -1:
+			return 'PLN';
+		case price.indexOf('R$') === 0:
+			return 'BRL';
+		case price[0] === '¥':
+			// Japanese Yen don't have a decimal point
+			if (price.indexOf('.') !== -1) {
+				return 'CNY';
+			} else {
+				return 'JPY';
+			}
+		case price.indexOf('kr') !== -1:
+			// Note: other currencies have kr as a sign, but it's the only one used on steam
+			return 'NOK';
+		case price.indexOf('Rp') === 0:
+			return 'IDR';
+		case price.indexOf('RM') === 0:
+			return 'MYR';
+		case price[0] === 'P':
+			return 'PHP';
+		case price.indexOf('S$') === 0:
+			return 'SGD';
+		case price[0] === '฿':
+			return 'THB';
+		case price.indexOf('₫') !== -1:
+			return 'VND';
+		case price.indexOf('₩') !== -1:
+			return 'VND';
+		case price.indexOf('TL') !== -1:
+			return 'TRY';
+		case price.indexOf('₴') !== -1:
+			return 'UAH';
+		case price.indexOf('Mex$') !== -1:
+			return 'MXN';
+		case price.indexOf('CDN$') !== -1:
+			return 'CAD';
+		case price.indexOf('A$') !== -1:
+			return 'AUD';
+		case price.indexOf('NZ$') !== -1:
+			return 'NZD';
+		case price.indexOf('₹') !== -1:
+			return 'INR';
+		case price.indexOf('CLP$') !== -1:
+			return 'CLP';
+		case price.indexOf('S/.') !== -1:
+			return 'PEN';
+		case price.indexOf('COL$') !== -1:
+			return 'COP';
+		case price[0] === 'R':
+			// Watch out: not no be confused with R$
+			return 'ZAR';
+		case price.indexOf('HK$') !== -1:
+			return 'HKD';
+		case price.indexOf('NT$') !== -1:
+			return 'TWD';
+		case price.indexOf('SR') !== -1:
+			return 'SAR';
+		case price.indexOf('AED') !== -1:
+			return 'AED';
+		case price.indexOf('ARS$') !== -1:
+			return 'ARS';
+		case price.indexOf('₪') !== -1:
+			return 'ILS';
+		case price.indexOf('₸') !== -1:
+			return 'KZT';
+		case price.indexOf('KD') !== -1:
+			return 'KWD';
+		case price.indexOf('QR') !== -1:
+			return 'QAR';
+		case price.indexOf('₡') !== -1:
+			return 'CRC';
+		default:
+			return 'USD';
+	}
+	/*
+	'USD'  1 $1,921.25
+	'GBP'  2 £1,422.94
+	'EUR'  3 1 660,62€
+	'CHF'  4 CHF 1 551.92
+	'RUB'  5 157499,40 руб.
+	'PLN'  6 7 136,87 zł
+	'BRL'  7 R$ 9.784,69
+	'JPY'  8 ¥ 302,563
+	'NOK'  9 18.232,22 kr
+	'IDR'  10 Rp 34 406 427
+	'MYR'  11 RM7,871.12
+	'PHP'  12 P116,755.71
+	'SGD'  13 S$2,456.51
+	'THB'  14 ฿63,292.00
+	'VND'  15 50.387.500₫
+	'KRW'  16 ₩ 2,706,190
+	'TRY'  17 91.722,88 TL
+	'UAH'  18 86 073₴
+	'MXN'  19 Mex$ 32,924.34
+	'CAD'  20 CDN$ 2,681.06
+	'AUD'  21 A$ 2,720.92
+	'NZD'  22 NZ$ 3,261.95
+	'CNY'  23 ¥ 13,055.22
+	'INR'  24 ₹ 182,862
+	'CLP'  25 CLP$ 1.747.931
+	'PEN'  26 S/.6,507.23
+	'COP'  27 COL$ 6.085.314
+	'ZAR'  28 R 31 056.73
+	'HKD'  29 HK$ 15,083.56
+	'TWD'  30 NT$ 61,922
+	'SAR'  31 7,219.17 SR
+	'AED'  32 7,061.52 AED
+	'SEK'  33 ----
+	'ARS'  34 ARS$ 2.880.053,45
+	'ILS'  35 ₪5,757.79
+	'BYN'  36 ----
+	'KZT'  37 899 873₸
+	'KWD'  38 590.53 KD
+	'QAR'  39 7,010.56 QR
+	'CRC'  40 ₡884.400
+	'UYU'  41 $U77.482
+	*/
+}

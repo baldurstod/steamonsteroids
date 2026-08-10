@@ -25,7 +25,6 @@
 	"content_scripts": [
 		{
 			"matches": [
-				"https://steamcommunity.com/market/listings/*",
 				"https://steamcommunity.com/*/inventory*",
 				"https://steamcommunity.com/market/",
 				"https://steamcommunity.com/tradeoffer/*",
