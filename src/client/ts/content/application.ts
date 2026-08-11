@@ -575,7 +575,6 @@ export class Application {
 			return
 		}
 		const myListings = Array.from(tabContentsMyListings.getElementsByClassName('my_listing_section'));
-		console.info(myListings);
 
 		let offset = 0
 		// Add offset for My listings awaiting confirmation which may or may not be there
@@ -591,15 +590,60 @@ export class Application {
 
 
 	async #processSellListings(container: HTMLElement): Promise<void> {
-		return;
-		const listings = Array.from(container.getElementsByClassName('market_listing_row'));
+		let i = 0;
+		const countPerPage = 100;
+		let currency = 'USD';
+		let total = 0;
+		while (true) {
+			const response = await fetch(`https://steamcommunity.com/market/mylistings/render/?query=&start=${i}&count=${countPerPage}`, { cache: 'no-store' });
+			if (response.status === 429) {// Too many requests
+				// Wait 1 min then resume
+				await setTimeoutPromise(60000);
+				continue;
+			}
 
-		const total = 0;
-		for (const listing of listings) {
-			const values = listing.getElementsByClassName('market_listing_price');
-			console.info(values);
+			if (response.status !== 200) {// Failure
+				break;
+			}
 
+			const json = await response.json();
+			if (!json.success) {
+				break;
+			}
+
+
+			// Put the rendered html into a external div
+			const htmlListings = createElement('div', { innerHTML: json.results_html });
+			const listings = htmlListings.getElementsByClassName('market_listing_price');
+
+			// Iterate the rendered listings
+			for (const listing of listings) {
+				const p = (listing as HTMLElement).innerText.split('(')[0]?.trim();
+
+				if (p) {
+					const price = parseMarketPrice(p);
+					currency = getCurrencyFromPrice(p);
+					if (!Number.isNaN(price)) { // TODO: error if NaN ?
+						total += price;
+					}
+				}
+			}
+
+			if (i + countPerPage > json.total_count) {
+				break;
+			}
+			i += countPerPage;
 		}
+
+		const header = container.getElementsByClassName('my_market_header')[0];
+		if (header) {
+			const s = createElement('span', {
+				style: 'color:greenyellow;',
+				innerText: Number(total.toFixed(2)).toLocaleString(undefined, { style: 'currency', currency }),
+				parent: header,
+			});
+		}
+
 	}
 
 	async #processBuyOrders(container: HTMLElement): Promise<void> {
@@ -649,6 +693,7 @@ export class Application {
 		const buyOrders = await MarketAssets.getBuyOrders();
 		const sellOrders = await MarketAssets.getSellOrders();
 
+		// Wait for react initialization
 		await setTimeoutPromise(1000);
 
 		for (let i = 0; i < tables.length; i++) {
