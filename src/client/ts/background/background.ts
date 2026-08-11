@@ -239,15 +239,38 @@ class BackGround {
 		});
 		*/
 
-		// Open the cache if it doesn't exist
-		this.#cache = this.#cache ?? await caches.open('v1');
 
-		let response: Response | undefined = await this.#cache.match(url);
+		let response: Response | undefined;
+
+		let readCache = true;
+		let writeCache = true;
+		if (init) {
+			switch (init.cache) {
+				case 'no-store':
+					readCache = false;
+					writeCache = false;
+					break;
+				case 'reload':
+				case 'no-cache':// Actually no-cache is more complex, but that will do
+					readCache = false;
+					break;
+			}
+		}
+
+		if (readCache || writeCache) {
+			// Open the cache if it doesn't exist
+			this.#cache = this.#cache ?? await caches.open('v1');
+		}
+
+		if (readCache) {
+			response = await this.#cache!.match(url);
+		}
+
 		if (!response) {
 			// If cache miss, fetch the request
 			response = await fetch(url, init);
-			if (url.startsWith('https://')) {
-				this.#cache.put(url, response.clone());
+			if (writeCache && url.startsWith('https://')) {
+				this.#cache!.put(url, response.clone());
 			}
 		}
 
