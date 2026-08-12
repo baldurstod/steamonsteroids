@@ -3,7 +3,8 @@ import { JSONObject } from 'harmony-types';
 const historyDbVersion = 1
 const historyDbName = 'market-history';
 const historyAssetStore = 'market-assets';
-const historyTransactionsStore = 'market-transactions';
+const historyTransactionStore = 'market-transactions';
+const userRowIndex = 'user-row';
 
 export type MarketAsset = {
 	appId: string;
@@ -18,10 +19,12 @@ export type MarketTransaction = {
 	appId: string;
 	contextId: string;
 	assetId: string;
+	// 1 based index from the end of the history. The last transaction has the index 1 and so on
+	row: number;
 	listed: string;
 	acted: string;
 	price: string;
-	type: 'gain' | 'loss';
+	type: 'gain' | 'loss' | 'unknown';
 }
 
 export class MarketHistory {
@@ -35,20 +38,24 @@ export class MarketHistory {
 			this.#dbOpenRequest.addEventListener('error', () => {
 				this.#dbPromiseResolve(null);
 			});
+
 			this.#dbOpenRequest.addEventListener('success', () => {
 				this.#dbPromiseResolve(this.#dbOpenRequest!.result);
 			});
+
 			this.#dbOpenRequest.addEventListener('upgradeneeded', () => {
 				const db = this.#dbOpenRequest!.result;
 
 				// Create the stores
 				db.createObjectStore(historyAssetStore, {
-					keyPath: ["appId", "contextId", "assetId"],
+					keyPath: ['appId', 'contextId', 'assetId'],
 				});
 
-				db.createObjectStore(historyTransactionsStore, {
-					keyPath: ["userId", "transactionId"],
+				const transactionStore = db.createObjectStore(historyTransactionStore, {
+					keyPath: ['userId', 'transactionId', 'row'],
 				});
+
+				transactionStore.createIndex(userRowIndex, ['userId', 'row'], { unique: true });
 			});
 		}
 
@@ -56,7 +63,7 @@ export class MarketHistory {
 	}
 
 	async insertTransaction(transaction: MarketTransaction): Promise<boolean> {
-		return this.#insert(historyTransactionsStore, transaction);
+		return this.#insert(historyTransactionStore, transaction);
 	}
 
 	async insertAsset(asset: MarketAsset): Promise<boolean> {

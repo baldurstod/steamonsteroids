@@ -680,37 +680,68 @@ export class Application {
 		}
 	}
 
-	async #processMarketHistory(): Promise<void> {
-
-		let i = 0;
-		const countPerPage = 100;
-		let currency = 'USD';
-		let total = 0;
+	async #fetchMarketHistory(start: number, count: number): Promise<JSONObject> {
 		while (true) {
-			const response = await fetch(`https://steamcommunity.com/market/myhistory/render/?query=&start=${i}&count=${countPerPage}`, { cache: 'no-store' });
+			const response = await fetch(`https://steamcommunity.com/market/myhistory/render/?query=&start=${start}&count=${count}`, { cache: 'no-store' });
 			if (response.status === 429) {// Too many requests
 				// Wait 1 min then resume
 				await setTimeoutPromise(60000);
 				continue;
 			}
 
-			if (response.status !== 200) {// Failure
-				break;
+			if (!response.ok) {
+				// Sometimes team send an empty response
+				continue;
 			}
 
 			const json = await response.json();
 			if (!json.success) {
-				break;
+				continue;
 			}
+
+			// Check total count
+			if (json.total_count === undefined || typeof json.total_count !== 'number' || Number.isNaN(json.total_count)) {
+				continue;
+			}
+
+			return json;
+		}
+	}
+
+
+	async #processMarketHistory(): Promise<void> {
+		const countPerPage = 100;
+
+		const json = await this.#fetchMarketHistory(0, 1);
+		if (json.total_count === 0) {
+			return;
+		}
+
+		let totalCount: number = json.total_count as number;
+		let start = totalCount - countPerPage;
+
+		while (true) {
+			const json = await this.#fetchMarketHistory(start, countPerPage);
+			if (json.total_count === 0) {
+				// Sometimes steam wrongly return a 0 count
+				continue;
+			}
+
+			if ((json.total_count as number) < totalCount) {
+				// Total count is wrong, it can only go up
+				continue;
+			}
+
+			totalCount = json.total_count as number;
 
 			if (json.assets) {
 				// Iterate apps, contexts, assets
-				for (const appId in json.assets) {
-					const app = json.assets[appId];
-					for (const contextId in app) {
-						const context = app[contextId];
-						for (const assetId in context) {
-							const asset = context[assetId];
+				for (const appId in json.assets as JSONObject) {
+					const app = (json.assets as JSONObject)[appId];
+					for (const contextId in app as JSONObject) {
+						const context = (app as JSONObject)[contextId];
+						for (const assetId in context as JSONObject) {
+							const asset = (context as JSONObject)[assetId] as JSONObject;
 
 							this.#marketHistory.insertAsset({
 								appId,
@@ -724,11 +755,12 @@ export class Application {
 			}
 
 			// Put the rendered html into a external div
-			const htmlListings = createElement('div', { innerHTML: json.results_html });
+			const htmlListings = createElement('div', { innerHTML: json.results_html as string });
 			const listings = htmlListings.getElementsByClassName('market_listing_row');
 			const hovers = json.hovers as string;
 
 			// Iterate the rendered listings
+			let listingId = 1;
 			for (const listing of listings) {
 				// TODO: it's a sequential number XXXX_YYYY
 				const transactionId = listing.id.replace('history_row_', '');
@@ -740,9 +772,13 @@ export class Application {
 					break;
 				}
 
-				let type: 'gain' | 'loss' = 'loss';
+				let type: 'gain' | 'loss' | 'unknown' = 'unknown';
 				if ((htmlGainOrLoss as HTMLElement).innerText.indexOf('+') !== -1) {
 					type = 'gain';
+				}
+
+				if ((htmlGainOrLoss as HTMLElement).innerText.indexOf('-') !== -1) {
+					type = 'loss';
 				}
 
 				// Get app, context, asset ids
@@ -786,13 +822,16 @@ export class Application {
 					acted,
 					price,
 					type,
+					row: totalCount - start - countPerPage + listingId,
 				});
+
+				++listingId;
 			}
 
-			if (i + countPerPage > json.total_count) {
+			if (start <= 0) {
 				break;
 			}
-			i += countPerPage;
+			start = Math.max(start - countPerPage, 0);
 		}
 
 		/*
