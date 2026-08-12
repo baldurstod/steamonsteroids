@@ -11,6 +11,7 @@ import { GenerationState } from '../enums';
 import { Messages } from '../messages/messages';
 import { ClearMarketListingEvent, Controller, ControllerEvents, ExportLoadout, SetGenerationStateEvent, SetItemInfoEvent, Tf2RefreshListing } from './controller';
 import { CS2Viewer } from './cs2/cs2viewer';
+import { MarketHistory } from './market/history';
 import { getInventoryAssetDatas, getInventorySteamId, MarketAssets } from './marketassets';
 import { MARKET_LISTING_ROW_PREFIX, MARKET_LISTINGS_ID, SEARCH_RESULT_ROWS } from './steam/constants';
 import { ListingElement, MarketListings } from './steam/marketlistings';
@@ -113,6 +114,7 @@ export class Application {
 	#weaponShowcase = false;
 	#translations = new Map<string, Map<string, string>>();
 	#injectedReady = false;
+	#marketHistory = new MarketHistory();
 
 	constructor() {
 		this.#initTranslations();
@@ -585,9 +587,8 @@ export class Application {
 		// myListings contains 2 elements: first is sell listings, second is buy orders,
 		this.#processSellListings(myListings[0 + offset] as HTMLElement);
 		this.#processBuyOrders(myListings[1 + offset] as HTMLElement);
-
+		this.#processMarketHistory();
 	}
-
 
 	async #processSellListings(container: HTMLElement): Promise<void> {
 		let i = 0;
@@ -677,6 +678,133 @@ export class Application {
 				parent: header,
 			});
 		}
+	}
+
+	async #processMarketHistory(): Promise<void> {
+
+		let i = 0;
+		const countPerPage = 100;
+		let currency = 'USD';
+		let total = 0;
+		while (true) {
+			const response = await fetch(`https://steamcommunity.com/market/myhistory/render/?query=&start=${i}&count=${countPerPage}`, { cache: 'no-store' });
+			if (response.status === 429) {// Too many requests
+				// Wait 1 min then resume
+				await setTimeoutPromise(60000);
+				continue;
+			}
+
+			if (response.status !== 200) {// Failure
+				break;
+			}
+
+			const json = await response.json();
+			if (!json.success) {
+				break;
+			}
+
+			if (json.assets) {
+				// Iterate apps, contexts, assets
+				for (const appId in json.assets) {
+					const app = json.assets[appId];
+					for (const contextId in app) {
+						const context = app[contextId];
+						for (const assetId in context) {
+							const asset = context[assetId];
+
+							this.#marketHistory.insertAsset({
+								appId,
+								contextId,
+								assetId,
+								asset,
+							});
+						}
+					}
+				}
+			}
+
+			// Put the rendered html into a external div
+			const htmlListings = createElement('div', { innerHTML: json.results_html });
+			const listings = htmlListings.getElementsByClassName('market_listing_row');
+			const hovers = json.hovers as string;
+
+			// Iterate the rendered listings
+			for (const listing of listings) {
+				// TODO: it's a sequential number XXXX_YYYY
+				const transactionId = listing.id.replace('history_row_', '');
+
+				// Determine if it's a gain or loss
+				const htmlGainOrLoss = listing.getElementsByClassName('market_listing_gainorloss')[0];
+				if (!htmlGainOrLoss) {
+					// Not able to get the transaction direction
+					break;
+				}
+
+				let type: 'gain' | 'loss' = 'loss';
+				if ((htmlGainOrLoss as HTMLElement).innerText.indexOf('+') !== -1) {
+					type = 'gain';
+				}
+
+				// Get app, context, asset ids
+				const idx = hovers.indexOf(listing.id);
+				if (idx === -1) {
+					break;
+				}
+
+				// Get dates
+				const dates = listing.getElementsByClassName('market_listing_listed_date');
+				let listed = '';
+				let acted = '';
+				if (dates.length === 2) {
+					acted = (dates[0] as HTMLElement).innerText.trim();
+					listed = (dates[1] as HTMLElement).innerText.trim();
+				}
+
+				// Get price
+				const htmlPrice = listing.getElementsByClassName('market_listing_price')[0];
+				let price = '';
+				if (htmlPrice) {
+					price = (htmlPrice as HTMLElement).innerText.trim();
+				}
+
+				const values: string[] = [];
+				let lastIdx = hovers.indexOf(',', idx) + 1;
+				for (let i = 0; i < 3; i++) {
+					const idx = hovers.indexOf(',', lastIdx);
+					values[i] = hovers.substring(lastIdx, idx).replace(/[^0-9]+/g, '');
+
+					lastIdx = idx + 1;
+				}
+
+				this.#marketHistory.insertTransaction({
+					userId: '',
+					transactionId,
+					appId: values[0]!,
+					contextId: values[1]!,
+					assetId: values[2]!,
+					listed,
+					acted,
+					price,
+					type,
+				});
+			}
+
+			if (i + countPerPage > json.total_count) {
+				break;
+			}
+			i += countPerPage;
+		}
+
+		/*
+		const header = container.getElementsByClassName('my_market_header')[0];
+		if (header) {
+			const s = createElement('span', {
+				style: 'color:greenyellow;',
+				innerText: Number(total.toFixed(2)).toLocaleString(undefined, { style: 'currency', currency }),
+				parent: header,
+			});
+		}
+		*/
 	}
 
 	async #initSteamMarketOrders(): Promise<void> {
