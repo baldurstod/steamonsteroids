@@ -587,7 +587,27 @@ export class Application {
 		// myListings contains 2 elements: first is sell listings, second is buy orders,
 		this.#processSellListings(myListings[0 + offset] as HTMLElement);
 		this.#processBuyOrders(myListings[1 + offset] as HTMLElement);
-		this.#processMarketHistory();
+		this.#initMarketHomeButtons();
+	}
+
+	#initMarketHomeButtons(): void {
+		const parent = document.getElementsByClassName('market_tab_well_tabs')[0];
+
+		let button: HTMLButtonElement;
+		createElement('a', {
+			class: 'item_market_action_button item_market_action_button_green',
+			parent,
+			childs: [
+				button = createElement('span', {
+					class: 'item_market_action_button_contents',
+					innerText: 'List all transactions',
+					$click: async () => {
+						await this.#processMarketHistory();
+						button.disabled = true;
+					},
+				}) as HTMLButtonElement,
+			]
+		});
 	}
 
 	async #processSellListings(container: HTMLElement): Promise<void> {
@@ -708,7 +728,6 @@ export class Application {
 		}
 	}
 
-
 	async #processMarketHistory(): Promise<void> {
 		const countPerPage = 100;
 
@@ -720,7 +739,16 @@ export class Application {
 		let totalCount: number = json.total_count as number;
 		let start = totalCount - countPerPage;
 
+
+		const lastRow = await this.#marketHistory.getLastRow();
+		if (lastRow !== -1) {
+			start = lastRow - countPerPage;
+		}
+
 		while (true) {
+			// Clamp start
+			start = Math.max(start, 0);
+
 			const json = await this.#fetchMarketHistory(start, countPerPage);
 			if (json.total_count === 0) {
 				// Sometimes steam wrongly return a 0 count
@@ -831,7 +859,7 @@ export class Application {
 			if (start <= 0) {
 				break;
 			}
-			start = Math.max(start - countPerPage, 0);
+			start -= countPerPage;
 		}
 
 		/*

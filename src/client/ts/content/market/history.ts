@@ -85,4 +85,38 @@ export class MarketHistory {
 			request.addEventListener('error', () => resolve(false));
 		});
 	}
+
+	/**
+	 * Return the last stored transaction
+	 * @returns The last (most recent) row or -1 in case of error
+	 */
+	async getLastRow(): Promise<number> {
+		const db = await this.#getDb();
+		if (!db) {
+			return -1;
+		}
+
+		return new Promise<number>((resolve) => {
+			const objectStore = db.transaction(historyTransactionStore, 'readonly').objectStore(historyTransactionStore);
+
+			// Open the cursor on the row index decreasing
+			let index = objectStore.index(userRowIndex);
+			let cursorRequest = index.openCursor(undefined, 'prev');
+
+			cursorRequest.addEventListener('error', () => resolve(-1));
+			cursorRequest.addEventListener('success', () => {
+				const cursor = cursorRequest.result;
+				if (cursor) {
+					// Access the first record
+					const value = cursor.value;
+					if (value) {
+						// Return the first row
+						resolve((cursor.value as MarketTransaction).row);
+						return;
+					}
+				}
+				resolve(-1);
+			});
+		});
+	}
 }
