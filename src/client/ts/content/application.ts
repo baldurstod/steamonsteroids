@@ -584,8 +584,12 @@ export class Application {
 			offset = 1;
 		}
 
-		// myListings contains 2 elements: first is sell listings, second is buy orders,
-		this.#processSellListings(myListings[0 + offset] as HTMLElement);
+		// myListings contains 2-3 elements: an optional awaiting listings, then sell listings, then buy orders,
+		let awaitingConfirmation = 0;
+		if (offset) {
+			awaitingConfirmation = await this.#processAwaitingListings(myListings[0] as HTMLElement);
+		}
+		this.#processSellListings(myListings[0 + offset] as HTMLElement, awaitingConfirmation);
 		this.#processBuyOrders(myListings[1 + offset] as HTMLElement);
 		this.#initMarketHomeButtons();
 	}
@@ -610,7 +614,44 @@ export class Application {
 		});
 	}
 
-	async #processSellListings(container: HTMLElement): Promise<void> {
+	async #processAwaitingListings(container: HTMLElement): Promise<number> {
+		let currency = 'USD';
+
+		const listings = Array.from(container.getElementsByClassName('market_listing_row'));
+
+		let total = 0;
+		for (const listing of listings) {
+			const values = Array.from(listing.getElementsByClassName('market_listing_price')) as HTMLElement[];
+			// Get the "you receive" price
+			const p = values[0]!.innerText.split('(')[1]?.trim();
+
+			if (p) {
+				const price = parseMarketPrice(p);
+				currency = getCurrencyFromPrice(p);
+				if (!Number.isNaN(price)) { // TODO: error if NaN ?
+					total += price;
+				}
+			}
+		}
+
+		// Deal with rounding errors
+		total = Number(total.toFixed(2));
+
+		const header = container.getElementsByClassName('my_market_header')[0];
+		if (header) {
+			const s = createElement('span', {
+				style: 'color:greenyellow;',
+				innerText: total.toLocaleString(undefined, { style: 'currency', currency }),
+				parent: header,
+			});
+		}
+
+		console.log(total);
+
+		return total;
+	}
+
+	async #processSellListings(container: HTMLElement, awaitingConfirmation: number): Promise<void> {
 		let i = 0;
 		const countPerPage = 100;
 		let currency = 'USD';
@@ -668,7 +709,7 @@ export class Application {
 			});
 			createElement('span', {
 				style: 'color:greenyellow;',
-				innerText: Number(total.toFixed(2)).toLocaleString(undefined, { style: 'currency', currency }),
+				innerText: total.toLocaleString(undefined, { style: 'currency', currency }),
 				parent: c,
 			});
 
@@ -684,7 +725,7 @@ export class Application {
 				});
 				createElement('span', {
 					style: 'color:greenyellow;font-size:0.75rem;',
-					innerText: `available: ${Number((maxBalance - total - walletBalance).toFixed(2)).toLocaleString(undefined, { style: 'currency', currency })}`,
+					innerText: `available: ${(Number((maxBalance - total - walletBalance - awaitingConfirmation).toFixed(2)) + 0).toLocaleString(undefined, { style: 'currency', currency })}`,
 					parent: c,
 				});
 			}
@@ -714,11 +755,14 @@ export class Application {
 			}
 		}
 
+		// Deal with rounding errors
+		total = Number(total.toFixed(2));
+
 		const header = container.getElementsByClassName('my_market_header')[0];
 		if (header) {
 			const s = createElement('span', {
 				style: 'color:greenyellow;',
-				innerText: Number(total.toFixed(2)).toLocaleString(undefined, { style: 'currency', currency }),
+				innerText: total.toLocaleString(undefined, { style: 'currency', currency }),
 				parent: header,
 			});
 		}
