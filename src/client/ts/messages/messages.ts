@@ -9,6 +9,7 @@ export enum Messages {
 	ActiveInventorySetActivePage = 'activeinventorysetactivepage',
 	AjaxPagingControlsGoToPage = 'ajaxpagingcontrolsgotopage',
 	AjaxPagingControlsSetPageSize = 'ajaxpagingcontrolssetpagesize',
+	RequestWallet = 'requestwallet',
 
 	ResponseListingAssets = 'responselistingassets',
 	ResponseListingAsset = 'responselistingasset',
@@ -16,6 +17,7 @@ export enum Messages {
 	ResponseInventoryAssetDatas = 'responseinventoryassetdatas',
 	ResponseInventorySteamId = 'responseinventorysteamid',
 	ResponseSSRQueryData = 'responsessrquerydata',
+	ResponseWallet = 'responsewallet',
 }
 
 export type Message = {
@@ -95,5 +97,29 @@ export type ResponseInventorySteamId = Message & {
 
 export type ResponseSSRQueryData = Message & {
 	queryData: string;
+	promiseId: number;
+};
+
+export type Wallet = {
+	rwgrsn: number,
+	success: number,
+	wallet_balance: string,
+	wallet_country: string,
+	wallet_currency: number
+	wallet_currency_increment: string,
+	wallet_delayed_balance: string,
+	wallet_fee: string,
+	wallet_fee_base: string,
+	wallet_fee_minimum: string,
+	wallet_fee_percent: string,
+	wallet_market_minimum: string,
+	wallet_max_balance: string,
+	wallet_publisher_fee_percent_default: string,
+	wallet_state: string,
+	wallet_trade_max_balance: string,
+}
+
+export type ResponseWallet = Message & {
+	wallet: Wallet;
 	promiseId: number;
 };

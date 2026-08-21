@@ -1,5 +1,5 @@
 import { JSONArray, JSONObject } from 'harmony-types';
-import { Message, Messages, ResponseInventoryAssetDatas, ResponseInventorySteamId, ResponseListingAsset, ResponseListingAssets, ResponseListingInfo, ResponseSSRQueryData } from '../messages/messages';
+import { Message, Messages, ResponseInventoryAssetDatas, ResponseInventorySteamId, ResponseListingAsset, ResponseListingAssets, ResponseListingInfo, ResponseSSRQueryData, ResponseWallet, Wallet } from '../messages/messages';
 import { getCurrency } from './market/currencies';
 import { MarketAsset } from './types';
 
@@ -87,6 +87,8 @@ export class MarketAssets {
 				resolvePromise((messageData as ResponseInventorySteamId).promiseId, (messageData as ResponseInventorySteamId).steamId);
 			case Messages.ResponseSSRQueryData:
 				resolvePromise((messageData as ResponseSSRQueryData).promiseId, (messageData as ResponseSSRQueryData).queryData);
+			case Messages.ResponseWallet:
+				resolvePromise((messageData as ResponseWallet).promiseId, (messageData as ResponseWallet).wallet);
 				break;
 		}
 	}
@@ -182,6 +184,13 @@ export class MarketAssets {
 		return null;
 	}
 
+
+	static async getWallet(): Promise<Wallet | null> {
+		let { promise, promiseId } = createPromise();
+		requestWallet(promiseId);
+		const wallet = await promise;
+		return wallet;
+	}
 }
 
 function requestListingAssets(promiseId: number) {
@@ -206,6 +215,10 @@ function requestInventorySteamId(promiseId: number) {
 
 function requestSsrQueryData(promiseId: number) {
 	window.postMessage({ action: Messages.RequestSSRQueryData, promiseId: promiseId }, '*');
+}
+
+function requestWallet(promiseId: number) {
+	window.postMessage({ action: Messages.RequestWallet, promiseId: promiseId }, '*');
 }
 
 async function getListingAsset(appId: number, contextId: number, assetId: number) {

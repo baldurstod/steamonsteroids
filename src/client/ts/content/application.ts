@@ -639,7 +639,8 @@ export class Application {
 
 			// Iterate the rendered listings
 			for (const listing of listings) {
-				const p = (listing as HTMLElement).innerText.split('(')[0]?.trim();
+				// Get the "you receive" price
+				const p = (listing as HTMLElement).innerText.split('(')[1]?.trim();
 
 				if (p) {
 					const price = parseMarketPrice(p);
@@ -656,15 +657,38 @@ export class Application {
 			i += countPerPage;
 		}
 
+		// Deal with rounding errors
+		total = Number(total.toFixed(2));
+
 		const header = container.getElementsByClassName('my_market_header')[0];
 		if (header) {
-			const s = createElement('span', {
-				style: 'color:greenyellow;',
-				innerText: Number(total.toFixed(2)).toLocaleString(undefined, { style: 'currency', currency }),
+			const c = createElement('div', {
+				style: 'display:inline-flex;gap:0.5rem',
 				parent: header,
 			});
-		}
+			createElement('span', {
+				style: 'color:greenyellow;',
+				innerText: Number(total.toFixed(2)).toLocaleString(undefined, { style: 'currency', currency }),
+				parent: c,
+			});
 
+			const wallet = await MarketAssets.getWallet();
+			if (wallet) {
+				console.info(wallet);
+				const maxBalance = Number((Number(wallet.wallet_max_balance) / 100).toFixed(2));
+				const walletBalance = Number((Number(wallet.wallet_balance) / 100).toFixed(2));
+				createElement('span', {
+					style: 'color:greenyellow;font-size:0.75rem;',
+					innerText: `max: ${Number(maxBalance.toFixed(2)).toLocaleString(undefined, { style: 'currency', currency })}`,
+					parent: c,
+				});
+				createElement('span', {
+					style: 'color:greenyellow;font-size:0.75rem;',
+					innerText: `available: ${Number((maxBalance - total - walletBalance).toFixed(2)).toLocaleString(undefined, { style: 'currency', currency })}`,
+					parent: c,
+				});
+			}
+		}
 	}
 
 	async #processBuyOrders(container: HTMLElement): Promise<void> {
