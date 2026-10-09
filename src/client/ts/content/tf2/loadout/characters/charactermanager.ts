@@ -56,8 +56,8 @@ export class CharacterManager {
 	static #presets = new Map<string, Presets>();
 
 	static {
-		GraphicsEvents.addEventListener(GraphicsEvent.Tick, () => this.#updatePaintColor());
-		GraphicsEvents.addEventListener(GraphicsEvent.Pick, (event: Event) => this.#pickedModel(event as CustomEvent<GraphicPickEvent>));
+		GraphicsEvents.addEventListener('tick', () => this.#updatePaintColor());
+		GraphicsEvents.addEventListener('pick', (event: Event) => this.#pickedModel(event as CustomEvent<GraphicPickEvent>));
 		Controller.addEventListener(ControllerEvent.SetInvulnerable, (event: Event) => { this.#setInvulnerable((event as CustomEvent<SetInvulnerable>).detail.invulnerable, (event as CustomEvent<SetInvulnerable>).detail.scene); return; },);
 		Controller.addEventListener(ControllerEvent.SetRagdoll, (event: Event) => { this.#setRagdoll((event as CustomEvent<SetRagdoll>).detail.ragdoll, (event as CustomEvent<SetRagdoll>).detail.scene); return; },);
 		Controller.addEventListener(ControllerEvent.SetAnim, (event: Event) => this.#setAnim((event as CustomEvent<string>).detail));

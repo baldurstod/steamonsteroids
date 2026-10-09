@@ -48,9 +48,9 @@ export class FlyingBird {
 			dove.setPosition(vec3.add(forward, forward, dove._position));
 		}
 
-		GraphicsEvents.addEventListener(GraphicsEvent.Tick, tickEvent);
+		GraphicsEvents.addEventListener('tick', tickEvent);
 
 		setTimeout(() => dove.playSequence('fly_cycle'), this.flGlideTime * 1000);
-		setTimeout(() => { dove.remove(); GraphicsEvents.removeEventListener(GraphicsEvent.Tick, tickEvent); }, 10000);
+		setTimeout(() => { dove.remove(); GraphicsEvents.removeEventListener('tick', tickEvent); }, 10000);
 	}
 }

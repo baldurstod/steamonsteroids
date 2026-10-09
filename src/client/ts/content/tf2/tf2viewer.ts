@@ -107,7 +107,7 @@ export class TF2Viewer {
 		WeaponManager.addEventListener('success', (event: Event) => Controller.dispatchEvent(ControllerEvents.SetGenerationState, { detail: { state: GenerationState.Success, listingId: (event as CustomEvent<WeaponManagerItem>).detail.userData } }));
 		WeaponManager.addEventListener('failure', (event: Event) => Controller.dispatchEvent(ControllerEvents.SetGenerationState, { detail: { state: GenerationState.Failure, listingId: (event as CustomEvent<WeaponManagerItem>).detail.userData } }));
 
-		GraphicsEvents.addEventListener(GraphicsEvent.Tick, event => this.#flipWarpaints());
+		GraphicsEvents.addEventListener('tick', event => this.#flipWarpaints());
 
 		Controller.addEventListener(ControllerEvents.ExportLoadout, (event) => this.#exportLoadout((event as CustomEvent<ExportLoadout>).detail.listingId));
 	}
