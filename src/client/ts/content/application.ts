@@ -1,9 +1,9 @@
 import { quat, vec3 } from 'gl-matrix';
-import { AmbientLight, BoundingBox, Camera, CanvasAttributes, ColorBackground, Graphics, GraphicsEvent, GraphicsEvents, GraphicTickEvent, OrbitControl, Scene, Source1ModelInstance, WebGLStats } from 'harmony-3d';
+import { AmbientLight, BoundingBox, Camera, CanvasAttributes, ColorBackground, Graphics, GraphicsEvents, GraphicTickEvent, OrbitControl, Scene, Source1ModelInstance, WebGLStats } from 'harmony-3d';
 import { getCharCodes } from 'harmony-binary-reader';
 import { starSVG } from 'harmony-svg';
 import { JSONObject } from 'harmony-types';
-import { addRemoveClass, createElement, hide, show } from 'harmony-ui';
+import { addRemoveClass, adoptStyle, createElement, hide, show } from 'harmony-ui';
 import { setTimeoutPromise } from 'harmony-utils';
 import translationsJSON from '../../json/translations.json';
 import { ACTIVE_INVENTORY_PAGE, APP_ID_CS2, APP_ID_TF2, INVENTORY_BACKGROUND_COLOR, INVENTORY_ITEM_CLASSNAME, MARKET_LISTING_BACKGROUND_COLOR, MARKET_LISTING_EFFECT_COLOR, MARKET_LISTING_NAME_CLASSNAME, MARKET_LISTING_ROW_CLASSNAME, MARKET_TF_ITEM_TITLE_CLASS, MARKET_TF_LISTING_ID, MARKET_TF_URL, MARKETPLACE_LISTING_BACKGROUND_COLOR, MARKETPLACE_LISTINGS_ID, MOUSE_ENTER_DELAY } from '../constants';
@@ -31,6 +31,7 @@ enum PageType {
 }
 
 const CAMERA_DISTANCE = 200;
+const STEAM_MARKET_HOME = 'https://steamcommunity.com/market/';
 
 const AJAX_PAGING_CONTROLS = new Map([
 	['tabContentsMyActiveMarketListings_controls', 'g_oMyListings'],
@@ -120,6 +121,7 @@ export class Application {
 
 	constructor() {
 		this.#initTranslations();
+		this.#initCss();
 		this.#initPageType();
 		this.#initEvents();
 		this.#initHtml();
@@ -1051,8 +1053,67 @@ export class Application {
 				}
 			}
 		}
-
 	}
+
+	async #initSteamMarketCancelAllListings(): Promise<void> {
+		if (!this.#injectedReady) {
+			return;
+		}
+		if (this.#pageType !== PageType.Market) {
+			return;
+		}
+
+
+		const mySellOrders = await MarketAssets.getMySellOrders();
+		if (!mySellOrders?.length) {
+			// No sell order, or bad response
+			return;
+		}
+
+		// Detect the navigation bar
+		let nav: HTMLElement | null = null;
+		const links = document.getElementsByTagName('a');
+		for (const link of links) {
+			if (link.href !== STEAM_MARKET_HOME) {
+				continue;
+			}
+
+			const nextElementSibling = link.nextElementSibling;
+			if (!nextElementSibling || nextElementSibling.tagName !== 'SPAN' || (nextElementSibling as HTMLElement).innerText !== ' > ') {
+				continue;
+			}
+
+			nav = link.parentElement;
+			break;
+		}
+
+		if (nav) {
+			const aa = createElement('div', {
+				parent: nav,
+				class: 'remove-listings-buttons',
+			});
+			createElement('span', {
+				parent: aa,
+				innerText: 'Remove all listings',
+				class: 'remove-listings-button',
+				$click: () => this.#removeAllSellListings(),
+			});
+			const a = [100, 50, 20, 10];
+			for (const i of a) {
+				if (i > mySellOrders.length) {
+					continue;
+				}
+				createElement('span', {
+					parent: aa,
+					innerText: `Remove ${i} listings`,
+					class: 'remove-listings-button',
+					$click: () => this.#removeAllSellListings(i),
+				});
+			}
+		}
+	}
+
+
 
 	#createInventoryListeners() {
 		let items = document.getElementsByClassName(INVENTORY_ITEM_CLASSNAME);
@@ -1814,14 +1875,15 @@ export class Application {
 		return this.#active;
 	}
 
-	#onMessage(event: MessageEvent) {
+	async #onMessage(event: MessageEvent): Promise<void> {
 		const messageData = event.data;
 
 		if (messageData.action == 'injected_ready') {
 			this.#injectedReady = true;
 			this.#createButtons();
 			this.#initMarketPlaceTf();
-			this.#initSteamMarketOrders();
+			await this.#initSteamMarketOrders();
+			await this.#initSteamMarketCancelAllListings();
 
 			switch (this.#pageType) {
 				case PageType.MarketHome:
@@ -1840,6 +1902,44 @@ export class Application {
 			}
 
 			this.#translations.set(name, s);
+		}
+	}
+
+	async #initCss(): Promise<void> {
+		document.styleSheets.item
+		await adoptStyle(document, `
+.remove-listings-buttons {
+	display:flex;
+	gap:0.5rem;
+}
+.remove-listings-button {
+	cursor: pointer;
+	height: 24px;
+	line-height: 24px;
+	padding: 0 4px;
+	min-width: 53px;
+	text-align: center;
+	background-repeat: repeat-x;
+	background-position: left bottom;
+	background-image: url(https://community.fastly.steamstatic.com/public/images/economy/btn_green_small.png);
+	color: #ebebeb;
+}
+`)
+	}
+
+	async #removeAllSellListings(max = Infinity): Promise<void> {
+		const orders = await MarketAssets.getMySellOrders();
+		if (!orders) {
+			return;
+		}
+
+		let i = 0;
+		for (const order of orders) {
+			await MarketAssets.removeListing(order.listingid);
+			await setTimeoutPromise(500);
+			if (++i >= max) {
+				break;
+			}
 		}
 	}
 }

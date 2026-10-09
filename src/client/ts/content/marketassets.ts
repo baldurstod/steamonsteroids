@@ -1,5 +1,5 @@
 import { JSONArray, JSONObject } from 'harmony-types';
-import { Message, Messages, ResponseInventoryAssetDatas, ResponseInventorySteamId, ResponseListingAsset, ResponseListingAssets, ResponseListingInfo, ResponseSSRQueryData, ResponseWallet, Wallet } from '../messages/messages';
+import { Message, Messages, ResponseAny, ResponseInventoryAssetDatas, ResponseInventorySteamId, ResponseListingAsset, ResponseListingAssets, ResponseListingInfo, ResponseMySellOrders, ResponseSSRQueryData, ResponseWallet, SellOrder, Wallet } from '../messages/messages';
 import { getCurrency } from './market/currencies';
 import { MarketAsset } from './types';
 
@@ -54,6 +54,9 @@ export class MarketAssets {
 		let messageData = event.data;
 		//console.log(event);
 		switch (messageData.action) {
+			case Messages.ResponseAny:
+				resolvePromise((messageData as ResponseAny).promiseId);
+				break;
 			case Messages.ResponseListingAssets:
 				let apps = (messageData as ResponseListingAssets).listingAssets;
 				for (let appId in apps) {
@@ -85,10 +88,15 @@ export class MarketAssets {
 				break;
 			case Messages.ResponseInventorySteamId:
 				resolvePromise((messageData as ResponseInventorySteamId).promiseId, (messageData as ResponseInventorySteamId).steamId);
+				break;
 			case Messages.ResponseSSRQueryData:
 				resolvePromise((messageData as ResponseSSRQueryData).promiseId, (messageData as ResponseSSRQueryData).queryData);
+				break;
 			case Messages.ResponseWallet:
 				resolvePromise((messageData as ResponseWallet).promiseId, (messageData as ResponseWallet).wallet);
+				break;
+			case Messages.ResponseMySellOrders:
+				resolvePromise((messageData as ResponseMySellOrders).promiseId, (messageData as ResponseMySellOrders).orders);
 				break;
 		}
 	}
@@ -184,12 +192,24 @@ export class MarketAssets {
 		return null;
 	}
 
-
 	static async getWallet(): Promise<Wallet | null> {
 		let { promise, promiseId } = createPromise();
 		requestWallet(promiseId);
-		const wallet = await promise;
-		return wallet;
+		return await promise;
+	}
+
+	static async getMySellOrders(): Promise<SellOrder[] | null> {
+		let { promise, promiseId } = createPromise();
+		requestMySellOrders(promiseId);
+		return await promise;
+	}
+
+	static async removeListing(listingId: string): Promise<void> {
+		let { promise, promiseId } = createPromise();
+		//requestMySellOrders(listingId: string);
+
+		window.postMessage({ action: Messages.RemoveMarketListing, listingId, promiseId: promiseId }, '*');
+		await promise;
 	}
 }
 
@@ -237,4 +257,8 @@ export async function getInventorySteamId(): Promise<string> {
 	let { promise, promiseId } = createPromise();
 	requestInventorySteamId(promiseId);
 	return promise;
+}
+
+function requestMySellOrders(promiseId: number) {
+	window.postMessage({ action: Messages.RequestMySellOrders, promiseId: promiseId }, '*');
 }

@@ -10,7 +10,10 @@ export enum Messages {
 	AjaxPagingControlsGoToPage = 'ajaxpagingcontrolsgotopage',
 	AjaxPagingControlsSetPageSize = 'ajaxpagingcontrolssetpagesize',
 	RequestWallet = 'requestwallet',
+	RequestMySellOrders = 'requestmysellorders',
+	RemoveMarketListing = 'removemarketlisting',
 
+	ResponseAny = 'responseany',// Used when you don't expect a reponse, but want to wait for the action to finish
 	ResponseListingAssets = 'responselistingassets',
 	ResponseListingAsset = 'responselistingasset',
 	ResponseListingInfo = 'responselistinginfo',
@@ -18,6 +21,7 @@ export enum Messages {
 	ResponseInventorySteamId = 'responseinventorysteamid',
 	ResponseSSRQueryData = 'responsessrquerydata',
 	ResponseWallet = 'responsewallet',
+	ResponseMySellOrders = 'responsemysellorders',
 }
 
 export type Message = {
@@ -62,6 +66,10 @@ export type AjaxPagingControlsGoToPage = Message & {
 export type AjaxPagingControlsSetPageSize = Message & {
 	name: string;
 	pageSize: number;
+};
+
+export type ResponseAny = Message & {
+	promiseId: number;
 };
 
 export type ResponseListingAssets = Message & {
@@ -122,4 +130,41 @@ export type Wallet = {
 export type ResponseWallet = Message & {
 	wallet: Wallet;
 	promiseId: number;
+};
+
+export type SellOrder = {
+	appid: number;
+	classid: string;
+	assetid: string;
+	listingid: string;
+	rtListed: string;
+
+	listing: {
+		listingid: string,
+		time_created: number,
+		asset: {
+			currency: boolean,
+			appid: number,
+			contextid: string,
+			id: string,
+			classid: string,
+			instanceid: string,
+			amount: string,
+			status: number,
+			original_amount: string,
+			unowned_id: string,
+			unowned_contextid: string,
+		},
+	},
+
+	// TODO: add other fields use JSON.parse(window.SSR.loaderData[3]).myOrders.rgSellOrders
+}
+
+export type ResponseMySellOrders = Message & {
+	orders: SellOrder[];
+	promiseId: number;
+};
+
+export type RemoveMarketListing = Message & {
+	listingId: string;
 };

@@ -1,4 +1,4 @@
-import { ActiveInventorySetActivePage, AjaxPagingControlsGoToPage, AjaxPagingControlsSetPageSize, Message, Messages, RequestInventoryAssetDatas, RequestInventorySteamId, RequestListingAsset, RequestListingAssets, RequestListingInfo, ResponseSSRQueryData, ResponseWallet, SetInventoryFilterMessage } from '../messages/messages';
+import { ActiveInventorySetActivePage, AjaxPagingControlsGoToPage, AjaxPagingControlsSetPageSize, Message, Messages, RemoveMarketListing, RequestInventoryAssetDatas, RequestInventorySteamId, RequestListingAsset, RequestListingAssets, RequestListingInfo, ResponseAny, ResponseMySellOrders, ResponseSSRQueryData, ResponseWallet, SetInventoryFilterMessage } from '../messages/messages';
 
 window.addEventListener('message', (event: MessageEvent<Message>) => {
 	let messageData = event.data;
@@ -87,7 +87,36 @@ window.addEventListener('message', (event: MessageEvent<Message>) => {
 		case Messages.RequestWallet:
 			window.postMessage({ action: Messages.ResponseWallet, wallet: (window as any).g_rgWalletInfo, promiseId: (messageData as RequestInventorySteamId).promiseId } as ResponseWallet, '*');
 			break;
+		case Messages.RequestMySellOrders:
+			window.postMessage({ action: Messages.ResponseMySellOrders, orders: JSON.parse(window.SSR.loaderData[3]).myOrders.rgSellOrders, promiseId: (messageData as ResponseMySellOrders).promiseId } as ResponseMySellOrders, '*');
+			break;
+		case Messages.RemoveMarketListing:
+			removeListing((messageData as RemoveMarketListing).listingId, (messageData as ResponseAny).promiseId);
+			break;
 	}
 });
 
 window.postMessage({ action: 'injected_ready' }, '*');
+
+async function removeListing(listingId: string, promiseId: number): Promise<void> {
+	console.info('removing listing', listingId);
+
+	const sessionIdCookie = getCookie('sessionid');
+
+	if (sessionIdCookie) {
+		let t = new FormData;
+		t.set('sessionid', sessionIdCookie);
+		fetch(`/market/removelisting/${listingId}`, {
+			method: `POST`,
+			credentials: `include`,
+			body: t
+		})
+	}
+
+	window.postMessage({ action: Messages.ResponseAny, promiseId: promiseId } as ResponseAny, '*');
+}
+
+function getCookie(name: string): string | null {
+	const t = document.cookie.match(`(^|; )` + name + `=([^;]*)`);
+	return t && t[2] ? decodeURIComponent(t[2]) : null
+}
