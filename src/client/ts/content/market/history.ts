@@ -13,6 +13,8 @@ export type MarketAsset = {
 	asset: JSONObject;
 }
 
+export type MarketTransactionType = 'gain' | 'loss' | 'unknown';
+
 export type MarketTransaction = {
 	userId: string;
 	transactionId: string;
@@ -24,15 +26,15 @@ export type MarketTransaction = {
 	listed: string;
 	acted: string;
 	price: string;
-	type: 'gain' | 'loss' | 'unknown';
+	type: MarketTransactionType;
 }
 
 export class MarketHistory {
-	#dbPromiseResolve: (value: IDBDatabase | null) => void = () => { };
-	#dbPromise = new Promise<IDBDatabase | null>((resolve) => this.#dbPromiseResolve = resolve);
-	#dbOpenRequest?: IDBOpenDBRequest;
+	static #dbPromiseResolve: (value: IDBDatabase | null) => void;
+	static #dbPromise = new Promise<IDBDatabase | null>((resolve) => this.#dbPromiseResolve = resolve);
+	static #dbOpenRequest?: IDBOpenDBRequest;
 
-	async #getDb(): Promise<IDBDatabase | null> {
+	static async #getDb(): Promise<IDBDatabase | null> {
 		if (!this.#dbOpenRequest) {
 			this.#dbOpenRequest = window.indexedDB.open(historyDbName, historyDbVersion);
 			this.#dbOpenRequest.addEventListener('error', () => {
@@ -62,15 +64,15 @@ export class MarketHistory {
 		return this.#dbPromise;
 	}
 
-	async insertTransaction(transaction: MarketTransaction): Promise<boolean> {
+	static async insertTransaction(transaction: MarketTransaction): Promise<boolean> {
 		return this.#insert(historyTransactionStore, transaction);
 	}
 
-	async insertAsset(asset: MarketAsset): Promise<boolean> {
+	static async insertAsset(asset: MarketAsset): Promise<boolean> {
 		return this.#insert(historyAssetStore, asset);
 	}
 
-	async #insert(store: string, data: MarketTransaction | MarketAsset): Promise<boolean> {
+	static async #insert(store: string, data: MarketTransaction | MarketAsset): Promise<boolean> {
 		const db = await this.#getDb();
 		if (!db) {
 			return false;
@@ -86,11 +88,31 @@ export class MarketHistory {
 		});
 	}
 
+	static async getAsset(appId: string, contextId: string, assetId: string): Promise<MarketAsset | null> {
+		return this.#get(historyAssetStore, [appId, contextId, assetId]);
+	}
+
+	static async #get(store: string, key: string[]): Promise<MarketAsset | null> {
+		const db = await this.#getDb();
+		if (!db) {
+			return null;
+		}
+
+		return new Promise<MarketAsset | null>((resolve) => {
+			const objectStore = db.transaction(store, 'readonly').objectStore(store);
+
+			const request = objectStore.get(key);
+
+			request.addEventListener('success', () => resolve(request.result));
+			request.addEventListener('error', () => resolve(null));
+		});
+	}
+
 	/**
 	 * Return the last stored transaction
 	 * @returns The last (most recent) row or -1 in case of error
 	 */
-	async getLastRow(): Promise<number> {
+	static async getLastRow(): Promise<number> {
 		const db = await this.#getDb();
 		if (!db) {
 			return -1;
@@ -118,5 +140,81 @@ export class MarketHistory {
 				resolve(-1);
 			});
 		});
+	}
+
+	static async getAllTransactions(): Promise<MarketTransaction[]> {
+		const db = await this.#getDb();
+		if (!db) {
+			return [];
+		}
+
+		return new Promise<MarketTransaction[]>((resolve) => {
+			const objectStore = db.transaction(historyTransactionStore, 'readonly').objectStore(historyTransactionStore);
+
+			let request = objectStore.getAll();
+
+			request.addEventListener('error', () => resolve([]));
+			request.addEventListener('success', () => resolve(request.result));
+		});
+	}
+
+	static async * fetchTransactions(): AsyncGenerator<MarketTransaction, null, unknown> {//Promise<MarketTransaction | null> {
+		const db = await this.#getDb();
+		if (!db) {
+			return null;
+		}
+
+		let nextPromiseResolve: (value: void) => void;
+		let nextPromise = new Promise<void>(resolve => nextPromiseResolve = resolve);
+
+		const mc = new MessageChannel();
+
+		// Iterate is a function that turns the event listener into a generator
+		const datas: (MarketTransaction | null)[] = [];
+		async function* iterate(): AsyncGenerator<MarketTransaction, null, unknown> {
+			mc.port1.onmessage = (event: MessageEvent) => {
+				datas.push(event.data)
+				//console.count('mc.port1.onmessage');
+				nextPromiseResolve();
+			};
+
+			while (true) {
+				await nextPromise;
+				const datas2 = Array.from(datas);
+				console.info(datas2.length);
+				while (datas.pop()) { }
+				nextPromise = new Promise<void>(resolve => nextPromiseResolve = resolve);
+
+				for (const data of datas2) {
+					if (data) {
+						yield data;
+					} else {
+						return null;
+					}
+				}
+			}
+		}
+
+		// Get the store and open the cursor
+		const objectStore = db.transaction(historyTransactionStore, 'readonly').objectStore(historyTransactionStore);
+
+		let cursorRequest = objectStore.openCursor();
+		cursorRequest.addEventListener('error', () => mc.port2.postMessage(null)/*nextPromiseResolve(null)*/);
+		cursorRequest.addEventListener('success', () => {
+			const cursor = cursorRequest.result;
+			if (cursor) {
+				mc.port2.postMessage(cursor.value);
+				cursor.continue();
+			} else {
+				mc.port2.postMessage(null);
+			}
+		});
+
+		// Generate the values
+		for await (const value of iterate()) {
+			yield value;
+		}
+
+		return null;
 	}
 }

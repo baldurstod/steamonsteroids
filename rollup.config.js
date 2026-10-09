@@ -5,6 +5,7 @@ import terser from '@rollup/plugin-terser';
 import typescript from '@rollup/plugin-typescript';
 import copy from 'rollup-plugin-copy';
 import del from 'rollup-plugin-delete';
+import css from 'rollup-plugin-import-css';
 
 const isProduction = process.env.BUILD === 'production';
 const isFirefox = process.env.BROWSER === 'firefox';
@@ -29,6 +30,7 @@ export default [
 			json({
 				compact: true,
 			}),
+			css(),
 			image(),
 			typescript(),
 			nodeResolve({ dedupe: ['harmony-ui'] }),

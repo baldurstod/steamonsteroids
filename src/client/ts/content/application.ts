@@ -3,7 +3,7 @@ import { AmbientLight, BoundingBox, Camera, CanvasAttributes, ColorBackground, G
 import { getCharCodes } from 'harmony-binary-reader';
 import { starSVG } from 'harmony-svg';
 import { JSONObject } from 'harmony-types';
-import { createElement, hide, show } from 'harmony-ui';
+import { addRemoveClass, createElement, hide, show } from 'harmony-ui';
 import { setTimeoutPromise } from 'harmony-utils';
 import translationsJSON from '../../json/translations.json';
 import { ACTIVE_INVENTORY_PAGE, APP_ID_CS2, APP_ID_TF2, INVENTORY_BACKGROUND_COLOR, INVENTORY_ITEM_CLASSNAME, MARKET_LISTING_BACKGROUND_COLOR, MARKET_LISTING_EFFECT_COLOR, MARKET_LISTING_NAME_CLASSNAME, MARKET_LISTING_ROW_CLASSNAME, MARKET_TF_ITEM_TITLE_CLASS, MARKET_TF_LISTING_ID, MARKET_TF_URL, MARKETPLACE_LISTING_BACKGROUND_COLOR, MARKETPLACE_LISTINGS_ID, MOUSE_ENTER_DELAY } from '../constants';
@@ -11,7 +11,7 @@ import { GenerationState } from '../enums';
 import { Messages } from '../messages/messages';
 import { ClearMarketListingEvent, Controller, ControllerEvents, ExportLoadout, SetGenerationStateEvent, SetItemInfoEvent, Tf2RefreshListing } from './controller';
 import { CS2Viewer } from './cs2/cs2viewer';
-import { MarketHistory } from './market/history';
+import { MarketHistory, MarketTransactionType } from './market/history';
 import { getInventoryAssetDatas, getInventorySteamId, MarketAssets } from './marketassets';
 import { MARKET_LISTING_ROW_PREFIX, MARKET_LISTINGS_ID, SEARCH_RESULT_ROWS } from './steam/constants';
 import { ListingElement, MarketListings } from './steam/marketlistings';
@@ -19,6 +19,7 @@ import { ItemManager } from './tf2/loadout/items/itemmanager';
 import { TF2_SHOWCASE_CAMERA_POSITION, TF2_SHOWCASE_CAMERA_TARGET } from './tf2/tf2constants';
 import { TF2Viewer } from './tf2/tf2viewer';
 import { ClassInfo, MarketAsset } from './types';
+import { MarketHistoryView } from './view/markethistory';
 
 enum PageType {
 	Unknown = 0,
@@ -114,7 +115,8 @@ export class Application {
 	#weaponShowcase = false;
 	#translations = new Map<string, Map<string, string>>();
 	#injectedReady = false;
-	#marketHistory = new MarketHistory();
+	//#marketHistory = new MarketHistory();
+	#marketHistoryView?: MarketHistoryView;
 
 	constructor() {
 		this.#initTranslations();
@@ -170,8 +172,8 @@ export class Application {
 		}
 		*/
 
-		GraphicsEvents.addEventListener(GraphicsEvent.Tick, handleTick);
-		//GraphicsEvents.addEventListener(GraphicsEvent.Tick, (event) => this.#orbitCameraControl.update((event as CustomEvent<GraphicTickEvent>).detail.delta / 1000));
+		GraphicsEvents.addEventListener('tick', handleTick);
+		//GraphicsEvents.addEventListener('tick', (event) => this.#orbitCameraControl.update((event as CustomEvent<GraphicTickEvent>).detail.delta / 1000));
 		Graphics.play();
 
 		this.#scene.addChild(this.#tf2Viewer.getScene());
@@ -610,6 +612,14 @@ export class Application {
 						button.disabled = true;
 					},
 				}) as HTMLButtonElement,
+				createElement('span', {
+					class: 'item_market_action_button_contents',
+					innerText: 'Search all transactions',
+					$click: async () => {
+						this.#searchMarketHistory();
+						button.disabled = true;
+					},
+				}) as HTMLButtonElement,
 			]
 		});
 	}
@@ -796,6 +806,38 @@ export class Application {
 		}
 	}
 
+	#searchMarketHistory(): void {
+		if (!this.#marketHistoryView) {
+			this.#marketHistoryView = new MarketHistoryView();
+		}
+
+		this.#marketHistoryView.show();
+		/*
+		if (this.#htmlMarketHistory) {
+			show(this.#htmlMarketHistory);
+		}
+
+		this.#htmlMarketHistory = createElement('div', {
+			parent: document.body,
+			class: 'market-history-dialog',
+			childs: [
+				this.#htmlMarketHistoryFilter = createElement('input', {
+					$input: (event: InputEvent) => {
+
+					},
+				}) as HTMLInputElement,
+				this.#htmlMarketHistoryList = createElement('div', {
+					class: 'market-history-list',
+				}) as HTMLInputElement,
+			]
+		});
+		*/
+	}
+
+	#setMarketHistoryTextFilter(filter: string): void {
+
+	}
+
 	async #processMarketHistory(): Promise<void> {
 		const countPerPage = 100;
 
@@ -808,7 +850,7 @@ export class Application {
 		let start = totalCount - countPerPage;
 
 
-		const lastRow = await this.#marketHistory.getLastRow();
+		const lastRow = await MarketHistory.getLastRow();
 		if (lastRow !== -1) {
 			start = lastRow - countPerPage;
 		}
@@ -839,7 +881,7 @@ export class Application {
 						for (const assetId in context as JSONObject) {
 							const asset = (context as JSONObject)[assetId] as JSONObject;
 
-							this.#marketHistory.insertAsset({
+							MarketHistory.insertAsset({
 								appId,
 								contextId,
 								assetId,
@@ -868,7 +910,7 @@ export class Application {
 					break;
 				}
 
-				let type: 'gain' | 'loss' | 'unknown' = 'unknown';
+				let type: MarketTransactionType = 'unknown';
 				if ((htmlGainOrLoss as HTMLElement).innerText.indexOf('+') !== -1) {
 					type = 'gain';
 				}
@@ -908,7 +950,7 @@ export class Application {
 					lastIdx = idx + 1;
 				}
 
-				this.#marketHistory.insertTransaction({
+				MarketHistory.insertTransaction({
 					userId: '',
 					transactionId,
 					appId: values[0]!,
@@ -1765,8 +1807,7 @@ export class Application {
 
 	setActive(active: boolean): void {
 		this.#active = active;
-		const method = active ? 'add' : 'remove';
-		document.body.classList[method]('steamonsteroids-active');
+		addRemoveClass(document.body, 'steamonsteroids-active', active);
 	}
 
 	isActive(): boolean {
